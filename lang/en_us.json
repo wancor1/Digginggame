@@ -1,0 +1,26 @@
+{
+  "_metadata": {
+    "display_name": "English"
+  },
+  "game_title": "Digging Game Reforged",
+  "menu_title": "MENU",
+  "menu_se": "Sound Effects",
+  "menu_music": "Music",
+  "menu_language": "Language",
+  "menu_save": "Save Game",
+  "menu_load": "Load Game",
+  "menu_quit": "Quit Game",
+  "start_button": "Start",
+  "start_button_pressed": "Click!",
+  "debug_fps": "FPS: {fps}",
+  "debug_cam": "Cam:({cam_x},{cam_y})",
+  "debug_blk_pcl": "Blk:{blk_count} Pcl:{pcl_count}",
+  "debug_sel": "Sel:{is_selected}",
+  "save_success": "Game saved to {filename}",
+  "save_error_write": "Error saving game: Could not write to file {filename}. {error}",
+  "save_error_unexpected": "An unexpected error occurred during saving: {error}",
+  "load_success": "Game loaded from {filename}",
+  "load_error_not_found": "Save file not found: {filename}",
+  "load_error_decode": "Error decoding save file ({filename}): Invalid JSON format. {error}",
+  "load_error_unexpected": "An unexpected error occurred during loading: {error}"
+}

@@ -1,0 +1,26 @@
+{
+  "_metadata": {
+    "display_name": "日本語"
+  },
+  "game_title": "穴掘りゲーム",
+  "menu_title": "メニュー",
+  "menu_se": "効果音",
+  "menu_music": "音楽",
+  "menu_language": "言語",
+  "menu_save": "セーブ",
+  "menu_load": "ロード",
+  "menu_quit": "ゲーム終了",
+  "start_button": "スタート",
+  "start_button_pressed": "クリック！",
+  "debug_fps": "FPS: {fps}",
+  "debug_cam": "カメラ:({cam_x},{cam_y})",
+  "debug_blk_pcl": "ブロック:{blk_count} Pcl:{pcl_count}",
+  "debug_sel": "選択中:{is_selected}",
+  "save_success": "ゲームを {filename} に保存しました",
+  "save_error_write": "セーブエラー: {filename} に書き込めませんでした。 {error}",
+  "save_error_unexpected": "予期せぬセーブエラーが発生しました: {error}",
+  "load_success": "{filename} からゲームをロードしました",
+  "load_error_not_found": "セーブファイルが見つかりません: {filename}",
+  "load_error_decode": "セーブファイル ({filename}) の解析エラー: 無効なJSON形式です。 {error}",
+  "load_error_unexpected": "予期せぬロードエラーが発生しました: {error}"
+}
