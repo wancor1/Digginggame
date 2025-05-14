@@ -73,6 +73,57 @@ def numbers_to_notes(number_list):
         result += note_name + str(octave)
     return result
 
+class Toast:
+    def __init__(self, text1='a', text2=None, duration=3):
+        self.text1 = text1
+        self.text2 = text2
+        self.duration = duration
+        self.elapsed_time = 0  
+        self.start_time = time.time()
+    
+    def get_height(self):
+        return px.FONT_HEIGHT * (2 if self.text2 else 1) + 2
+
+    def set_message(self, text1, text2=None):
+        self.text1 = text1
+        self.text2 = text2
+        self.start_time = time.time()
+
+    def update(self):
+        self.elapsed_time = time.time() - self.start_time
+        if self.elapsed_time >= self.duration:
+            return False
+        return True
+
+    def draw(self, offset_y=0):
+        if self.text2 is None:
+            text_x = SCREEN_WIDTH - ((px.FONT_WIDTH) * len(self.text1))
+        else:
+            text_x = SCREEN_WIDTH - ((px.FONT_WIDTH) * max(len(self.text1), len(self.text2)))
+
+        text_y = 1 + offset_y
+        px.rect(text_x - 2, text_y - 1, SCREEN_WIDTH - text_x + 2, px.FONT_HEIGHT * (2 if self.text2 else 1) + 1, 5)
+        px.rectb(text_x - 2, text_y - 1, SCREEN_WIDTH - text_x + 2, px.FONT_HEIGHT * (2 if self.text2 else 1) + 1, 1)
+        px.text(text_x, text_y, self.text1, 7)
+        if self.text2 is not None:
+            px.text(text_x, text_y + px.FONT_HEIGHT, self.text2, 7)
+
+class ToastManager:
+    def __init__(self):
+        self.toasts = []
+
+    def add(self, text1, text2=None, duration=3):
+        self.toasts.append(Toast(text1, text2, duration))
+
+    def update(self):
+        self.toasts = [t for t in self.toasts if t.update()]
+
+    def draw(self):
+        offset_y = 0
+        for toast in self.toasts:
+            toast.draw(offset_y=offset_y)
+            offset_y += toast.get_height()
+
 class SelectBlock:
     def __init__(self):
         self._selection_effect_start_time = 0
@@ -430,6 +481,7 @@ class DiggingGame:
         self.select_block_highlighter = SelectBlock()
         self.button_handler = ButtonBox()
         self.game_menu = GameMenu(self.button_handler, game_instance_ref=self)
+        self.toast_manager = ToastManager()
 
         self.on_title_screen = True
         self.is_menu_visible = False
@@ -566,16 +618,17 @@ class DiggingGame:
             # else:
             #     px.stop(BGM_CHANNEL) # チャンネルを指定して停止
 
+        #wip: まだ日本語対応してない bank2が日本語関係
         except FileNotFoundError:
             print(f"Save file not found: {SAVE_FILE_NAME}")
-            # TODO: ユーザーに「セーブファイルが見つかりません」というフィードバックを表示
+            self.toast_manager.add('セーブデータが見つかりませんでした', '新規ゲームを開始します', 5)
         except json.JSONDecodeError as e:
             print(f"Error decoding save file ({SAVE_FILE_NAME}): Invalid JSON format. {e}")
-            # TODO: ユーザーにエラーフィードバックを表示
+            self.toast_manager.add('セーブデータの読み込みに失敗しました', 'データが壊れている可能性があります', 5)
         except Exception as e:
             print(f"An unexpected error occurred during loading: {e}")
             traceback.print_exc() # 開発用に詳細なトレースバックを表示
-            # TODO: ユーザーに一般的なエラーメッセージを表示
+            self.toast_manager.add('セーブデータの読み込みに失敗しました', '不明なエラーが発生しました', 5)
 
     def _create_dummy_sprites_if_needed(self):
         img_bank0 = px.Image(32, 16)
@@ -701,9 +754,10 @@ class DiggingGame:
                     self.show_debug_overlay = not self.show_debug_overlay
                 self._handle_camera_movement()
                 self._update_game_logic()
+        self.toast_manager.update()
 
     def _draw_title_screen(self):
-        px.cls(1)
+        px.cls(5)
         px.camera(0, 0)
 
         title_x, title_y = calculate_text_center_position(SCREEN_WIDTH, SCREEN_HEIGHT, self.GAME_TITLE)
@@ -713,6 +767,7 @@ class DiggingGame:
         button_w, button_h = 35, 10
         button_x = (SCREEN_WIDTH - button_w) / 2
         button_y = (SCREEN_HEIGHT - button_h) / 2 * 1.25
+        self.toast_manager.draw()
 
         if self.button_handler.draw_button(button_x, button_y, button_w, button_h, 'Start', 'Click!'):
             self.load_game_state()
@@ -723,7 +778,7 @@ class DiggingGame:
 
     def _draw_game_world_elements(self):
         px.camera(self.camera_x, self.camera_y)
-        px.cls(1)
+        px.cls(12)
 
         for block in self.all_blocks:
             if block.x + BLOCK_SIZE > self.camera_x and block.x < self.camera_x + SCREEN_WIDTH and \
@@ -745,6 +800,8 @@ class DiggingGame:
             self._handle_menu_action(selected_button_action)
 
         cursor_y_offset = 1 if px.btn(px.MOUSE_BUTTON_LEFT) else 0
+        self.toast_manager.draw()
+
         px.blt(px.mouse_x, px.mouse_y + cursor_y_offset, *SPRITE_CURSOR)
 
         self._calc_fps()
