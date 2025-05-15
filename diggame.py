@@ -65,7 +65,7 @@ NOTIFICATION_INTER_ITEM_SPACING = 2
 NOTIFICATION_BG_COLOR = 13
 NOTIFICATION_TEXT_COLOR_INFO = 0
 NOTIFICATION_TEXT_COLOR_ERROR = 8
-NOTIFICATION_TEXT_COLOR_SUCCESS = 11
+NOTIFICATION_TEXT_COLOR_SUCCESS = 5
 NOTIFICATION_MAX_WIDTH = 115
 
 CHUNK_SIZE_X_BLOCKS = 16
@@ -270,6 +270,7 @@ class Notification:
         if time.time() - self.start_time > self.duration:
             self.is_alive = False
         # TODO: フェードアウト処理?
+        # 右にスワイプっていうかあれがいいと思う
 
 class NotificationManager:
     def __init__(self, font_writer: puf.Writer):
@@ -761,9 +762,9 @@ class GameMenu:
             {"key": "menu_se", "type": "checkbox", "setting_attr": "se_on"},
             {"key": "menu_music", "type": "checkbox", "setting_attr": "bgm_on"},
             {"key": "menu_language", "type": "dropdown"},
-            {"key": "menu_save", "type": "button", "action_label": "Save Game"},
-            {"key": "menu_load", "type": "button", "action_label": "Load Game"},
-            {"key": "menu_quit", "type": "button", "action_label": "Quit Game"}
+            {"key": "button.default.menu_save", "press_key":"button.press.menu_save", "type": "button", "action_label": "Save Game"},
+            {"key": "button.default.menu_load", "press_key":"button.press.menu_load", "type": "button", "action_label": "Load Game"},
+            {"key": "button.default.menu_quit", "press_key":"button.press.menu_quit", "type": "button", "action_label": "Quit Game"}
         ]
         self.selected_button_action = None
         self.is_lang_dropdown_open = False
@@ -919,7 +920,7 @@ class GameMenu:
                     dropdown_draw_params = (dropdown_button_x, current_y, dropdown_button_w) # リスト描画用パラメータ
 
             elif item_def["type"] == "button":
-                if self.button_handler.draw_button(item_x, current_y, item_w, MENU_ITEM_HEIGHT, item_def["key"], item_def["key"]):
+                if self.button_handler.draw_button(item_x, current_y, item_w, MENU_ITEM_HEIGHT, item_def["key"], item_def["press_key"]):
                     if not self.is_lang_dropdown_open:
                         self.selected_button_action = item_def["action_label"]
 
@@ -1187,24 +1188,44 @@ class DiggingGame:
             "modified_chunks": modified_chunks_data,
             "current_language": self.lang_manager.current_lang_code
         }
-        try:
-            with open(SAVE_FILE_NAME, "w") as f:
-                json.dump(save_data, f, indent=2)
-            self.notification_manager.add_notification(
-                self.lang_manager.get_string("save_success", filename=SAVE_FILE_NAME),
-                msg_type="success"
-            )
-        except IOError as e:
-            self.notification_manager.add_notification(
-                self.lang_manager.get_string("save_error_write", filename=SAVE_FILE_NAME, error=str(e)),
-                msg_type="error"
-            )
-        except Exception as e:
-            self.notification_manager.add_notification(
-                self.lang_manager.get_string("save_error_unexpected", error=str(e)),
-                msg_type="error"
-            )
-            traceback.print_exc()
+        if self.show_debug_overlay:
+            try:
+                with open(SAVE_FILE_NAME, "w") as f:
+                    json.dump(save_data, f, indent=2)
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.save_success", filename=SAVE_FILE_NAME),
+                    msg_type="success"
+                )
+            except IOError as e:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.save_error_write", filename=SAVE_FILE_NAME, error=str(e)),
+                    msg_type="error"
+                )
+            except Exception as e:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.save_error_unexpected", error=str(e)),
+                    msg_type="error"
+                )
+                traceback.print_exc()
+        else:
+            try:
+                with open(SAVE_FILE_NAME, "w") as f:
+                    json.dump(save_data, f, indent=2)
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.default.save_success", filename=SAVE_FILE_NAME),
+                    msg_type="success"
+                )
+            except IOError as e:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.default.save_error_write", filename=SAVE_FILE_NAME, error=str(e)),
+                    msg_type="error"
+                )
+            except Exception as e:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.default.save_error_unexpected", error=str(e)),
+                    msg_type="error"
+                )
+                traceback.print_exc()
 
     def _regenerate_world_from_chunks_and_apply_mods(self, loaded_gen_chunk_coords, loaded_mod_chunks_data):
         self.chunks = {}
@@ -1255,30 +1276,52 @@ class DiggingGame:
             self._initial_block_generation_done = True
 
             self._generate_visible_chunks()
-
-            self.notification_manager.add_notification(
-                self.lang_manager.get_string("load_success", filename=SAVE_FILE_NAME),
-                msg_type="success")
+            if self.show_debug_overlay:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.load_success", filename=SAVE_FILE_NAME),
+                    msg_type="success")
+            else:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.default.load_success", filename=SAVE_FILE_NAME),
+                    msg_type="success")
             self.on_title_screen = False;
             self.is_menu_visible = False
             # if self.bgm_on: self.play_bgm(BGM_CHANNEL, BGM_SOUND_ID) else: px.stop(BGM_CHANNEL)
-
+        
         except FileNotFoundError:
             if not start:
-                self.notification_manager.add_notification(
-                self.lang_manager.get_string("load_error_not_found", filename=SAVE_FILE_NAME),
-                msg_type="error"
-            )
+                if self.show_debug_overlay:
+                    self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.load_error_not_found", filename=SAVE_FILE_NAME),
+                    msg_type="error"
+                    )
+                else:
+                    self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.default.load_error_not_found", filename=SAVE_FILE_NAME),
+                    msg_type="error"
+                    )
         except json.JSONDecodeError as e:
-            self.notification_manager.add_notification(
-                self.lang_manager.get_string("load_error_decode", filename=SAVE_FILE_NAME, error=str(e)),
+            if self.show_debug_overlay:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.load_error_decode", filename=SAVE_FILE_NAME, error=str(e)),
+                    msg_type="error"
+                )
+            else:
+                self.notification_manager.add_notification(
+                self.lang_manager.get_string("notification.default.load_error_decode", filename=SAVE_FILE_NAME, error=str(e)),
                 msg_type="error"
-            )
+                )
         except Exception as e:
-            self.notification_manager.add_notification(
-                self.lang_manager.get_string("load_error_unexpected", error=str(e)),
-                msg_type="error"
-            )
+            if self.show_debug_overlay:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.debug.load_error_unexpected", error=str(e)),
+                    msg_type="error"
+                )
+            else:
+                self.notification_manager.add_notification(
+                    self.lang_manager.get_string("notification.default.load_error_unexpected", error=str(e)),
+                    msg_type="error"
+                )
             traceback.print_exc()
 
     def _create_dummy_sprites_if_needed(self):
@@ -1377,12 +1420,12 @@ class DiggingGame:
 
         self._calc_fps()
         if self.show_debug_overlay and not self.is_menu_visible and not self.on_title_screen:
-            debug_fps = self.lang_manager.get_string("debug_fps", fps=f"{self.current_fps:.2f}")
-            debug_cam = self.lang_manager.get_string("debug_cam", cam_x=self.camera_x, cam_y=self.camera_y)
-            debug_mouse = self.lang_manager.get_string("debug_mouse", mouse_x=math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE, mouse_y=math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE)
-            debug_blk = self.lang_manager.get_string("debug_blk", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
-            debug_pcl = self.lang_manager.get_string("debug_pcl", pcl_count=len(self.active_particles))
-            debug_hover = self.lang_manager.get_string("debug_hover", is_hovered=self._is_mouse_over_any_block)
+            debug_fps = self.lang_manager.get_string("main.debug.fps", fps=f"{self.current_fps:.2f}")
+            debug_cam = self.lang_manager.get_string("main.debug.cam", cam_x=self.camera_x, cam_y=self.camera_y)
+            debug_mouse = self.lang_manager.get_string("main.debug.mouse", mouse_x=math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE, mouse_y=math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE)
+            debug_blk = self.lang_manager.get_string("main.debug.blk", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
+            debug_pcl = self.lang_manager.get_string("main.debug.pcl", pcl_count=len(self.active_particles))
+            debug_hover = self.lang_manager.get_string("main.debug.hover", is_hovered=self._is_mouse_over_any_block)
             debug_list = [debug_fps, debug_cam, debug_mouse, debug_blk, debug_pcl, debug_hover]
 
             i = 0
