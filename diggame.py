@@ -62,6 +62,17 @@ LANG_FOLDER = "lang"
 DEFAULT_LANGUAGE = "en_us"
 FONT_SIZE = 8
 
+NOTIFICATION_MAX_DISPLAY_TIME = 3.0
+NOTIFICATION_PADDING_X = 5
+NOTIFICATION_PADDING_Y = 3
+NOTIFICATION_LINE_SPACING = 2
+NOTIFICATION_INTER_ITEM_SPACING = 2
+NOTIFICATION_BG_COLOR = 13
+NOTIFICATION_TEXT_COLOR_INFO = 0
+NOTIFICATION_TEXT_COLOR_ERROR = 8
+NOTIFICATION_TEXT_COLOR_SUCCESS = 11
+NOTIFICATION_MAX_WIDTH = 115
+
 def estimate_text_width(text):
     estimated_width = 0
     for char in text:
@@ -221,57 +232,136 @@ class LanguageManager:
             return True
         return False
 
-class Toast:
-    def __init__(self, text1='a', text2=None, duration=3):
-        self.text1 = text1
-        self.text2 = text2
+class Notification:
+    def __init__(self, message, duration=NOTIFICATION_MAX_DISPLAY_TIME, msg_type="info"):
+        self.message = message
+        self.start_time = time.time()
         self.duration = duration
-        self.elapsed_time = 0
-        self.start_time = time.time()
+        self.msg_type = msg_type
+        self.is_alive = True
 
-    def get_height(self):
-        return px.FONT_HEIGHT * (2 if self.text2 else 1) + 2
-
-    def set_message(self, text1, text2=None):
-        self.text1 = text1
-        self.text2 = text2
-        self.start_time = time.time()
-
-    def update(self):
-        self.elapsed_time = time.time() - self.start_time
-        if self.elapsed_time >= self.duration:
-            return False
-        return True
-
-    def draw(self, offset_y=0):
-        if self.text2 is None:
-            text_x = SCREEN_WIDTH - ((px.FONT_WIDTH) * len(self.text1))
-        else:
-            text_x = SCREEN_WIDTH - ((px.FONT_WIDTH) * max(len(self.text1), len(self.text2)))
-
-        text_y = 1 + offset_y
-        px.rect(text_x - 2, text_y - 1, SCREEN_WIDTH - text_x + 2, px.FONT_HEIGHT * (2 if self.text2 else 1) + 1, 5)
-        px.rectb(text_x - 2, text_y - 1, SCREEN_WIDTH - text_x + 2, px.FONT_HEIGHT * (2 if self.text2 else 1) + 1, 1)
-        #writer.draw(text_x, text_y, self.text1, FONT_SIZE, 7)
-        if self.text2 is not None:
-            print("", end="")
-            #writer.draw(text_x, text_y + px.FONT_HEIGHT, self.text2, FONT_SIZE, 7)
-
-class ToastManager:
-    def __init__(self):
-        self.toasts = []
-
-    def add(self, text1, text2=None, duration=3):
-        self.toasts.append(Toast(text1, text2, duration))
+    def get_text_color(self):
+        if self.msg_type == "error":
+            return NOTIFICATION_TEXT_COLOR_ERROR
+        elif self.msg_type == "success":
+            return NOTIFICATION_TEXT_COLOR_SUCCESS
+        return NOTIFICATION_TEXT_COLOR_INFO
 
     def update(self):
-        self.toasts = [t for t in self.toasts if t.update()]
+        if time.time() - self.start_time > self.duration:
+            self.is_alive = False
+        # TODO: フェードアウト処理?
+
+class NotificationManager:
+    def __init__(self, font_writer: puf.Writer):
+        self.notifications = []
+        self.font = font_writer
+
+    def add_notification(self, message, duration=NOTIFICATION_MAX_DISPLAY_TIME, msg_type="info"):
+        new_notif = Notification(message, duration, msg_type)
+        self.notifications.append(new_notif)
+
+        #MAX_NOTIFICATIONS = 5
+        #if len(self.notifications) > MAX_NOTIFICATIONS:
+        #    self.notifications.pop(0)
+
+    def update(self):
+        for notif in self.notifications:
+            notif.update()
+        self.notifications = [n for n in self.notifications if n.is_alive]
+
+    def _wrap_chars_only(self, text, max_width):
+        wrapped_lines = []
+        if not text:
+            return [""]
+
+        current_line = ""
+        for char in text:
+            test_line = current_line + char
+            test_width = estimate_text_width(test_line)
+
+            if test_width > max_width and current_line:
+                wrapped_lines.append(current_line)
+                current_line = char
+            else:
+                current_line = test_line
+
+        if current_line:
+            wrapped_lines.append(current_line)
+        return wrapped_lines
+
+    def _wrap_text(self, text, max_width):
+        temp_wrapped_lines = []
+        paragraphs = text.split('\n')
+
+        for para in paragraphs:
+            if not para:
+                temp_wrapped_lines.append("")
+                continue
+
+            current_line = ""
+            words = para.split(' ')
+
+            for i, word in enumerate(words):
+                    test_line_with_space = current_line + (" " if current_line else "") + word
+                    test_width_with_space = estimate_text_width(test_line_with_space)
+                    if test_width_with_space <= max_width:
+                        current_line = test_line_with_space
+                    else:
+                        if current_line:
+                            temp_wrapped_lines.append(current_line)
+                            current_line = word
+                        else:
+                            char_wrapped_word_lines = self._wrap_chars_only(word, max_width)
+                            temp_wrapped_lines.extend(char_wrapped_word_lines)
+                            current_line = ""
+
+            if current_line:
+                temp_wrapped_lines.append(current_line)
+
+            final_wrapped_result = []
+            for line in temp_wrapped_lines:
+                if not line:
+                    final_wrapped_result.append(line)
+                    continue
+
+                if estimate_text_width(line) > max_width:
+                    char_wrapped_sublines = self._wrap_chars_only(line, max_width)
+                    final_wrapped_result.extend(char_wrapped_sublines)
+                else:
+                    final_wrapped_result.append(line)
+
+        return final_wrapped_result
 
     def draw(self):
-        offset_y = 0
-        for toast in self.toasts:
-            toast.draw(offset_y=offset_y)
-            offset_y += toast.get_height()
+        if not self.notifications:
+            return
+
+        current_y = NOTIFICATION_PADDING_Y
+
+        for notif in reversed(self.notifications):
+            effective_wrap_width = NOTIFICATION_MAX_WIDTH - NOTIFICATION_PADDING_X * 2
+            lines = self._wrap_text(notif.message, effective_wrap_width)
+
+            total_text_height = len(lines) * FONT_SIZE + (len(lines) - 1) * NOTIFICATION_LINE_SPACING
+            box_height = total_text_height + NOTIFICATION_PADDING_Y * 2
+
+            max_line_width = 0
+            for line in lines:
+                max_line_width = max(max_line_width, estimate_text_width(line))
+
+            box_width = min(NOTIFICATION_MAX_WIDTH, max_line_width + NOTIFICATION_PADDING_X * 2)
+            box_x = SCREEN_WIDTH - box_width - NOTIFICATION_PADDING_X
+
+            px.rect(box_x, current_y, box_width, box_height, NOTIFICATION_BG_COLOR)
+            px.rectb(box_x, current_y, box_width, box_height, notif.get_text_color())
+
+            text_color = notif.get_text_color()
+            line_y_offset = current_y + NOTIFICATION_PADDING_Y
+            for line in lines:
+                self.font.draw(box_x + NOTIFICATION_PADDING_X, line_y_offset, line, FONT_SIZE, text_color)
+                line_y_offset += FONT_SIZE + NOTIFICATION_LINE_SPACING
+            current_y += box_height + NOTIFICATION_INTER_ITEM_SPACING
 
 class SelectBlock:
     def __init__(self):
@@ -786,7 +876,7 @@ class DiggingGame:
         self.lang_manager = LanguageManager()
         self.button_handler = ButtonBox(self.font, self.lang_manager)
         self.game_menu = GameMenu(self, self.lang_manager, self.font)
-        self.toast_manager = ToastManager()
+        self.notification_manager = NotificationManager(self.font)
 
         self.current_language_code = self.lang_manager.current_lang_code
         self.update_window_title()
@@ -919,15 +1009,23 @@ class DiggingGame:
         try:
             with open(SAVE_FILE_NAME, "w") as f:
                 json.dump(save_data, f, indent=2)
-            print(self.lang_manager.get_string("save_success", filename=SAVE_FILE_NAME))
-            # TODO: ユーザーに「Saved!」というフィードバックを画面に表示する
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string("save_success", filename=SAVE_FILE_NAME),
+                msg_type="success"
+            )
         except IOError as e:
-            print(self.lang_manager.get_string("save_error_write", filename=SAVE_FILE_NAME, error=e))
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string("save_error_write", filename=SAVE_FILE_NAME, error=str(e)),
+                msg_type="error"
+            )
         except Exception as e:
-            print(self.lang_manager.get_string("save_error_unexpected", error=e))
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string("save_error_unexpected", error=str(e)),
+                msg_type="error"
+            )
             traceback.print_exc()
 
-    def load_game_state(self):
+    def load_game_state(self, start=False):
         try:
             with open(SAVE_FILE_NAME, "r") as f:
                 load_data = json.load(f)
@@ -962,24 +1060,34 @@ class DiggingGame:
                 if block.current_hp <= 0: block.is_broken = True; block.current_hp = 0
                 else: block.is_broken = False
                 if not block.is_broken: self.all_blocks.append(block)
-
             self.active_particles = []
             self._initial_block_generation_done = True
-            print(self.lang_manager.get_string("load_success", filename=SAVE_FILE_NAME))
+
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string("load_success", filename=SAVE_FILE_NAME),
+                msg_type="success"
+            )
             self.on_title_screen = False
             self.is_menu_visible = False
             # if self.bgm_on: self.play_bgm(BGM_CHANNEL, BGM_SOUND_ID) else: px.stop(BGM_CHANNEL)
 
         except FileNotFoundError:
-            print(self.lang_manager.get_string("load_error_not_found", filename=SAVE_FILE_NAME))
-            self.toast_manager.add('セーブデータが見つかりませんでした', '新規ゲームを開始します', 5)
+            if not start:
+                self.notification_manager.add_notification(
+                self.lang_manager.get_string("load_error_not_found", filename=SAVE_FILE_NAME),
+                msg_type="error"
+            )
         except json.JSONDecodeError as e:
-            print(self.lang_manager.get_string("load_error_decode", filename=SAVE_FILE_NAME, error=e))
-            self.toast_manager.add('セーブデータの読み込みに失敗しました', 'データが壊れている可能性があります', 5)
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string("load_error_decode", filename=SAVE_FILE_NAME, error=str(e)),
+                msg_type="error"
+            )
         except Exception as e:
-            print(self.lang_manager.get_string("load_error_unexpected", error=e))
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string("load_error_unexpected", error=str(e)),
+                msg_type="error"
+            )
             traceback.print_exc()
-            self.toast_manager.add('セーブデータの読み込みに失敗しました', '不明なエラーが発生しました', 5)
 
     def _create_dummy_sprites_if_needed(self):
         img_bank0 = px.Image(32, 16)
@@ -1049,7 +1157,7 @@ class DiggingGame:
                     self.show_debug_overlay = not self.show_debug_overlay
                 self._handle_camera_movement()
                 self._update_game_logic()
-        self.toast_manager.update()
+        self.notification_manager.update()
 
     def _draw_title_screen(self):
         px.cls(5)
@@ -1063,13 +1171,12 @@ class DiggingGame:
         button_w, button_h = 60, 10
         button_x = (SCREEN_WIDTH - button_w) / 2
         button_y = (SCREEN_HEIGHT - button_h) / 2 * 1.25
-        self.toast_manager.draw()
 
         if not hasattr(self, 'title_button_handler'):
             self.title_button_handler = ButtonBox(self.font, self.lang_manager)
 
         if self.button_handler.draw_button(button_x, button_y, button_w, button_h, 'Start', 'Click!'):
-            self.load_game_state()
+            self.load_game_state(True)
             self.on_title_screen = False
             if not self._initial_block_generation_done:
                 self._generate_visible_blocks()
@@ -1095,7 +1202,6 @@ class DiggingGame:
             self._handle_menu_action(selected_button_action)
 
         cursor_y_offset = 1 if px.btn(px.MOUSE_BUTTON_LEFT) else 0
-        self.toast_manager.draw()
         px.blt(px.mouse_x, px.mouse_y + cursor_y_offset, *SPRITE_CURSOR)
 
         self._calc_fps()
@@ -1121,6 +1227,7 @@ class DiggingGame:
         else:
             self._draw_game_world_elements()
             self._draw_ui_and_overlays()
+        self.notification_manager.draw()
 
     def run(self):
         px.run(self.update, self.draw)
