@@ -53,11 +53,6 @@ DROPDOWN_ARROW_HEIGHT = 5
 
 SAVE_FILE_NAME = "savegame.json"
 
-DEFAULT_FONT_PATH_CANDIDATES = [
-    "misaki_gothic.ttf",
-    "misaki_gothic2.ttf",
-    "misaki_mincho.ttf"
-]
 LANG_FOLDER = "lang"
 DEFAULT_LANGUAGE = "en_us"
 FONT_SIZE = 8
@@ -72,6 +67,9 @@ NOTIFICATION_TEXT_COLOR_INFO = 0
 NOTIFICATION_TEXT_COLOR_ERROR = 8
 NOTIFICATION_TEXT_COLOR_SUCCESS = 11
 NOTIFICATION_MAX_WIDTH = 115
+
+CHUNK_SIZE_X_BLOCKS = 16
+CHUNK_SIZE_Y_BLOCKS = 16
 
 def estimate_text_width(text):
     estimated_width = 0
@@ -94,6 +92,26 @@ def calculate_text_center_position(box_width, box_height, text_content):
     text_x = (box_width - text_width_pixels) / 2
     return text_x, text_y
 
+def world_to_chunk_coords(world_x, world_y):
+    """ワールド座標をそれが属するチャンクの座標に変換"""
+    chunk_x = math.floor(world_x / (CHUNK_SIZE_X_BLOCKS * BLOCK_SIZE))
+    chunk_y = math.floor(world_y / (CHUNK_SIZE_Y_BLOCKS * BLOCK_SIZE))
+    return chunk_x, chunk_y
+
+def world_to_relative_in_chunk_coords(world_x, world_y):
+    """ワールド座標をチャンク内相対ブロック座標(0-15, 0-15)に変換"""
+    cx, cy = world_to_chunk_coords(world_x, world_y)
+    rel_bx = (world_x // BLOCK_SIZE) - cx * CHUNK_SIZE_X_BLOCKS
+    rel_by = (world_y // BLOCK_SIZE) - cy * CHUNK_SIZE_Y_BLOCKS
+    return rel_bx, rel_by
+
+def chunk_coords_to_world_origin(chunk_x, chunk_y):
+    """チャンク座標からそのチャンクのワールド原点座標(左上)を計算"""
+    world_x = chunk_x * CHUNK_SIZE_X_BLOCKS * BLOCK_SIZE
+    world_y = chunk_y * CHUNK_SIZE_Y_BLOCKS * BLOCK_SIZE
+    return world_x, world_y
+
+"""
 def numbers_to_notes(number_list):
     note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
@@ -105,6 +123,7 @@ def numbers_to_notes(number_list):
 
         result += note_name + str(octave)
     return result
+"""
 
 class LanguageManager:
     def __init__(self, lang_folder=LANG_FOLDER, default_lang=DEFAULT_LANGUAGE):
@@ -156,7 +175,7 @@ class LanguageManager:
                 "debug_fps": "FPS: {fps}",
                 "debug_cam": "Cam:({cam_x},{cam_y})",
                 "debug_blk_pcl": "Blk:{blk_count} Pcl:{pcl_count}",
-                "debug_sel": "Sel:{is_selected}",
+                "debug_sel": "Hover:{is_hovered}",
                 "save_success": "Game saved to {filename}",
                 "save_error_write": "Error saving game: Could not write to file {filename}. {error}",
                 "save_error_unexpected": "An unexpected error occurred during saving: {error}",
@@ -468,6 +487,105 @@ class Particle:
         if self.alive:
             px.pset(self.x, self.y, self.color)
 
+class Chunk:
+    def __init__(self, chunk_x, chunk_y, game_ref):
+        self.chunk_x = chunk_x
+        self.chunk_y = chunk_y
+        self.game = game_ref
+        self.blocks = [[None for _ in range(CHUNK_SIZE_Y_BLOCKS)] for _ in range(CHUNK_SIZE_X_BLOCKS)]
+        self.is_generated = False
+        self.is_modified_in_session = False
+        # self.has_modified_blocks = False # 将来使用する可能性あり
+
+    def _initialize_blocks(self):
+        if self.is_generated:
+            return
+
+        world_origin_x, world_origin_y = chunk_coords_to_world_origin(self.chunk_x, self.chunk_y)
+
+        for rel_bx in range(CHUNK_SIZE_X_BLOCKS):
+            for rel_by in range(CHUNK_SIZE_Y_BLOCKS):
+                block_world_x = world_origin_x + rel_bx * BLOCK_SIZE
+                block_world_y = world_origin_y + rel_by * BLOCK_SIZE
+
+                if block_world_y // BLOCK_SIZE < self.game.GROUND_SURFACE_Y_BLOCK_INDEX:
+                    air_block = Block(block_world_x, block_world_y, self.game.world_seed_main, self.game.world_seed_ore)
+                    self.blocks[rel_bx][rel_by] = air_block
+                else:
+                    self.blocks[rel_bx][rel_by] = Block(
+                        block_world_x, block_world_y,
+                        self.game.world_seed_main, self.game.world_seed_ore
+                    )
+        self.is_generated = True
+
+    def get_block(self, rel_bx, rel_by):
+        if not self.is_generated:
+            self._initialize_blocks()
+
+        if 0 <= rel_bx < CHUNK_SIZE_X_BLOCKS and 0 <= rel_by < CHUNK_SIZE_Y_BLOCKS:
+            return self.blocks[rel_bx][rel_by]
+        return None
+
+    def get_block_by_world_coords(self, world_x, world_y):
+        rel_bx, rel_by = world_to_relative_in_chunk_coords(world_x, world_y)
+        return self.get_block(rel_bx, rel_by)
+
+    def mark_as_modified_in_session(self):
+        self.is_modified_in_session = True
+
+    def to_save_data(self):
+        if not self.is_generated:
+            return None
+
+        modified_blocks_in_chunk = []
+        has_any_modification = False
+        for rel_bx in range(CHUNK_SIZE_X_BLOCKS):
+            for rel_by in range(CHUNK_SIZE_Y_BLOCKS):
+                block = self.blocks[rel_bx][rel_by]
+                if block and block.is_modified:
+                    modified_blocks_in_chunk.append(block.to_save_data())
+                    has_any_modification = True
+
+        if has_any_modification:
+            return {
+                "cx": self.chunk_x,
+                "cy": self.chunk_y,
+                "modified_blocks": modified_blocks_in_chunk
+            }
+        return None
+
+    def apply_loaded_block_data(self, block_data_list):
+        if not self.is_generated:
+            self._initialize_blocks()
+
+        for mod_block_save_data in block_data_list:
+            world_x, world_y = mod_block_save_data["x"], mod_block_save_data["y"]
+            loaded_hp = mod_block_save_data["current_hp"]
+
+            rel_bx, rel_by = world_to_relative_in_chunk_coords(world_x, world_y)
+
+            block_to_update = self.get_block(rel_bx, rel_by)
+            if block_to_update:
+                block_to_update.current_hp = loaded_hp
+                block_to_update.is_modified = True
+                if loaded_hp <= 0:
+                    block_to_update.is_broken = True
+                    block_to_update.current_hp = 0
+                else:
+                    block_to_update.is_broken = False
+        self.is_modified_in_session = True
+
+    def get_all_active_blocks_in_chunk(self):
+        if not self.is_generated:
+            return []
+
+        active_blocks = []
+        for row in self.blocks:
+            for block in row:
+                if block and not block.is_broken:
+                    active_blocks.append(block)
+        return active_blocks
+
 class Block:
     HARDNESS_MIN = 3
     HARDNESS_MAX = 10
@@ -486,12 +604,11 @@ class Block:
         self.x = x
         self.y = y
         self.is_broken = False
+        self.is_modified = False
 
         px.nseed(world_seed_noise)
-
         noise_val_hardness = px.noise(self.x * self.NOISE_SCALE_HARDNESS,
-                                      self.y * self.NOISE_SCALE_HARDNESS,
-                                      0)
+                                      self.y * self.NOISE_SCALE_HARDNESS, 0)
         self.max_hp = int(math.floor((self.HARDNESS_MAX - self.HARDNESS_MIN) * abs(noise_val_hardness)) + self.HARDNESS_MIN)
         self.current_hp = self.max_hp
 
@@ -509,8 +626,7 @@ class Block:
 
             px.nseed(world_seed_ore)
             noise_val_ore = px.noise(self.x * self.NOISE_SCALE_ORE,
-                                     self.y * self.NOISE_SCALE_ORE,
-                                     0.5)
+                                     self.y * self.NOISE_SCALE_ORE, 0.5)
             if noise_val_ore >= self.ORE_THRESHOLD:
                 self.sprite_info = SPRITE_BLOCK_COAL
         else:
@@ -560,11 +676,16 @@ class Block:
         if self.is_broken:
             return []
 
+        if self.current_hp == self.max_hp:
+            self.is_modified = True
+
         self.current_hp -= 1
         created_particles = []
 
         if self.current_hp <= 0:
             self.is_broken = True
+            self.current_hp = 0
+            self.is_modified = True
             game_instance.play_se(0, 1)
 
             num_particles = int(min(self.PARTICLES_MAX_ON_BREAK,
@@ -584,7 +705,6 @@ class Block:
 
     def to_save_data(self):
         return {"x": self.x, "y": self.y, "current_hp": self.current_hp}
-
 
 class ButtonBox:
     def __init__(self, font_writer: puf.Writer, lang_manager: LanguageManager):
@@ -801,7 +921,7 @@ class GameMenu:
             elif item_def["type"] == "button":
                 if self.button_handler.draw_button(item_x, current_y, item_w, MENU_ITEM_HEIGHT, item_def["key"], item_def["key"]):
                     if not self.is_lang_dropdown_open:
-                         self.selected_button_action = item_def["action_label"]
+                        self.selected_button_action = item_def["action_label"]
 
             current_y += MENU_ITEM_HEIGHT + MENU_PADDING
 
@@ -868,9 +988,9 @@ class DiggingGame:
 
         self.font = puf.Writer("misaki_gothic.ttf")
 
-        self.all_blocks = []
+        self.chunks = {}
+        self.generated_chunk_coords = set()
         self.active_particles = []
-        self.generated_block_coordinates = set()
 
         self.select_block_highlighter = SelectBlock()
         self.lang_manager = LanguageManager()
@@ -925,8 +1045,58 @@ class DiggingGame:
         else:
             px.stop(ch)
 
+    def _ensure_chunk_generated_and_get(self, chunk_x, chunk_y):
+        if (chunk_x, chunk_y) not in self.chunks:
+            self.chunks[(chunk_x, chunk_y)] = Chunk(chunk_x, chunk_y, self)
+
+        chunk = self.chunks[(chunk_x, chunk_y)]
+        if not chunk.is_generated:
+            chunk._initialize_blocks()
+            self.generated_chunk_coords.add((chunk_x, chunk_y))
+        return chunk
+
+    def _generate_visible_chunks(self):
+        cam_world_left = self.camera_x
+        cam_world_right = self.camera_x + SCREEN_WIDTH
+        cam_world_top = self.camera_y
+        cam_world_bottom = self.camera_y + SCREEN_HEIGHT
+
+        start_cx, start_cy = world_to_chunk_coords(cam_world_left, cam_world_top)
+        end_cx, end_cy = world_to_chunk_coords(cam_world_right, cam_world_bottom)
+
+        for cx in range(start_cx, end_cx + 1):
+            for cy in range(start_cy, end_cy + 1):
+                self._ensure_chunk_generated_and_get(cx, cy)
+
+    def get_block_at_world_coords(self, world_x, world_y):
+        chunk_x, chunk_y = world_to_chunk_coords(world_x, world_y)
+        chunk = self._ensure_chunk_generated_and_get(chunk_x, chunk_y)
+        if chunk:
+            return chunk.get_block_by_world_coords(world_x, world_y)
+        return None
+
+    def _get_active_blocks_in_view(self):
+        active_blocks = []
+        cam_world_left = self.camera_x - BLOCK_SIZE
+        cam_world_right = self.camera_x + SCREEN_WIDTH + BLOCK_SIZE
+        cam_world_top = self.camera_y - BLOCK_SIZE
+        cam_world_bottom = self.camera_y + SCREEN_HEIGHT + BLOCK_SIZE
+
+        start_cx, start_cy = world_to_chunk_coords(cam_world_left, cam_world_top)
+        end_cx, end_cy = world_to_chunk_coords(cam_world_right, cam_world_bottom)
+
+        for cx in range(start_cx, end_cx + 1):
+            for cy in range(start_cy, end_cy + 1):
+                chunk = self.chunks.get((cx, cy))
+                if chunk and chunk.is_generated:
+                    for block in chunk.get_all_active_blocks_in_chunk():
+                        if block.x + BLOCK_SIZE > self.camera_x and block.x < self.camera_x + SCREEN_WIDTH and \
+                           block.y + BLOCK_SIZE > self.camera_y and block.y < self.camera_y + SCREEN_HEIGHT:
+                            active_blocks.append(block)
+        return active_blocks
+
     def _handle_camera_movement(self):
-        camera_moved = False
+        camera_moved_flag = False
         current_time = time.time()
 
         key_directions = {
@@ -936,20 +1106,16 @@ class DiggingGame:
 
         for key_code, (dx_mult, dy_mult, key_char) in key_directions.items():
             base_speed = self.CAMERA_SPEED_FAST if px.btn(px.KEY_SHIFT) else self.CAMERA_SPEED_NORMAL
-
+            moved_this_key = False
             if px.btnp(key_code):
-                self.camera_x += dx_mult * base_speed
-                self.camera_y += dy_mult * base_speed
-                camera_moved = True
+                moved_this_key = True
                 self._key_pressed_start_time[key_char] = current_time
                 self._key_last_repeat_action_time[key_char] = current_time
             elif px.btn(key_code):
                 if key_char in self._key_pressed_start_time:
                     if current_time - self._key_pressed_start_time[key_char] >= self.CAMERA_KEY_REPEAT_DELAY_INITIAL:
                         if current_time - self._key_last_repeat_action_time[key_char] >= self.CAMERA_KEY_REPEAT_INTERVAL:
-                            self.camera_x += dx_mult * base_speed
-                            self.camera_y += dy_mult * base_speed
-                            camera_moved = True
+                            moved_this_key = True
                             self._key_last_repeat_action_time[key_char] = current_time
             else:
                 if key_char in self._key_pressed_start_time:
@@ -957,31 +1123,43 @@ class DiggingGame:
                 if key_char in self._key_last_repeat_action_time:
                     del self._key_last_repeat_action_time[key_char]
 
-        if camera_moved:
-            self._generate_visible_blocks()
+            if moved_this_key:
+                self.camera_x += dx_mult * base_speed
+                self.camera_y += dy_mult * base_speed
+                camera_moved_flag = True
+
+        if camera_moved_flag:
+            self._generate_visible_chunks()
 
     def _update_game_logic(self):
         world_mouse_x = px.mouse_x + self.camera_x
         world_mouse_y = px.mouse_y + self.camera_y
 
         self._is_mouse_over_any_block = False
-        for block in self.all_blocks:
-            if block.is_mouse_over(world_mouse_x, world_mouse_y):
-                self._is_mouse_over_any_block = True
-                break
+        hovered_block = self.get_block_at_world_coords(world_mouse_x, world_mouse_y)
+        if hovered_block and not hovered_block.is_broken:
+            self._is_mouse_over_any_block = True
         self.select_block_highlighter.update_selection_status(self._is_mouse_over_any_block)
 
         if px.btnp(px.MOUSE_BUTTON_LEFT):
-            for block in self.all_blocks:
-                if block.is_mouse_over(world_mouse_x, world_mouse_y):
-                    new_particles = block.handle_click()
-                    self.active_particles.extend(new_particles)
-                    break
+            clicked_block = self.get_block_at_world_coords(world_mouse_x, world_mouse_y)
+            if clicked_block:
+                chunk_x, chunk_y = world_to_chunk_coords(clicked_block.x, clicked_block.y)
+                if (chunk_x, chunk_y) in self.chunks:
+                    self.chunks[(chunk_x, chunk_y)].mark_as_modified_in_session()
 
-        collidable_blocks_for_particles = [b for b in self.all_blocks if not b.is_broken]
+                new_particles = clicked_block.handle_click()
+                self.active_particles.extend(new_particles)
+
+        temp_collidable_blocks = []
+        # パーティクルが存在しうるチャンク範囲を限定的に取得
+        # (ここでは簡略化のため、ビュー内の全アクティブブロックを使う)
+        # 実際には、各パーティクルの位置からチャンクを取得し、その中のブロックと衝突判定する
+        # とりあえず _get_active_blocks_in_view() の結果を流用する
+        collidable_blocks_for_particles = self._get_active_blocks_in_view()
+
         for particle in self.active_particles:
             particle.update(collidable_blocks_for_particles)
-
         self.active_particles = [p for p in self.active_particles if p.alive]
 
     def _handle_menu_action(self, action):
@@ -994,16 +1172,19 @@ class DiggingGame:
             px.quit()
 
     def save_game_state(self):
-        active_blocks_data = []
-        for block in self.all_blocks:
-            active_blocks_data.append(block.to_save_data())
+        modified_chunks_data = []
+        for chunk_coord, chunk_instance in self.chunks.items():
+            if chunk_instance.is_modified_in_session:
+                chunk_save_data = chunk_instance.to_save_data()
+                if chunk_save_data:
+                    modified_chunks_data.append(chunk_save_data)
 
         save_data = {
             "camera_x": self.camera_x, "camera_y": self.camera_y,
             "se_on": self.se_on, "bgm_on": self.bgm_on,
             "world_seed_main": self.world_seed_main, "world_seed_ore": self.world_seed_ore,
-            "generated_coords": list(self.generated_block_coordinates),
-            "active_blocks_states": [b.to_save_data() for b in self.all_blocks],
+            "generated_chunk_coords": [list(c) for c in self.generated_chunk_coords],
+            "modified_chunks": modified_chunks_data,
             "current_language": self.lang_manager.current_lang_code
         }
         try:
@@ -1025,6 +1206,21 @@ class DiggingGame:
             )
             traceback.print_exc()
 
+    def _regenerate_world_from_chunks_and_apply_mods(self, loaded_gen_chunk_coords, loaded_mod_chunks_data):
+        self.chunks = {}
+        self.generated_chunk_coords = set()
+
+        for cx, cy in loaded_gen_chunk_coords:
+            self.generated_chunk_coords.add((cx,cy))
+            chunk = self._ensure_chunk_generated_and_get(cx, cy)
+
+        mod_chunks_map = {(cd["cx"], cd["cy"]): cd["modified_blocks"] for cd in loaded_mod_chunks_data}
+
+        for chunk_coord, modified_blocks_list in mod_chunks_map.items():
+            cx, cy = chunk_coord
+            if (cx, cy) in self.chunks:
+                self.chunks[(cx, cy)].apply_loaded_block_data(modified_blocks_list)
+
     def load_game_state(self, start=False):
         try:
             with open(SAVE_FILE_NAME, "r") as f:
@@ -1043,31 +1239,27 @@ class DiggingGame:
             loaded_lang_code = load_data.get("current_language", DEFAULT_LANGUAGE)
             if self.lang_manager.set_language(loaded_lang_code):
                 self.current_language_code = loaded_lang_code
-                self.update_window_title()
             else:
                 self.current_language_code = self.lang_manager.current_lang_code
-                self.update_window_title()
+            self.update_window_title()
 
-            self.all_blocks = []
-            self.generated_block_coordinates = set(tuple(coord) for coord in load_data.get("generated_coords", []))
-            block_hp_map = {(bd["x"], bd["y"]): bd["current_hp"] for bd in load_data.get("active_blocks_states", [])}
+            loaded_gen_chunk_coords_list = load_data.get("generated_chunk_coords", [])
+            loaded_gen_chunk_coords_set = set()
+            for coord_pair_list in loaded_gen_chunk_coords_list:
+                loaded_gen_chunk_coords_set.add(tuple(coord_pair_list))
+            loaded_modified_chunks_data = load_data.get("modified_chunks", [])
 
-            for world_x, world_y in list(self.generated_block_coordinates):
-                if world_y // BLOCK_SIZE < self.GROUND_SURFACE_Y_BLOCK_INDEX: continue
-                block = Block(world_x, world_y, self.world_seed_main, self.world_seed_ore)
-                if (world_x, world_y) in block_hp_map:
-                    block.current_hp = block_hp_map[(world_x, world_y)]
-                if block.current_hp <= 0: block.is_broken = True; block.current_hp = 0
-                else: block.is_broken = False
-                if not block.is_broken: self.all_blocks.append(block)
+            self._regenerate_world_from_chunks_and_apply_mods(loaded_gen_chunk_coords_set, loaded_modified_chunks_data)
+
             self.active_particles = []
             self._initial_block_generation_done = True
 
+            self._generate_visible_chunks()
+
             self.notification_manager.add_notification(
                 self.lang_manager.get_string("load_success", filename=SAVE_FILE_NAME),
-                msg_type="success"
-            )
-            self.on_title_screen = False
+                msg_type="success")
+            self.on_title_screen = False;
             self.is_menu_visible = False
             # if self.bgm_on: self.play_bgm(BGM_CHANNEL, BGM_SOUND_ID) else: px.stop(BGM_CHANNEL)
 
@@ -1108,28 +1300,6 @@ class DiggingGame:
             img_bank1.text(SPRITE_BREAK_ANIM_U + 1, SPRITE_BREAK_ANIM_V_START + i * 8 + 1, str(i+1), px.COLOR_BLACK)
         px.images[SPRITE_BANK_UI] = img_bank1
         print("Dummy sprites created.")
-
-    def _generate_visible_blocks(self):
-
-        min_bx = math.floor(self.camera_x / BLOCK_SIZE)
-        max_bx = math.ceil((self.camera_x + SCREEN_WIDTH) / BLOCK_SIZE)
-
-        min_by_camera = math.floor(self.camera_y / BLOCK_SIZE)
-        max_by_camera = math.ceil((self.camera_y + SCREEN_HEIGHT) / BLOCK_SIZE)
-
-        start_generation_by = max(min_by_camera, self.GROUND_SURFACE_Y_BLOCK_INDEX)
-
-        for current_bx in range(min_bx, max_bx + 1):
-            for current_by in range(start_generation_by, max_by_camera + 1):
-                block_world_x, block_world_y = current_bx * BLOCK_SIZE, current_by * BLOCK_SIZE
-                coord_tuple = (block_world_x, block_world_y)
-
-                if coord_tuple not in self.generated_block_coordinates:
-                    if current_by >= self.GROUND_SURFACE_Y_BLOCK_INDEX:
-                        new_block = Block(block_world_x, block_world_y, self.world_seed_main, self.world_seed_ore)
-                        if not new_block.is_broken:
-                            self.all_blocks.append(new_block)
-                            self.generated_block_coordinates.add(coord_tuple)
 
     def _calc_fps(self):
         current_time = time.time()
@@ -1179,13 +1349,14 @@ class DiggingGame:
             self.load_game_state(True)
             self.on_title_screen = False
             if not self._initial_block_generation_done:
-                self._generate_visible_blocks()
+                self._generate_visible_chunks()
                 self._initial_block_generation_done = True
 
     def _draw_game_world_elements(self):
         px.camera(self.camera_x, self.camera_y)
         px.cls(12)
-        for block in self.all_blocks:
+        visible_blocks_list = self._get_active_blocks_in_view()
+        for block in visible_blocks_list:
             if block.x + BLOCK_SIZE > self.camera_x and block.x < self.camera_x + SCREEN_WIDTH and \
                block.y + BLOCK_SIZE > self.camera_y and block.y < self.camera_y + SCREEN_HEIGHT:
                 block.draw(self.show_debug_overlay, self.font)
@@ -1208,14 +1379,16 @@ class DiggingGame:
         if self.show_debug_overlay and not self.is_menu_visible and not self.on_title_screen:
             debug_fps = self.lang_manager.get_string("debug_fps", fps=f"{self.current_fps:.2f}")
             debug_cam = self.lang_manager.get_string("debug_cam", cam_x=self.camera_x, cam_y=self.camera_y)
-            debug_blk_pcl = self.lang_manager.get_string("debug_blk_pcl", blk_count=len(self.all_blocks), pcl_count=len(self.active_particles))
-            debug_sel = self.lang_manager.get_string("debug_sel", is_selected=self._is_mouse_over_any_block)
-            debug_list = [debug_fps, debug_cam, debug_blk_pcl, debug_sel]
+            debug_mouse = self.lang_manager.get_string("debug_mouse", mouse_x=math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE, mouse_y=math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE)
+            debug_blk = self.lang_manager.get_string("debug_blk", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
+            debug_pcl = self.lang_manager.get_string("debug_pcl", pcl_count=len(self.active_particles))
+            debug_hover = self.lang_manager.get_string("debug_hover", is_hovered=self._is_mouse_over_any_block)
+            debug_list = [debug_fps, debug_cam, debug_mouse, debug_blk, debug_pcl, debug_hover]
 
             i = 0
-            for dev_text in debug_list:
-                px.rect(1, (2 + FONT_SIZE * i)-1, estimate_text_width(dev_text)+1, FONT_SIZE, 13)
-                self.font.draw(2, 2 + FONT_SIZE * i, dev_text, FONT_SIZE, 7)
+            for debug_text in debug_list:
+                px.rect(1, (2 + FONT_SIZE * i)-1, estimate_text_width(debug_text)+1, FONT_SIZE, 13)
+                self.font.draw(2, 2 + FONT_SIZE * i, debug_text, FONT_SIZE, 7)
                 i += 1
 
     def draw(self):
