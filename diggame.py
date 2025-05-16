@@ -9,15 +9,18 @@ import PyxelUniversalFont as puf
 
 import gen_translation 
 
-# TODO: 鉱石の追加 [鉄、コバルト、銅、金、銀、ダイヤ]
-# TODO: インベントリの追加
-# TODO: マップの追加
-# TODO: バイオームの追加
-# TODO: 鉱石の高さによる出現頻度の変化
-# TODO: 石の高さによる硬度の変化
-# TODO: アップグレード等の追加
-# TODO: 横幅50ブロック カメラの移動可能範囲を50+画面横幅
-# TODO: 掘れる範囲の制限
+# player
+    # TODO: インベントリの追加
+    # TODO: アップグレード等の追加
+# map
+    # TODO: マップの追加
+    # TODO: バイオームの追加
+# block
+    # TODO: 鉱石の高さによる出現頻度の変化
+    # TODO: 鉱石の追加 [鉄、コバルト、銅、金、銀、ダイヤ]
+    # TODO: 石の高さによる硬度の変化
+    # TODO: 横幅50ブロック カメラの移動可能範囲を50+画面横幅
+    # TODO: 掘れる範囲の制限
 
 SCREEN_WIDTH = 160
 SCREEN_HEIGHT = 120
