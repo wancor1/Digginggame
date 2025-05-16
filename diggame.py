@@ -7,6 +7,8 @@ import json
 import traceback
 import PyxelUniversalFont as puf
 
+import gen_translation 
+
 # TODO: 鉱石の追加 [鉄、コバルト、銅、金、銀、ダイヤ]
 # TODO: インベントリの追加
 # TODO: マップの追加
@@ -166,44 +168,7 @@ class LanguageManager:
 
         en_path = os.path.join(self.lang_folder, "en_us.json")
         if not os.path.exists(en_path):
-            en_data = {
-                    "_metadata": {
-                        "display_name": "English"
-                    },
-                    "game.title": "Digging Game",
-                    "menu.title": "MENU",
-                    "menu.sound_effects": "Sound Effects",
-                    "menu.music": "Music",
-                    "menu.language": "Language",
-                    "button.title_screen.start.default": "Start",
-                    "button.title_screen.start.pressed": "Click!",
-                    "button.menu.save.default": "Save Game",
-                    "button.menu.load.default": "Load Game",
-                    "button.menu.quit.default": "Quit Game",
-                    "button.menu.save.pressed": "Saving Game...",
-                    "button.menu.load.pressed": "Loading Game...",
-                    "button.menu.quit.pressed": "Quitting Game...",
-                    "main.debug.fps": "FPS: {fps}",
-                    "main.debug.camera": "cam:({cam_x},{cam_y})",
-                    "main.debug.mouse": "mouse:({mouse_x},{mouse_y})",
-                    "main.debug.block_count": "blk:{blk_count}",
-                    "main.debug.particle_count": "pcl:{pcl_count}",
-                    "main.debug.hover_state": "hover:{is_hovered}",
-                    "notification.save.success.default": "Game saved",
-                    "notification.save.error.write.default": "Save failed: couldn't write file.",
-                    "notification.save.error.unexpected.default": "Unexpected error occurred while saving.",
-                    "notification.load.success.default": "Game loaded",
-                    "notification.load.error.not_found.default": "Save file not found",
-                    "notification.load.error.decode.default": "Load failed: Invalid JSON.",
-                    "notification.load.error.unexpected.default": "Load failed: Unexpected error",
-                    "notification.save.success.debug": "Game saved to {filename}",
-                    "notification.save.error.write.debug": "Error saving game: Could not write to file {filename}. {error}",
-                    "notification.save.error.unexpected.debug": "An unexpected error occurred during saving: {error}",
-                    "notification.load.success.debug": "Game loaded from {filename}",
-                    "notification.load.error.not_found.debug": "Save file not found: {filename}",
-                    "notification.load.error.decode.debug": "Error decoding save file ({filename}): Invalid JSON format. {error}",
-                    "notification.load.error.unexpected.debug": "An unexpected error occurred during loading: {error}"
-                }
+            en_data = gen_translation._generate_en_()
             try:
                 with open(en_path, "w", encoding="utf-8") as f:
                     json.dump(en_data, f, ensure_ascii=False, indent=2)
