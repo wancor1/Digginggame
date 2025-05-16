@@ -57,16 +57,24 @@ LANG_FOLDER = "lang"
 DEFAULT_LANGUAGE = "en_us"
 FONT_SIZE = 8
 
-NOTIFICATION_MAX_DISPLAY_TIME = 3.0
 NOTIFICATION_PADDING_X = 5
 NOTIFICATION_PADDING_Y = 3
 NOTIFICATION_LINE_SPACING = 2
 NOTIFICATION_INTER_ITEM_SPACING = 2
+NOTIFICATION_MAX_WIDTH = 115
+NOTIFICATION_MAX_DISPLAY_TIME = 2
+MAX_NOTIFICATIONS = 3
+
+NOTIFICATION_FADE_IN_AMOUNT_Y_PER_FRAME = 5
+NOTIFICATION_FADE_OUT_INITIAL_AMOUNT_X_PER_FRAME = 2
+NOTIFICATION_FADE_OUT_ACCELERATION_X_PER_FRAME = 0.5
+NOTIFICATION_FADE_IN_OFFSET_Y = -30
+NOTIFICATION_TARGET_Y_TOLERANCE = 1
+
 NOTIFICATION_BG_COLOR = 13
 NOTIFICATION_TEXT_COLOR_INFO = 0
 NOTIFICATION_TEXT_COLOR_ERROR = 8
 NOTIFICATION_TEXT_COLOR_SUCCESS = 5
-NOTIFICATION_MAX_WIDTH = 115
 
 CHUNK_SIZE_X_BLOCKS = 16
 CHUNK_SIZE_Y_BLOCKS = 16
@@ -159,31 +167,43 @@ class LanguageManager:
         en_path = os.path.join(self.lang_folder, "en_us.json")
         if not os.path.exists(en_path):
             en_data = {
-                "_metadata": {
-                    "display_name": "English"
-                },
-                "game_title": "Digging Game Reforged",
-                "menu_title": "MENU",
-                "menu_se": "Sound Effects",
-                "menu_music": "Music",
-                "menu_language": "Language",
-                "menu_save": "Save Game",
-                "menu_load": "Load Game",
-                "menu_quit": "Quit Game",
-                "start_button": "Start",
-                "start_button_pressed": "Click!",
-                "debug_fps": "FPS: {fps}",
-                "debug_cam": "Cam:({cam_x},{cam_y})",
-                "debug_blk_pcl": "Blk:{blk_count} Pcl:{pcl_count}",
-                "debug_sel": "Hover:{is_hovered}",
-                "save_success": "Game saved to {filename}",
-                "save_error_write": "Error saving game: Could not write to file {filename}. {error}",
-                "save_error_unexpected": "An unexpected error occurred during saving: {error}",
-                "load_success": "Game loaded from {filename}",
-                "load_error_not_found": "Save file not found: {filename}",
-                "load_error_decode": "Error decoding save file ({filename}): Invalid JSON format. {error}",
-                "load_error_unexpected": "An unexpected error occurred during loading: {error}"
-            }
+                    "_metadata": {
+                        "display_name": "English"
+                    },
+                    "game.title": "Digging Game",
+                    "menu.title": "MENU",
+                    "menu.sound_effects": "Sound Effects",
+                    "menu.music": "Music",
+                    "menu.language": "Language",
+                    "button.title_screen.start.default": "Start",
+                    "button.title_screen.start.pressed": "Click!",
+                    "button.menu.save.default": "Save Game",
+                    "button.menu.load.default": "Load Game",
+                    "button.menu.quit.default": "Quit Game",
+                    "button.menu.save.pressed": "Saving Game...",
+                    "button.menu.load.pressed": "Loading Game...",
+                    "button.menu.quit.pressed": "Quitting Game...",
+                    "main.debug.fps": "FPS: {fps}",
+                    "main.debug.camera": "cam:({cam_x},{cam_y})",
+                    "main.debug.mouse": "mouse:({mouse_x},{mouse_y})",
+                    "main.debug.block_count": "blk:{blk_count}",
+                    "main.debug.particle_count": "pcl:{pcl_count}",
+                    "main.debug.hover_state": "hover:{is_hovered}",
+                    "notification.save.success.default": "Game saved",
+                    "notification.save.error.write.default": "Save failed: couldn't write file.",
+                    "notification.save.error.unexpected.default": "Unexpected error occurred while saving.",
+                    "notification.load.success.default": "Game loaded",
+                    "notification.load.error.not_found.default": "Save file not found",
+                    "notification.load.error.decode.default": "Load failed: Invalid JSON.",
+                    "notification.load.error.unexpected.default": "Load failed: Unexpected error",
+                    "notification.save.success.debug": "Game saved to {filename}",
+                    "notification.save.error.write.debug": "Error saving game: Could not write to file {filename}. {error}",
+                    "notification.save.error.unexpected.debug": "An unexpected error occurred during saving: {error}",
+                    "notification.load.success.debug": "Game loaded from {filename}",
+                    "notification.load.error.not_found.debug": "Save file not found: {filename}",
+                    "notification.load.error.decode.debug": "Error decoding save file ({filename}): Invalid JSON format. {error}",
+                    "notification.load.error.unexpected.debug": "An unexpected error occurred during loading: {error}"
+                }
             try:
                 with open(en_path, "w", encoding="utf-8") as f:
                     json.dump(en_data, f, ensure_ascii=False, indent=2)
@@ -252,12 +272,27 @@ class LanguageManager:
         return False
 
 class Notification:
-    def __init__(self, message, duration=NOTIFICATION_MAX_DISPLAY_TIME, msg_type="info"):
+    def __init__(self, message, duration=NOTIFICATION_MAX_DISPLAY_TIME, msg_type="info",
+                 wrap_text_func=None, max_wrap_width=0):
         self.message = message
         self.start_time = time.time()
         self.duration = duration
         self.msg_type = msg_type
         self.is_alive = True
+
+        self.state = "fading_in" # "fading_in", "visible", "fading_out"
+        self.current_x = None
+        self.current_y = None
+        self.target_x = None
+        self.target_y = None
+        self.vel_x = 0
+
+        self.fade_out_timer = 0
+
+        self._wrap_text = wrap_text_func
+        self._max_wrap_width = max_wrap_width
+        self._box_width = None
+        self._box_height = None
 
     def get_text_color(self):
         if self.msg_type == "error":
@@ -266,11 +301,80 @@ class Notification:
             return NOTIFICATION_TEXT_COLOR_SUCCESS
         return NOTIFICATION_TEXT_COLOR_INFO
 
+    def _calculate_dimensions(self):
+        if not self._wrap_text:
+            print("Warning: Cannot calculate notification dimensions without text utility functions.")
+            self._box_width = 0
+            self._box_height = 0
+            return
+
+        lines = self._wrap_text(self.message, self._max_wrap_width)
+
+        total_text_height = len(lines) * FONT_SIZE + (max(0, len(lines) - 1)) * NOTIFICATION_LINE_SPACING
+        self._box_height = total_text_height + NOTIFICATION_PADDING_Y * 2
+
+        max_line_width = 0
+        for line in lines:
+            max_line_width = max(max_line_width, estimate_text_width(line))
+
+        self._box_width = min(NOTIFICATION_MAX_WIDTH, max_line_width + NOTIFICATION_PADDING_X * 2)
+
+    def set_target_position(self, target_x, target_y):
+        self.target_x = target_x
+        self.target_y = target_y
+
+        if self.current_y is None:
+            self.current_x = self.target_x
+            self.current_y = self.target_y + NOTIFICATION_FADE_IN_OFFSET_Y
+
     def update(self):
-        if time.time() - self.start_time > self.duration:
-            self.is_alive = False
-        # TODO: フェードアウト処理?
-        # 右にスワイプっていうかあれがいいと思う
+        if not self.is_alive:
+            return
+
+        # Calculate dimensions if not already done
+        if self._box_width is None or self._box_height is None:
+            self._calculate_dimensions()
+            if self._box_width == 0 or self._box_height == 0:
+                self.is_alive = False
+                return
+
+        # --- Handle Vertical Movement (Fade-in and Sliding) ---
+        if self.current_y is not None and self.target_y is not None and abs(self.target_y - self.current_y) > NOTIFICATION_TARGET_Y_TOLERANCE:
+            move_amount_y = NOTIFICATION_FADE_IN_AMOUNT_Y_PER_FRAME
+            if self.current_y < self.target_y:
+                self.current_y += min(move_amount_y, self.target_y - self.current_y)
+            else:
+                self.current_y -= min(move_amount_y, self.current_y - self.target_y)
+        else:
+            if self.target_y is not None:
+                self.current_y = self.target_y
+
+        if self.state == "fading_in":
+            if self.current_y is not None and self.target_y is not None and abs(self.target_y - self.current_y) <= NOTIFICATION_TARGET_Y_TOLERANCE:
+                self.state = "visible"
+
+        elif self.state == "visible":
+            if time.time() - self.start_time > self.duration:
+                self.state = "fading_out"
+                self.vel_x = NOTIFICATION_FADE_OUT_INITIAL_AMOUNT_X_PER_FRAME
+
+        elif self.state == "fading_out":
+            self.vel_x += NOTIFICATION_FADE_OUT_ACCELERATION_X_PER_FRAME
+            self.current_x += self.vel_x
+
+            if self.current_x > SCREEN_WIDTH:
+                self.is_alive = False
+
+    def get_draw_position(self):
+        return (self.current_x, self.current_y) if self.current_x is not None and self.current_y is not None else None
+
+    def get_box_dimensions(self):
+        return (self._box_width, self._box_height) if self._box_width is not None and self._box_height is not None else None
+
+    def get_wrapped_lines(self):
+        if self._wrap_text and self._max_wrap_width > 0:
+            return self._wrap_text(self.message, self._max_wrap_width)
+        return [self.message]
 
 class NotificationManager:
     def __init__(self, font_writer: puf.Writer):
@@ -278,17 +382,16 @@ class NotificationManager:
         self.font = font_writer
 
     def add_notification(self, message, duration=NOTIFICATION_MAX_DISPLAY_TIME, msg_type="info"):
-        new_notif = Notification(message, duration, msg_type)
+        effective_wrap_width = NOTIFICATION_MAX_WIDTH - NOTIFICATION_PADDING_X * 2
+        new_notif = Notification(
+            message, duration, msg_type,
+            wrap_text_func=self._wrap_text,
+            max_wrap_width=effective_wrap_width,
+        )
         self.notifications.append(new_notif)
 
-        #MAX_NOTIFICATIONS = 5
-        #if len(self.notifications) > MAX_NOTIFICATIONS:
-        #    self.notifications.pop(0)
-
-    def update(self):
-        for notif in self.notifications:
-            notif.update()
-        self.notifications = [n for n in self.notifications if n.is_alive]
+        if len(self.notifications) > MAX_NOTIFICATIONS:
+            self.notifications.pop(0)
 
     def _wrap_chars_only(self, text, max_width):
         wrapped_lines = []
@@ -323,18 +426,18 @@ class NotificationManager:
             words = para.split(' ')
 
             for i, word in enumerate(words):
-                    test_line_with_space = current_line + (" " if current_line else "") + word
-                    test_width_with_space = estimate_text_width(test_line_with_space)
-                    if test_width_with_space <= max_width:
-                        current_line = test_line_with_space
+                test_line_with_space = current_line + (" " if current_line else "") + word
+                test_width_with_space = estimate_text_width(test_line_with_space)
+                if test_width_with_space <= max_width:
+                    current_line = test_line_with_space
+                else:
+                    if current_line:
+                        temp_wrapped_lines.append(current_line)
+                        current_line = word
                     else:
-                        if current_line:
-                            temp_wrapped_lines.append(current_line)
-                            current_line = word
-                        else:
-                            char_wrapped_word_lines = self._wrap_chars_only(word, max_width)
-                            temp_wrapped_lines.extend(char_wrapped_word_lines)
-                            current_line = ""
+                        char_wrapped_word_lines = self._wrap_chars_only(word, max_width)
+                        temp_wrapped_lines.extend(char_wrapped_word_lines)
+                        current_line = ""
 
             if current_line:
                 temp_wrapped_lines.append(current_line)
@@ -353,35 +456,58 @@ class NotificationManager:
 
         return final_wrapped_result
 
+    def update(self):
+        for notif in self.notifications:
+            notif.update()
+
+        self.notifications = [n for n in self.notifications if n.is_alive]
+
+        current_target_y = NOTIFICATION_PADDING_Y
+        #positioned_notifications = [n for n in self.notifications if n.state != "fading_out"]
+
+        for notif in reversed(self.notifications):
+            if notif.is_alive and notif.state != "fading_out":
+                effective_wrap_width = NOTIFICATION_MAX_WIDTH - NOTIFICATION_PADDING_X * 2
+                lines = self._wrap_text(notif.message, effective_wrap_width)
+                total_text_height = len(lines) * FONT_SIZE + (max(0, len(lines) - 1)) * NOTIFICATION_LINE_SPACING
+                box_height = total_text_height + NOTIFICATION_PADDING_Y * 2
+
+                max_line_width = 0
+                for line in lines:
+                    max_line_width = max(max_line_width, estimate_text_width(line))
+
+                box_width = min(NOTIFICATION_MAX_WIDTH, max_line_width + NOTIFICATION_PADDING_X * 2)
+
+                target_x = SCREEN_WIDTH - box_width - NOTIFICATION_PADDING_X
+                target_y = current_target_y
+                notif.set_target_position(target_x, target_y)
+
+                current_target_y += box_height + NOTIFICATION_INTER_ITEM_SPACING
+
     def draw(self):
         if not self.notifications:
             return
 
-        current_y = NOTIFICATION_PADDING_Y
-
         for notif in reversed(self.notifications):
-            effective_wrap_width = NOTIFICATION_MAX_WIDTH - NOTIFICATION_PADDING_X * 2
-            lines = self._wrap_text(notif.message, effective_wrap_width)
+            draw_pos = notif.get_draw_position()
+            box_dims = notif.get_box_dimensions()
 
-            total_text_height = len(lines) * FONT_SIZE + (len(lines) - 1) * NOTIFICATION_LINE_SPACING
-            box_height = total_text_height + NOTIFICATION_PADDING_Y * 2
+            if draw_pos is None or box_dims is None:
+                continue
 
-            max_line_width = 0
-            for line in lines:
-                max_line_width = max(max_line_width, estimate_text_width(line))
+            box_x, box_y = draw_pos
+            box_width, box_height = box_dims
 
-            box_width = min(NOTIFICATION_MAX_WIDTH, max_line_width + NOTIFICATION_PADDING_X * 2)
-            box_x = SCREEN_WIDTH - box_width - NOTIFICATION_PADDING_X
-
-            px.rect(box_x, current_y, box_width, box_height, NOTIFICATION_BG_COLOR)
-            px.rectb(box_x, current_y, box_width, box_height, notif.get_text_color())
+            px.rect(int(box_x), int(box_y), int(box_width), int(box_height), NOTIFICATION_BG_COLOR)
+            px.rectb(int(box_x), int(box_y), int(box_width), int(box_height), notif.get_text_color())
 
             text_color = notif.get_text_color()
-            line_y_offset = current_y + NOTIFICATION_PADDING_Y
+            line_y_offset = box_y + NOTIFICATION_PADDING_Y
+            lines = notif.get_wrapped_lines()
+
             for line in lines:
-                self.font.draw(box_x + NOTIFICATION_PADDING_X, line_y_offset, line, FONT_SIZE, text_color)
+                self.font.draw(int(box_x + NOTIFICATION_PADDING_X), int(line_y_offset), line, FONT_SIZE, text_color)
                 line_y_offset += FONT_SIZE + NOTIFICATION_LINE_SPACING
-            current_y += box_height + NOTIFICATION_INTER_ITEM_SPACING
 
 class SelectBlock:
     def __init__(self):
@@ -759,12 +885,12 @@ class GameMenu:
         self.y = (SCREEN_HEIGHT - self.height) // 2
 
         self.menu_items_def = [
-            {"key": "menu_se", "type": "checkbox", "setting_attr": "se_on"},
-            {"key": "menu_music", "type": "checkbox", "setting_attr": "bgm_on"},
-            {"key": "menu_language", "type": "dropdown"},
-            {"key": "button.default.menu_save", "press_key":"button.press.menu_save", "type": "button", "action_label": "Save Game"},
-            {"key": "button.default.menu_load", "press_key":"button.press.menu_load", "type": "button", "action_label": "Load Game"},
-            {"key": "button.default.menu_quit", "press_key":"button.press.menu_quit", "type": "button", "action_label": "Quit Game"}
+            {"key": "menu.sound_effects", "type": "checkbox", "setting_attr": "se_on"},
+            {"key": "menu.music", "type": "checkbox", "setting_attr": "bgm_on"},
+            {"key": "menu.language", "type": "dropdown"},
+            {"key": "button.menu.save.default", "press_key":"button.menu.save.pressed", "type": "button", "action_label": "Save Game"},
+            {"key": "button.menu.load.default", "press_key":"button.menu.load.pressed", "type": "button", "action_label": "Load Game"},
+            {"key": "button.menu.quit.default", "press_key":"button.menu.quit.pressed", "type": "button", "action_label": "Quit Game"}
         ]
         self.selected_button_action = None
         self.is_lang_dropdown_open = False
@@ -882,7 +1008,7 @@ class GameMenu:
         px.rect(self.x, self.y, self.width, self.height, 9)
         px.rectb(self.x, self.y, self.width, self.height, 0)
 
-        menu_title_str = self.lang_manager.get_string("menu_title")
+        menu_title_str = self.lang_manager.get_string("menu.title")
         title_x_offset, title_y_offset = calculate_text_center_position(self.width, MENU_ITEM_HEIGHT, menu_title_str)
         self.font.draw(self.x + title_x_offset, self.y + MENU_PADDING + title_y_offset, menu_title_str, FONT_SIZE, 0)
 
@@ -1033,7 +1159,7 @@ class DiggingGame:
         self.bgm_on = True
 
     def update_window_title(self):
-        self.game_title = self.lang_manager.get_string("game_title")
+        self.game_title = self.lang_manager.get_string("game.title")
         px.title = self.game_title
 
     def play_se(self, ch, snd, loop=False):
@@ -1188,44 +1314,26 @@ class DiggingGame:
             "modified_chunks": modified_chunks_data,
             "current_language": self.lang_manager.current_lang_code
         }
-        if self.show_debug_overlay:
-            try:
-                with open(SAVE_FILE_NAME, "w") as f:
-                    json.dump(save_data, f, indent=2)
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.save_success", filename=SAVE_FILE_NAME),
-                    msg_type="success"
-                )
-            except IOError as e:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.save_error_write", filename=SAVE_FILE_NAME, error=str(e)),
-                    msg_type="error"
-                )
-            except Exception as e:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.save_error_unexpected", error=str(e)),
-                    msg_type="error"
-                )
-                traceback.print_exc()
-        else:
-            try:
-                with open(SAVE_FILE_NAME, "w") as f:
-                    json.dump(save_data, f, indent=2)
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.default.save_success", filename=SAVE_FILE_NAME),
-                    msg_type="success"
-                )
-            except IOError as e:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.default.save_error_write", filename=SAVE_FILE_NAME, error=str(e)),
-                    msg_type="error"
-                )
-            except Exception as e:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.default.save_error_unexpected", error=str(e)),
-                    msg_type="error"
-                )
-                traceback.print_exc()
+
+        message_prefix = "debug" if self.show_debug_overlay else "default"
+        try:
+            with open(SAVE_FILE_NAME, "w") as f:
+                json.dump(save_data, f, indent=2)
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string(f"notification.save.success.{message_prefix}", filename=SAVE_FILE_NAME),
+                msg_type="success"
+            )
+        except IOError as e:
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string(f"notification.save.error.write.{message_prefix}", filename=SAVE_FILE_NAME, error=str(e)),
+                msg_type="error"
+            )
+        except Exception as e:
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string(f"notification.save.error.unexpected.{message_prefix}", error=str(e)),
+                msg_type="error"
+            )
+            traceback.print_exc()
 
     def _regenerate_world_from_chunks_and_apply_mods(self, loaded_gen_chunk_coords, loaded_mod_chunks_data):
         self.chunks = {}
@@ -1243,6 +1351,8 @@ class DiggingGame:
                 self.chunks[(cx, cy)].apply_loaded_block_data(modified_blocks_list)
 
     def load_game_state(self, start=False):
+        message_prefix = "debug" if self.show_debug_overlay else "default"
+
         try:
             with open(SAVE_FILE_NAME, "r") as f:
                 load_data = json.load(f)
@@ -1276,52 +1386,29 @@ class DiggingGame:
             self._initial_block_generation_done = True
 
             self._generate_visible_chunks()
-            if self.show_debug_overlay:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.load_success", filename=SAVE_FILE_NAME),
-                    msg_type="success")
-            else:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.default.load_success", filename=SAVE_FILE_NAME),
-                    msg_type="success")
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string(f"notification.load.success.{message_prefix}", filename=SAVE_FILE_NAME),
+                msg_type="success")
             self.on_title_screen = False;
             self.is_menu_visible = False
             # if self.bgm_on: self.play_bgm(BGM_CHANNEL, BGM_SOUND_ID) else: px.stop(BGM_CHANNEL)
-        
+
         except FileNotFoundError:
             if not start:
-                if self.show_debug_overlay:
-                    self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.load_error_not_found", filename=SAVE_FILE_NAME),
-                    msg_type="error"
-                    )
-                else:
-                    self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.default.load_error_not_found", filename=SAVE_FILE_NAME),
-                    msg_type="error"
-                    )
-        except json.JSONDecodeError as e:
-            if self.show_debug_overlay:
                 self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.load_error_decode", filename=SAVE_FILE_NAME, error=str(e)),
-                    msg_type="error"
-                )
-            else:
-                self.notification_manager.add_notification(
-                self.lang_manager.get_string("notification.default.load_error_decode", filename=SAVE_FILE_NAME, error=str(e)),
+                self.lang_manager.get_string(f"notification.load.error.not_found.{message_prefix}", filename=SAVE_FILE_NAME),
                 msg_type="error"
                 )
+        except json.JSONDecodeError as e:
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string(f"notification.load.error.decode.{message_prefix}", filename=SAVE_FILE_NAME, error=str(e)),
+                msg_type="error"
+            )
         except Exception as e:
-            if self.show_debug_overlay:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.debug.load_error_unexpected", error=str(e)),
-                    msg_type="error"
-                )
-            else:
-                self.notification_manager.add_notification(
-                    self.lang_manager.get_string("notification.default.load_error_unexpected", error=str(e)),
-                    msg_type="error"
-                )
+            self.notification_manager.add_notification(
+                self.lang_manager.get_string(f"notification.load.error.unexpected.{message_prefix}", error=str(e)),
+                msg_type="error"
+            )
             traceback.print_exc()
 
     def _create_dummy_sprites_if_needed(self):
@@ -1376,7 +1463,7 @@ class DiggingGame:
         px.cls(5)
         px.camera(0, 0)
 
-        title_str = self.lang_manager.get_string("game_title")
+        title_str = self.lang_manager.get_string("game.title")
         t_tw, t_th = calculate_text_center_position(SCREEN_WIDTH, SCREEN_HEIGHT, title_str)
         self.font.draw(t_tw + 1, t_th * 0.5 + 1, title_str, FONT_SIZE, 3)
         self.font.draw(t_tw, t_th * 0.5, title_str, FONT_SIZE, 11)
@@ -1388,7 +1475,9 @@ class DiggingGame:
         if not hasattr(self, 'title_button_handler'):
             self.title_button_handler = ButtonBox(self.font, self.lang_manager)
 
-        if self.button_handler.draw_button(button_x, button_y, button_w, button_h, 'Start', 'Click!'):
+        if self.button_handler.draw_button(button_x, button_y, button_w, button_h,
+                                           self.lang_manager.get_string('button.title_screen.start.default'),
+                                           self.lang_manager.get_string('button.title_screen.start.pressed')):
             self.load_game_state(True)
             self.on_title_screen = False
             if not self._initial_block_generation_done:
@@ -1421,11 +1510,11 @@ class DiggingGame:
         self._calc_fps()
         if self.show_debug_overlay and not self.is_menu_visible and not self.on_title_screen:
             debug_fps = self.lang_manager.get_string("main.debug.fps", fps=f"{self.current_fps:.2f}")
-            debug_cam = self.lang_manager.get_string("main.debug.cam", cam_x=self.camera_x, cam_y=self.camera_y)
+            debug_cam = self.lang_manager.get_string("main.debug.camera", cam_x=self.camera_x, cam_y=self.camera_y)
             debug_mouse = self.lang_manager.get_string("main.debug.mouse", mouse_x=math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE, mouse_y=math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE)
-            debug_blk = self.lang_manager.get_string("main.debug.blk", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
-            debug_pcl = self.lang_manager.get_string("main.debug.pcl", pcl_count=len(self.active_particles))
-            debug_hover = self.lang_manager.get_string("main.debug.hover", is_hovered=self._is_mouse_over_any_block)
+            debug_blk = self.lang_manager.get_string("main.debug.block_count", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
+            debug_pcl = self.lang_manager.get_string("main.debug.particle_count", pcl_count=len(self.active_particles))
+            debug_hover = self.lang_manager.get_string("main.debug.hover_state", is_hovered=self._is_mouse_over_any_block)
             debug_list = [debug_fps, debug_cam, debug_mouse, debug_blk, debug_pcl, debug_hover]
 
             i = 0
