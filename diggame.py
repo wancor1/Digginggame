@@ -679,9 +679,9 @@ class Chunk:
         return active_blocks
 
 class Block:
-    HARDNESS_MIN = 3
-    HARDNESS_MAX = 10
-    NOISE_SCALE_HARDNESS = 0.01
+    HARDNESS_MIN = 5
+    HARDNESS_MAX = 100
+    NOISE_SCALE_HARDNESS = 0.005
     NOISE_SCALE_ORE = 0.04
     ORE_THRESHOLD = 0.4
 
@@ -697,11 +697,28 @@ class Block:
         self.y = y
         self.is_broken = False
         self.is_modified = False
+        what_is_this = (self.y-BLOCK_SIZE*2)/(BLOCK_SIZE*5)
+        level_hardness_max = \
+            min(
+                max(
+                    abs(
+                        random.gauss(
+                            0,
+                            what_is_this
+                        )
+                    ),
+                    max(
+                        what_is_this,
+                        self.HARDNESS_MIN
+                    )
+                ),
+                self.HARDNESS_MAX
+            )
 
         px.nseed(world_seed_noise)
         noise_val_hardness = px.noise(self.x * self.NOISE_SCALE_HARDNESS,
                                       self.y * self.NOISE_SCALE_HARDNESS, 0)
-        self.max_hp = int(math.floor((self.HARDNESS_MAX - self.HARDNESS_MIN) * abs(noise_val_hardness)) + self.HARDNESS_MIN)
+        self.max_hp = int(math.floor((level_hardness_max - self.HARDNESS_MIN) * abs(noise_val_hardness)) + self.HARDNESS_MIN)
         self.current_hp = self.max_hp
 
         if self.y // BLOCK_SIZE < self.SURFACE_Y_LEVEL_IN_BLOCKS:
@@ -711,9 +728,9 @@ class Block:
 
         if self.y // BLOCK_SIZE == self.SURFACE_Y_LEVEL_IN_BLOCKS:
             self.sprite_info = SPRITE_BLOCK_GRASS
-        elif self.max_hp <= 5:
-            self.sprite_info = SPRITE_BLOCK_DIRT
         elif self.max_hp <= 10:
+            self.sprite_info = SPRITE_BLOCK_DIRT
+        elif self.max_hp <= 20:
             self.sprite_info = SPRITE_BLOCK_STONE
 
             px.nseed(world_seed_ore)
