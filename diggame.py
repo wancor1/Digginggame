@@ -7,7 +7,7 @@ import json
 import traceback
 import PyxelUniversalFont as puf
 
-import gen_translation 
+import gen_translation
 
 # player
     # TODO: インベントリの追加
@@ -1116,6 +1116,7 @@ class DiggingGame:
         self.on_title_screen = True
         self.is_menu_visible = False
         self.show_debug_overlay = False
+        self.show_debug_block = False
 
         self.camera_x = 0
         self.camera_y = 0
@@ -1438,8 +1439,10 @@ class DiggingGame:
             if self.is_menu_visible:
                 self.game_menu.handle_input()
             else:
-                if px.btnp(px.KEY_F3):
+                if px.btnp(px.KEY_F3) and not px.btn(px.KEY_B):
                     self.show_debug_overlay = not self.show_debug_overlay
+                if px.btn(px.KEY_F3) and px.btnp(px.KEY_B):
+                    self.show_debug_block = not self.show_debug_block
                 self._handle_camera_movement()
                 self._update_game_logic()
         self.notification_manager.update()
@@ -1476,7 +1479,7 @@ class DiggingGame:
         for block in visible_blocks_list:
             if block.x + BLOCK_SIZE > self.camera_x and block.x < self.camera_x + SCREEN_WIDTH and \
                block.y + BLOCK_SIZE > self.camera_y and block.y < self.camera_y + SCREEN_HEIGHT:
-                block.draw(self.show_debug_overlay, self.font)
+                block.draw(self.show_debug_block, self.font)
         for particle in self.active_particles:
             particle.draw()
 
@@ -1493,14 +1496,17 @@ class DiggingGame:
         px.blt(px.mouse_x, px.mouse_y + cursor_y_offset, *SPRITE_CURSOR)
 
         self._calc_fps()
+        chunkposx,chunkposy=world_to_chunk_coords(px.mouse_x+self.camera_x,px.mouse_y+self.camera_y)
         if self.show_debug_overlay and not self.is_menu_visible and not self.on_title_screen:
             debug_fps = self.lang_manager.get_string("main.debug.fps", fps=f"{self.current_fps:.2f}")
-            debug_cam = self.lang_manager.get_string("main.debug.camera", cam_x=self.camera_x, cam_y=self.camera_y)
-            debug_mouse = self.lang_manager.get_string("main.debug.mouse", mouse_x=math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE, mouse_y=math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE)
+            debug_cam = self.lang_manager.get_string("main.debug.camera", cam_x=int(self.camera_x/BLOCK_SIZE), cam_y=int(self.camera_y/BLOCK_SIZE))
+            debug_mouse = self.lang_manager.get_string("main.debug.mouse", mouse_x=math.floor((px.mouse_x+self.camera_x) / BLOCK_SIZE), mouse_y=math.floor((px.mouse_y+self.camera_y) / BLOCK_SIZE))
+            debug_chunk = self.lang_manager.get_string("main.debug.chunk_pos", chunkposx=chunkposx,chunkposy=chunkposy)
             debug_blk = self.lang_manager.get_string("main.debug.block_count", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
             debug_pcl = self.lang_manager.get_string("main.debug.particle_count", pcl_count=len(self.active_particles))
-            debug_hover = self.lang_manager.get_string("main.debug.hover_state", is_hovered=self._is_mouse_over_any_block)
-            debug_list = [debug_fps, debug_cam, debug_mouse, debug_blk, debug_pcl, debug_hover]
+            debug_list = [debug_fps, debug_cam, debug_mouse, debug_chunk, debug_blk, debug_pcl]
+            # debug_hover = self.lang_manager.get_string("main.debug.hover_state", is_hovered=self._is_mouse_over_any_block)
+            # "main.debug.hover_state": "hover:{is_hovered}", 
 
             i = 0
             for debug_text in debug_list:
