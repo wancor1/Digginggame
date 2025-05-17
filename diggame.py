@@ -1152,7 +1152,13 @@ class DiggingGame:
 
         self.on_title_screen = True
         self.is_menu_visible = False
-        self.show_debug_overlay = False
+        self.show_debug_info = False
+        self.show_debug_blocks = False
+
+        self.combination_keys = [
+            px.KEY_B,
+        ]
+        self.combination_key_pressed_during_f3 = {key: False for key in self.combination_keys}
 
         self.camera_x = 0
         self.camera_y = 0
@@ -1333,7 +1339,7 @@ class DiggingGame:
             "current_language": self.lang_manager.current_lang_code
         }
 
-        message_prefix = "debug" if self.show_debug_overlay else "default"
+        message_prefix = "debug" if self.show_debug_info else "default"
         try:
             with open(SAVE_FILE_NAME, "w") as f:
                 json.dump(save_data, f, indent=2)
@@ -1369,7 +1375,7 @@ class DiggingGame:
                 self.chunks[(cx, cy)].apply_loaded_block_data(modified_blocks_list)
 
     def load_game_state(self, start=False):
-        message_prefix = "debug" if self.show_debug_overlay else "default"
+        message_prefix = "debug" if self.show_debug_info else "default"
 
         try:
             with open(SAVE_FILE_NAME, "r") as f:
@@ -1463,7 +1469,7 @@ class DiggingGame:
         if self.on_title_screen:
             pass
         else:
-            if px.btnp(px.KEY_ESCAPE):
+            if px.btnr(px.KEY_ESCAPE):
                 self.is_menu_visible = not self.is_menu_visible
                 if not self.is_menu_visible:
                     self.game_menu.is_lang_dropdown_open = False
@@ -1472,7 +1478,24 @@ class DiggingGame:
                 self.game_menu.handle_input()
             else:
                 if px.btnp(px.KEY_F3):
-                    self.show_debug_overlay = not self.show_debug_overlay
+                    for key in self.combination_keys:
+                        self.combination_key_pressed_during_f3[key] = False
+
+                if px.btn(px.KEY_F3):
+                    for key in self.combination_keys:
+                        if px.btnp(key):
+                            self.combination_key_pressed_during_f3[key] = True
+
+                for key in self.combination_keys:
+                    if px.btnr(key) and px.btn(px.KEY_F3):
+                        if key == px.KEY_B:
+                            self.show_debug_blocks = not self.show_debug_blocks
+
+                if px.btnr(px.KEY_F3):
+                    combination_occurred_during_f3_press = any(self.combination_key_pressed_during_f3.values())
+                    if not combination_occurred_during_f3_press:
+                        self.show_debug_info = not self.show_debug_info
+
                 self._handle_camera_movement()
                 self._update_game_logic()
         self.notification_manager.update()
@@ -1509,7 +1532,7 @@ class DiggingGame:
         for block in visible_blocks_list:
             if block.x + BLOCK_SIZE > self.camera_x and block.x < self.camera_x + SCREEN_WIDTH and \
                block.y + BLOCK_SIZE > self.camera_y and block.y < self.camera_y + SCREEN_HEIGHT:
-                block.draw(self.show_debug_overlay, self.font)
+                block.draw(self.show_debug_blocks, self.font)
         for particle in self.active_particles:
             particle.draw()
 
@@ -1526,7 +1549,7 @@ class DiggingGame:
         px.blt(px.mouse_x, px.mouse_y + cursor_y_offset, *SPRITE_CURSOR)
 
         self._calc_fps()
-        if self.show_debug_overlay and not self.is_menu_visible and not self.on_title_screen:
+        if self.show_debug_info and not self.is_menu_visible and not self.on_title_screen:
             mouse_x = self.camera_x + math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE
             mouse_y = self.camera_y + math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE
             chunk_x = mouse_x // (CHUNK_SIZE_X_BLOCKS * BLOCK_SIZE)
