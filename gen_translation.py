@@ -18,8 +18,9 @@ def _generate_en_():
         "button.menu.load.pressed": "Loading Game...",
         "button.menu.quit.pressed": "Quitting Game...",
         "main.debug.fps": "FPS: {fps}",
-        "main.debug.camera": "cam:({cam_x},{cam_y})",
-        "main.debug.mouse": "mouse:({mouse_x},{mouse_y})",
+        "main.debug.camera_coord": "cam:({cam_x},{cam_y})",
+        "main.debug.mouse_coord": "mouse:({mouse_x},{mouse_y})",
+        "main.debug.chunk_coord": "chunk:({chunk_x},{chunk_y})",
         "main.debug.block_count": "blk:{blk_count}",
         "main.debug.particle_count": "pcl:{pcl_count}",
         "main.debug.hover_state": "hover:{is_hovered}",
@@ -40,8 +41,8 @@ def _generate_en_():
     }
     return en_data
 
-def _generate_jp_():
-    jp_data = {
+def _generate_ja_():
+    ja_data = {
         "_metadata": {
             "display_name": "日本語"
         },
@@ -59,8 +60,9 @@ def _generate_jp_():
         "button.menu.load.pressed": "ロード中...",
         "button.menu.quit.pressed": "ゲームを終了中...",
         "main.debug.fps": "FPS: {fps}",
-        "main.debug.camera": "cam:({cam_x},{cam_y})",
-        "main.debug.mouse": "mouse:({mouse_x},{mouse_y})",
+        "main.debug.camera_coord": "cam:({cam_x},{cam_y})",
+        "main.debug.mouse_coord": "mouse:({mouse_x},{mouse_y})",
+        "main.debug.chunk_coord": "chunk:({chunk_x},{chunk_y})",
         "main.debug.block_count": "blk:{blk_count}",
         "main.debug.particle_count": "pcl:{pcl_count}",
         "main.debug.hover_state": "hover:{is_hovered}",
@@ -79,4 +81,4 @@ def _generate_jp_():
         "notification.load.error.decode.debug": "セーブファイル ({filename}) の解析エラー: 無効なJSON形式です。 {error}",
         "notification.load.error.unexpected.debug": "予期せぬロードエラーが発生しました: {error}"
     }
-    return jp_data
+    return ja_data

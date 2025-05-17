@@ -7,20 +7,22 @@ import json
 import traceback
 import PyxelUniversalFont as puf
 
-import gen_translation 
+import gen_translation
 
-# player
+"""
+--- player ---
     # TODO: インベントリの追加
     # TODO: アップグレード等の追加
-# map
+--- map ---
     # TODO: マップの追加
     # TODO: バイオームの追加
-# block
+--- block ---
     # TODO: 鉱石の高さによる出現頻度の変化
     # TODO: 鉱石の追加 [鉄、コバルト、銅、金、銀、ダイヤ]
     # TODO: 石の高さによる硬度の変化
     # TODO: 横幅50ブロック カメラの移動可能範囲を50+画面横幅
     # TODO: 掘れる範囲の制限
+"""
 
 SCREEN_WIDTH = 160
 SCREEN_HEIGHT = 120
@@ -83,6 +85,20 @@ NOTIFICATION_TEXT_COLOR_SUCCESS = 5
 
 CHUNK_SIZE_X_BLOCKS = 16
 CHUNK_SIZE_Y_BLOCKS = 16
+
+SPRITE_ID_MAP = {
+    "air": None,
+    "dirt": SPRITE_BLOCK_DIRT,
+    "grass": SPRITE_BLOCK_GRASS,
+    "stone": SPRITE_BLOCK_STONE,
+    "coal": SPRITE_BLOCK_COAL,
+}
+ID_SPRITE_MAP = {v_str: k_tuple for k_tuple, v_str in SPRITE_ID_MAP.items() if isinstance(k_tuple, str)}
+for k_str, v_tuple in SPRITE_ID_MAP.items():
+    if isinstance(v_tuple, tuple):
+        ID_SPRITE_MAP[k_str] = v_tuple
+    elif v_tuple is None and k_str == "air":
+        ID_SPRITE_MAP[k_str] = None
 
 def estimate_text_width(text):
     estimated_width = 0
@@ -171,8 +187,8 @@ class LanguageManager:
 
         en_path = os.path.join(self.lang_folder, "en_us.json")
         if not os.path.exists(en_path):
-            en_data = gen_translation._generate_en_()
             try:
+                en_data = gen_translation._generate_en_()
                 with open(en_path, "w", encoding="utf-8") as f:
                     json.dump(en_data, f, ensure_ascii=False, indent=2)
                 print(f"Created default language file: {en_path}")
@@ -299,14 +315,12 @@ class Notification:
         if not self.is_alive:
             return
 
-        # Calculate dimensions if not already done
         if self._box_width is None or self._box_height is None:
             self._calculate_dimensions()
             if self._box_width == 0 or self._box_height == 0:
                 self.is_alive = False
                 return
 
-        # --- Handle Vertical Movement (Fade-in and Sliding) ---
         if self.current_y is not None and self.target_y is not None and abs(self.target_y - self.current_y) > NOTIFICATION_TARGET_Y_TOLERANCE:
             move_amount_y = NOTIFICATION_FADE_IN_AMOUNT_Y_PER_FRAME
             if self.current_y < self.target_y:
@@ -656,9 +670,9 @@ class Chunk:
         for mod_block_save_data in block_data_list:
             world_x, world_y = mod_block_save_data["x"], mod_block_save_data["y"]
             loaded_hp = mod_block_save_data["current_hp"]
+            loaded_sprite_id = mod_block_save_data.get("sprite_id")
 
             rel_bx, rel_by = world_to_relative_in_chunk_coords(world_x, world_y)
-
             block_to_update = self.get_block(rel_bx, rel_by)
             if block_to_update:
                 block_to_update.current_hp = loaded_hp
@@ -668,6 +682,10 @@ class Chunk:
                     block_to_update.current_hp = 0
                 else:
                     block_to_update.is_broken = False
+
+                if loaded_sprite_id and loaded_sprite_id in ID_SPRITE_MAP:
+                    block_to_update.sprite_info = ID_SPRITE_MAP[loaded_sprite_id]
+
         self.is_modified_in_session = True
 
     def get_all_active_blocks_in_chunk(self):
@@ -682,8 +700,7 @@ class Chunk:
         return active_blocks
 
 class Block:
-    HARDNESS_MIN = 5
-    HARDNESS_MAX = 100
+    HARDNESS_MIN = 3
     NOISE_SCALE_HARDNESS = 0.005
     NOISE_SCALE_ORE = 0.04
     ORE_THRESHOLD = 0.4
@@ -695,54 +712,68 @@ class Block:
     PARTICLES_MEAN_ON_BREAK = 10
     PARTICLES_STDDEV_ON_BREAK = 2
 
+    HARDNESS_INCREASE_PER_BLOCK_BELOW_SURFACE = 0.1
+    NOISE_HARDNESS_VARIATION_RANGE = 20
+    NOISE_VARIATION_TRANSITION_DEPTH_BLOCKS = 50
+    NEGATIVE_NOISE_IMPACT_FACTOR = 0.25
+
     def __init__(self, x, y, world_seed_noise, world_seed_ore):
         self.x = x
         self.y = y
         self.is_broken = False
         self.is_modified = False
-        what_is_this = (self.y-BLOCK_SIZE*2)/(BLOCK_SIZE*5)
-        level_hardness_max = \
-            min(
-                max(
-                    abs(
-                        random.gauss(
-                            0,
-                            what_is_this
-                        )
-                    ),
-                    max(
-                        what_is_this,
-                        self.HARDNESS_MIN
-                    )
-                ),
-                self.HARDNESS_MAX
-            )
+
+        y_block = self.y // BLOCK_SIZE
+
+        if y_block < self.SURFACE_Y_LEVEL_IN_BLOCKS:
+            self.is_broken = True
+            self.sprite_info = None
+            self.max_hp = 0
+            self.current_hp = 0
+            return
+
+        if y_block == self.SURFACE_Y_LEVEL_IN_BLOCKS:
+            self.sprite_info = SPRITE_BLOCK_GRASS
+            self.max_hp = self.HARDNESS_MIN
+            self.current_hp = self.max_hp
+            return
+
+        y_start_solid = self.SURFACE_Y_LEVEL_IN_BLOCKS + 1
+        depth_below_surface_solid = y_block - y_start_solid
+        base_hardness_y = self.HARDNESS_MIN + depth_below_surface_solid * self.HARDNESS_INCREASE_PER_BLOCK_BELOW_SURFACE
 
         px.nseed(world_seed_noise)
         noise_val_hardness = px.noise(self.x * self.NOISE_SCALE_HARDNESS,
                                       self.y * self.NOISE_SCALE_HARDNESS, 0)
-        self.max_hp = int(math.floor((level_hardness_max - self.HARDNESS_MIN) * abs(noise_val_hardness)) + self.HARDNESS_MIN)
+
+        if self.NOISE_VARIATION_TRANSITION_DEPTH_BLOCKS <= 0:
+            depth_scale_for_noise = 1.0
+        else:
+            depth_scale_for_noise = min(1.0, depth_below_surface_solid / self.NOISE_VARIATION_TRANSITION_DEPTH_BLOCKS)
+
+        effective_noise_range = self.NOISE_HARDNESS_VARIATION_RANGE * depth_scale_for_noise
+
+        noise_contribution = 0.0
+        if noise_val_hardness >= 0:
+            noise_contribution = noise_val_hardness * effective_noise_range
+        else:
+            noise_contribution = noise_val_hardness * effective_noise_range * self.NEGATIVE_NOISE_IMPACT_FACTOR
+
+        combined_hardness = base_hardness_y + noise_contribution
+
+        self.max_hp = math.floor(max(self.HARDNESS_MIN, combined_hardness))
         self.current_hp = self.max_hp
 
-        if self.y // BLOCK_SIZE < self.SURFACE_Y_LEVEL_IN_BLOCKS:
-            self.is_broken = True
-            self.sprite_info = None
-            return
-
-        if self.y // BLOCK_SIZE == self.SURFACE_Y_LEVEL_IN_BLOCKS:
-            self.sprite_info = SPRITE_BLOCK_GRASS
-        elif self.max_hp <= 10:
+        if self.max_hp <= 10:
             self.sprite_info = SPRITE_BLOCK_DIRT
-        elif self.max_hp <= 20:
-            self.sprite_info = SPRITE_BLOCK_STONE
-
+        else:
             px.nseed(world_seed_ore)
             noise_val_ore = px.noise(self.x * self.NOISE_SCALE_ORE,
-                                     self.y * self.NOISE_SCALE_ORE, 0.5)
+                                     self.y * self.NOISE_SCALE_ORE, 256)
             if noise_val_ore >= self.ORE_THRESHOLD:
                 self.sprite_info = SPRITE_BLOCK_COAL
-        else:
-            self.sprite_info = SPRITE_BLOCK_STONE
+            else:
+                self.sprite_info = SPRITE_BLOCK_STONE
 
     def _get_break_animation_frame_index(self):
         if self.current_hp == self.max_hp or self.is_broken:
@@ -780,9 +811,9 @@ class Block:
                 bar_width_pixels = (self.current_hp / self.max_hp) * (BLOCK_SIZE - 2)
                 px.rect(self.x + 1, self.y + BLOCK_SIZE - 2, BLOCK_SIZE - 2, 1, 13)
                 px.rect(self.x + 1, self.y + BLOCK_SIZE - 2, bar_width_pixels, 1, 3)
-                font_writer.draw(self.x + text_x_offset, self.y + text_y_offset -1, hp_text, FONT_SIZE, 7)
+                font_writer.draw(self.x + text_x_offset, self.y + text_y_offset -1, hp_text, 8, 7)
             else:
-                font_writer.draw(self.x + text_x_offset, self.y + text_y_offset, hp_text, FONT_SIZE, 7)
+                font_writer.draw(self.x + text_x_offset, self.y + text_y_offset, hp_text, 8, 7)
 
     def handle_click(self):
         if self.is_broken:
@@ -816,7 +847,13 @@ class Block:
                 self.y <= world_mouse_y < self.y + BLOCK_SIZE)
 
     def to_save_data(self):
-        return {"x": self.x, "y": self.y, "current_hp": self.current_hp}
+        sprite_id_to_save = "unknown"
+        for id_name, sprite_tuple in ID_SPRITE_MAP.items():
+            if self.sprite_info == sprite_tuple:
+                sprite_id_to_save = id_name
+                break
+
+        return {"x": self.x, "y": self.y, "current_hp": self.current_hp, "sprite_id": sprite_id_to_save}
 
 class ButtonBox:
     def __init__(self, font_writer: puf.Writer, lang_manager: LanguageManager):
@@ -1264,10 +1301,6 @@ class DiggingGame:
                 self.active_particles.extend(new_particles)
 
         temp_collidable_blocks = []
-        # パーティクルが存在しうるチャンク範囲を限定的に取得
-        # (ここでは簡略化のため、ビュー内の全アクティブブロックを使う)
-        # 実際には、各パーティクルの位置からチャンクを取得し、その中のブロックと衝突判定する
-        # とりあえず _get_active_blocks_in_view() の結果を流用する
         collidable_blocks_for_particles = self._get_active_blocks_in_view()
 
         for particle in self.active_particles:
@@ -1320,16 +1353,16 @@ class DiggingGame:
             )
             traceback.print_exc()
 
-    def _regenerate_world_from_chunks_and_apply_mods(self, loaded_gen_chunk_coords, loaded_mod_chunks_data):
+    def _regenerate_world_from_chunks_and_apply_mods(self, loaded_gen_chunk_coords_set, loaded_mod_chunks_data):
         self.chunks = {}
         self.generated_chunk_coords = set()
 
-        for cx, cy in loaded_gen_chunk_coords:
-            self.generated_chunk_coords.add((cx,cy))
-            chunk = self._ensure_chunk_generated_and_get(cx, cy)
+        for cx_cy_tuple in loaded_gen_chunk_coords_set:
+            self.generated_chunk_coords.add(cx_cy_tuple)
+        for cx, cy in self.generated_chunk_coords:
+            self._ensure_chunk_generated_and_get(cx, cy)
 
         mod_chunks_map = {(cd["cx"], cd["cy"]): cd["modified_blocks"] for cd in loaded_mod_chunks_data}
-
         for chunk_coord, modified_blocks_list in mod_chunks_map.items():
             cx, cy = chunk_coord
             if (cx, cy) in self.chunks:
@@ -1494,13 +1527,19 @@ class DiggingGame:
 
         self._calc_fps()
         if self.show_debug_overlay and not self.is_menu_visible and not self.on_title_screen:
+            mouse_x = self.camera_x + math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE
+            mouse_y = self.camera_y + math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE
+            chunk_x = mouse_x // (CHUNK_SIZE_X_BLOCKS * BLOCK_SIZE)
+            chunk_y = mouse_y // (CHUNK_SIZE_Y_BLOCKS * BLOCK_SIZE)
+
             debug_fps = self.lang_manager.get_string("main.debug.fps", fps=f"{self.current_fps:.2f}")
-            debug_cam = self.lang_manager.get_string("main.debug.camera", cam_x=self.camera_x, cam_y=self.camera_y)
-            debug_mouse = self.lang_manager.get_string("main.debug.mouse", mouse_x=math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE, mouse_y=math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE)
+            debug_cam = self.lang_manager.get_string("main.debug.camera_coord", cam_x=self.camera_x, cam_y=self.camera_y)
+            debug_mouse = self.lang_manager.get_string("main.debug.mouse_coord", mouse_x=mouse_x, mouse_y=mouse_y)
+            debug_chunk = self.lang_manager.get_string("main.debug.chunk_coord", chunk_x=chunk_x, chunk_y=chunk_y)
             debug_blk = self.lang_manager.get_string("main.debug.block_count", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
             debug_pcl = self.lang_manager.get_string("main.debug.particle_count", pcl_count=len(self.active_particles))
             debug_hover = self.lang_manager.get_string("main.debug.hover_state", is_hovered=self._is_mouse_over_any_block)
-            debug_list = [debug_fps, debug_cam, debug_mouse, debug_blk, debug_pcl, debug_hover]
+            debug_list = [debug_fps, debug_cam, debug_mouse, debug_chunk, debug_blk, debug_pcl, debug_hover]
 
             i = 0
             for debug_text in debug_list:
