@@ -1561,8 +1561,7 @@ class DiggingGame:
             debug_chunk = self.lang_manager.get_string("main.debug.chunk_coord", chunk_x=chunk_x, chunk_y=chunk_y)
             debug_blk = self.lang_manager.get_string("main.debug.block_count", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
             debug_pcl = self.lang_manager.get_string("main.debug.particle_count", pcl_count=len(self.active_particles))
-            debug_hover = self.lang_manager.get_string("main.debug.hover_state", is_hovered=self._is_mouse_over_any_block)
-            debug_list = [debug_fps, debug_cam, debug_mouse, debug_chunk, debug_blk, debug_pcl, debug_hover]
+            debug_list = [debug_fps, debug_cam, debug_mouse, debug_chunk, debug_blk, debug_pcl]
 
             i = 0
             for debug_text in debug_list:
