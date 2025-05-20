@@ -1550,13 +1550,13 @@ class DiggingGame:
 
         self._calc_fps()
         if self.show_debug_info and not self.is_menu_visible and not self.on_title_screen:
-            mouse_x = self.camera_x + math.floor(px.mouse_x / BLOCK_SIZE) * BLOCK_SIZE
-            mouse_y = self.camera_y + math.floor(px.mouse_y / BLOCK_SIZE) * BLOCK_SIZE
+            mouse_x = self.camera_x + math.floor(px.mouse_x / BLOCK_SIZE) #* BLOCK_SIZE
+            mouse_y = self.camera_y + math.floor(px.mouse_y / BLOCK_SIZE) #* BLOCK_SIZE
             chunk_x = mouse_x // (CHUNK_SIZE_X_BLOCKS * BLOCK_SIZE)
             chunk_y = mouse_y // (CHUNK_SIZE_Y_BLOCKS * BLOCK_SIZE)
 
             debug_fps = self.lang_manager.get_string("main.debug.fps", fps=f"{self.current_fps:.2f}")
-            debug_cam = self.lang_manager.get_string("main.debug.camera_coord", cam_x=self.camera_x, cam_y=self.camera_y)
+            debug_cam = self.lang_manager.get_string("main.debug.camera_coord", cam_x=self.camera_x/BLOCK_SIZE, cam_y=self.camera_y/BLOCK_SIZE)
             debug_mouse = self.lang_manager.get_string("main.debug.mouse_coord", mouse_x=mouse_x, mouse_y=mouse_y)
             debug_chunk = self.lang_manager.get_string("main.debug.chunk_coord", chunk_x=chunk_x, chunk_y=chunk_y)
             debug_blk = self.lang_manager.get_string("main.debug.block_count", blk_count=len(self.generated_chunk_coords) * CHUNK_SIZE_X_BLOCKS * CHUNK_SIZE_Y_BLOCKS)
