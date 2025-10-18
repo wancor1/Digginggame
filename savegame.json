@@ -1,0 +1,51 @@
+{
+  "camera_x": 0,
+  "camera_y": 0,
+  "se_on": true,
+  "bgm_on": true,
+  "world_seed_main": 0,
+  "world_seed_ore": 0,
+  "generated_chunk_coords": [
+    [
+      2,
+      -1
+    ],
+    [
+      3,
+      -1
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      2,
+      0
+    ],
+    [
+      1,
+      0
+    ]
+  ],
+  "modified_chunks": [
+    {
+      "cx": 0,
+      "cy": 0,
+      "modified_blocks": [
+        {
+          "x": 0,
+          "y": 56,
+          "current_hp": 3,
+          "sprite_id": "coal"
+        },
+        {
+          "x": 64,
+          "y": 56,
+          "current_hp": 0,
+          "sprite_id": "grass"
+        }
+      ]
+    }
+  ],
+  "current_language": "ja_jp"
+}
