@@ -199,7 +199,7 @@ class DiggingGame:
         if self.button_handler.draw_button(button_x, button_y, button_w, button_h,
                                            self.lang_manager.get_string('button.title_screen.start.default'),
                                            self.lang_manager.get_string('button.title_screen.start.pressed')):
-            self.persistence_manager.load_game_state(True)
+            self.persistence_manager.load_game_state()
             if not self._initial_block_generation_done:
                 self.world_manager.generate_visible_chunks()
                 self._initial_block_generation_done = True
