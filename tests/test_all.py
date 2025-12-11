@@ -100,6 +100,9 @@ class MockGameObject:
     def update_window_title(self):
         pass
 
+    def set_loading_state(self, state):
+        pass
+
 class MockWorldManager:
     def __init__(self):
         self.world_seed_main = 123
@@ -125,7 +128,7 @@ class MockLangManager:
         return True
 
 class MockNotificationManager:
-    def add_notification(self, msg, msg_type):
+    def add_notification(self, msg, msg_type="info"):
         pass
 
 class MockParticleManager:
@@ -247,6 +250,15 @@ def test_notification_manager_add_notification(notification_manager, monkeypatch
     assert len(notification_manager.notifications) == 1
 
 def test_persistence_manager_save(persistence_manager, monkeypatch):
+    class MockThread:
+        def __init__(self, target):
+            self._target = target
+        def start(self):
+            self._target()
+        def is_alive(self):
+            return False
+    monkeypatch.setattr("threading.Thread", MockThread)
+
     mock_file = io.StringIO()
     monkeypatch.setattr("builtins.open", lambda name, mode: MockFileContextManager(mock_file))
     monkeypatch.setattr("json.dump", lambda data, file, indent: file.write(json.dumps(data)))
@@ -255,10 +267,20 @@ def test_persistence_manager_save(persistence_manager, monkeypatch):
     assert saved_data["camera_x"] == 0
 
 def test_persistence_manager_load(persistence_manager, monkeypatch):
+    class MockThread:
+        def __init__(self, target):
+            self._target = target
+        def start(self):
+            self._target()
+        def is_alive(self):
+            return False
+    monkeypatch.setattr("threading.Thread", MockThread)
+
     save_data = {"camera_x": 100, "camera_y": 200, "se_on": False, "bgm_on": False, "world_seed_main": 789, "world_seed_ore": 101, "generated_chunk_coords": [], "modified_chunks": [], "current_language": "de_de"}
     mock_file = io.StringIO(json.dumps(save_data))
     monkeypatch.setattr("builtins.open", lambda name, mode: MockFileContextManager(mock_file))
     persistence_manager.load_game_state()
+    persistence_manager.process_load_completion()
     game = persistence_manager.game
     assert game.camera_x == 100
     assert game.world_manager.world_seed_main == 789

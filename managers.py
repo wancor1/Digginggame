@@ -273,6 +273,7 @@ class PersistenceManager:
     def __init__(self, game):
         self.game = game
         self.save_thread = None
+        self.load_thread = None
         self.save_result = None
 
     @property
@@ -352,6 +353,8 @@ class PersistenceManager:
     @property
     def is_loading(self):
         return self.load_thread and self.load_thread.is_alive()
+
+    def load_game_state(self):
         if self.is_loading:
             return # Already loading
 
