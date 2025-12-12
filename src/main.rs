@@ -55,6 +55,7 @@ impl DiggingGame {
             bytes: rgba_image.into_raw(), // Get raw bytes
         };
         let atlas = Some(Texture2D::from_image(&mq_image));
+        atlas.as_ref().unwrap().set_filter(FilterMode::Nearest);
 
         let font_bytes = include_bytes!("../src/misaki_gothic.ttf");
         let font = Some(load_ttf_font_from_bytes(font_bytes).unwrap());
@@ -212,8 +213,8 @@ impl DiggingGame {
             );
             draw_text_ex(
                 title,
-                tx + 1.0,
-                ty * 0.5 + 1.0,
+                (tx + 1.0).floor(),
+                (ty * 0.5 + 1.0).floor(),
                 TextParams {
                     font_size: FONT_SIZE as u16,
                     font: self
@@ -227,8 +228,8 @@ impl DiggingGame {
             );
             draw_text_ex(
                 title,
-                tx,
-                ty * 0.5,
+                tx.floor(),
+                (ty * 0.5).floor(),
                 TextParams {
                     font_size: FONT_SIZE as u16,
                     font: self
@@ -243,8 +244,8 @@ impl DiggingGame {
 
             let bw = 60.0;
             let bh = 10.0;
-            let bx = (SCREEN_WIDTH - bw) / 2.0;
-            let by = (SCREEN_HEIGHT - bh) / 2.0 * 1.25;
+            let bx = ((SCREEN_WIDTH - bw) / 2.0).floor();
+            let by = ((SCREEN_HEIGHT - bh) / 2.0 * 1.25).floor();
 
             if ButtonBox::draw_button(
                 bx,
@@ -306,8 +307,8 @@ impl DiggingGame {
 
             let blocks = self.world_manager.get_active_blocks_in_view(cx, cy);
             for block in blocks {
-                let draw_x = block.x - cx;
-                let draw_y = block.y - cy;
+                let draw_x = (block.x - cx).floor();
+                let draw_y = (block.y - cy).floor();
 
                 if let (Some(rect), Some(atlas)) = (block.sprite_rect, self.atlas.as_ref()) {
                     // Draw block from atlas.
@@ -353,7 +354,7 @@ impl DiggingGame {
 
             // Particles
             for p in &self.particle_manager.active_particles {
-                draw_rectangle(p.x - cx, p.y - cy, 1.0, 1.0, p.color);
+                draw_rectangle((p.x - cx).floor(), (p.y - cy).floor(), 1.0, 1.0, p.color);
             }
 
             // Highlight
@@ -380,8 +381,8 @@ impl DiggingGame {
                     // Need to expose getter or pub field
                     // draw_texture_ex...
                     draw_rectangle_lines(
-                        grid_x - cx,
-                        grid_y - cy,
+                        (grid_x - cx).floor(),
+                        (grid_y - cy).floor(),
                         BLOCK_SIZE,
                         BLOCK_SIZE,
                         1.0,
@@ -395,14 +396,14 @@ impl DiggingGame {
                 // Draw menu background
                 let menu_w = 100.0;
                 let menu_h = SCREEN_HEIGHT - 20.0;
-                let menu_x = (SCREEN_WIDTH - menu_w) / 2.0;
-                let menu_y = (SCREEN_HEIGHT - menu_h) / 2.0;
+                let menu_x = ((SCREEN_WIDTH - menu_w) / 2.0).floor();
+                let menu_y = ((SCREEN_HEIGHT - menu_h) / 2.0).floor();
 
                 draw_rectangle(menu_x, menu_y, menu_w, menu_h, LIGHTGRAY);
                 draw_rectangle_lines(menu_x, menu_y, menu_w, menu_h, 1.0, BLACK);
 
                 // Menu buttons...
-                let mut current_y = menu_y + 10.0;
+                let mut current_y = (menu_y + 10.0).floor();
                 let btn_h = 10.0;
 
                 if ButtonBox::draw_button(
@@ -417,7 +418,7 @@ impl DiggingGame {
                 ) {
                     self.persistence_manager.save_game(self.make_save_data());
                 }
-                current_y += 15.0;
+                current_y = (current_y + 15.0).floor();
                 if ButtonBox::draw_button(
                     menu_x + 5.0,
                     current_y,
@@ -438,8 +439,8 @@ impl DiggingGame {
         self.notification_manager.draw(self.font.as_ref());
 
         // Cursor
-        let curs_x = (mouse_position().0 / screen_width()) * SCREEN_WIDTH;
-        let curs_y = (mouse_position().1 / screen_height()) * SCREEN_HEIGHT;
+        let curs_x = ((mouse_position().0 / screen_width()) * SCREEN_WIDTH).floor();
+        let curs_y = ((mouse_position().1 / screen_height()) * SCREEN_HEIGHT).floor();
         if let Some(atlas) = self.atlas.as_ref() {
             draw_texture_ex(
                 *atlas,
@@ -477,39 +478,32 @@ async fn main() {
         // Hide system cursor
         show_mouse(false);
         
-        loop {        game.update();
-        game.draw();
-
-        // Render target setup to scale up 160x120 to window size?
-        // Macroquad's camera with fixed zoom is easier.
-        // For now, we draw in pixel coords (0..160), but window is 640.
-        // We need a camera that scales up.
-
-        let render_target = render_target(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
-        render_target.texture.set_filter(FilterMode::Nearest);
-
-        // We need to render to this target, then draw target to screen scaled.
-        // But our draw function uses standard draw calls.
-        // We can set camera to render target?
-
-            let camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT)); 
-        set_camera(&camera);
-        game.draw();
-
-        set_default_camera();
-
-        // Draw the render target to the screen
-        draw_texture_ex(
-            render_target.texture,
-            0.0,
-            0.0,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(screen_width(), screen_height())),
-                ..Default::default()
-            },
-        );
-
-        next_frame().await
-    }
-}
+                // Create render target once
+                let render_target = render_target(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
+                render_target.texture.set_filter(FilterMode::Nearest);
+        
+                loop {
+                    game.update();
+        
+                    // Render to the off-screen render target
+                                // Set camera to render target
+                                let mut camera_to_render_target = Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT));
+                                camera_to_render_target.render_target = Some(render_target);
+                                set_camera(&camera_to_render_target);
+                                clear_background(SKYBLUE); // Clear the render target
+                                game.draw();
+                                set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically        
+                    // Draw the render target to the screen, scaled
+                    draw_texture_ex(
+                        render_target.texture,
+                        0.0,
+                        screen_height(), // Move to bottom to compensate for negative height
+                        WHITE,
+                        DrawTextureParams {
+                            dest_size: Some(vec2(screen_width(), -screen_height())), // Flip vertically
+                            ..Default::default()
+                        },
+                    );
+        
+                    next_frame().await
+                }}

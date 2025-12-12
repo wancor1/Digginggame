@@ -154,8 +154,8 @@ impl Notification {
         }
 
         draw_rectangle(
-            self.current_x,
-            self.current_y,
+            self.current_x.floor(),
+            self.current_y.floor(),
             self.box_width,
             self.box_height,
             NOTIFICATION_BG_COLOR,
@@ -170,8 +170,8 @@ impl Notification {
         };
 
         draw_rectangle_lines(
-            self.current_x,
-            self.current_y,
+            self.current_x.floor(),
+            self.current_y.floor(),
             self.box_width,
             self.box_height,
             1.0,
@@ -184,8 +184,8 @@ impl Notification {
             // We'll add FONT_SIZE * 0.8 as baseline offset.
             draw_text_ex(
                 line,
-                self.current_x + NOTIFICATION_PADDING_X,
-                y_off + FONT_SIZE * 0.8,
+                (self.current_x + NOTIFICATION_PADDING_X).floor(),
+                (y_off + FONT_SIZE * 0.8).floor(),
                 TextParams {
                     font_size: FONT_SIZE as u16,
                     font: font.copied().unwrap_or(TextParams::default().font),
@@ -259,8 +259,8 @@ impl SelectBlock {
         } else if elapsed <= 2.0 {
             draw_texture_ex(
                 *atlas,
-                grid_x - 1.0,
-                grid_y - 1.0,
+                (grid_x - 1.0).floor(),
+                (grid_y - 1.0).floor(),
                 WHITE,
                 DrawTextureParams {
                     source: Some(SPRITE_SELECT_LARGE),
@@ -297,12 +297,12 @@ impl ButtonBox {
         } else {
             COLOR_BUTTON_BG
         };
-        draw_rectangle(x, y, w, h, bg_col);
-        draw_rectangle_lines(x, y, w, h, 1.0, COLOR_BUTTON_BORDER);
+        draw_rectangle(x.floor(), y.floor(), w, h, bg_col);
+        draw_rectangle_lines(x.floor(), y.floor(), w, h, 1.0, COLOR_BUTTON_BORDER);
 
         if !is_pressed {
-            draw_line(x + w - 1.0, y + 1.0, x + w - 1.0, y + h - 2.0, 1.0, BLACK);
-            draw_line(x + 1.0, y + h - 1.0, x + w - 2.0, y + h - 1.0, 1.0, BLACK);
+            draw_line((x + w - 1.0).floor(), (y + 1.0).floor(), (x + w - 1.0).floor(), (y + h - 2.0).floor(), 1.0, BLACK);
+            draw_line((x + 1.0).floor(), (y + h - 1.0).floor(), (x + w - 2.0).floor(), (y + h - 1.0).floor(), 1.0, BLACK);
         }
 
         let key = if is_pressed { press_key } else { text_key };
@@ -312,8 +312,8 @@ impl ButtonBox {
         // Ensure color is correct using TextParams
         draw_text_ex(
             &label,
-            x + tx,
-            y + ty,
+            (x + tx).floor(),
+            (y + ty).floor(),
             TextParams {
                 font_size: FONT_SIZE as u16,
                 font: font.copied().unwrap_or(TextParams::default().font),
