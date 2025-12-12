@@ -301,8 +301,22 @@ impl ButtonBox {
         draw_rectangle_lines(x.floor(), y.floor(), w, h, 1.0, COLOR_BUTTON_BORDER);
 
         if !is_pressed {
-            draw_line((x + w - 1.0).floor(), (y + 1.0).floor(), (x + w - 1.0).floor(), (y + h - 2.0).floor(), 1.0, BLACK);
-            draw_line((x + 1.0).floor(), (y + h - 1.0).floor(), (x + w - 2.0).floor(), (y + h - 1.0).floor(), 1.0, BLACK);
+            draw_line(
+                (x + w - 1.0).floor(),
+                (y + 1.0).floor(),
+                (x + w - 1.0).floor(),
+                (y + h - 2.0).floor(),
+                1.0,
+                BLACK,
+            );
+            draw_line(
+                (x + 1.0).floor(),
+                (y + h - 1.0).floor(),
+                (x + w - 2.0).floor(),
+                (y + h - 1.0).floor(),
+                1.0,
+                BLACK,
+            );
         }
 
         let key = if is_pressed { press_key } else { text_key };

@@ -1,6 +1,6 @@
+use image::load_from_memory;
 use macroquad::prelude::*;
 use macroquad::text::load_ttf_font_from_bytes;
-use image::load_from_memory;
 
 mod components;
 mod constants;
@@ -271,11 +271,14 @@ impl DiggingGame {
             }
         } else {
             // Game World
-             let cam = Camera2D {
-                 target: vec2(self.input_handler.camera_x + SCREEN_WIDTH/2.0, self.input_handler.camera_y + SCREEN_HEIGHT/2.0),
-                 zoom: vec2(1.0 / (SCREEN_WIDTH/2.0), 1.0 / (SCREEN_HEIGHT/2.0)), // No longer invert Y
-                 ..Default::default()
-             };
+            let cam = Camera2D {
+                target: vec2(
+                    self.input_handler.camera_x + SCREEN_WIDTH / 2.0,
+                    self.input_handler.camera_y + SCREEN_HEIGHT / 2.0,
+                ),
+                zoom: vec2(1.0 / (SCREEN_WIDTH / 2.0), 1.0 / (SCREEN_HEIGHT / 2.0)), // No longer invert Y
+                ..Default::default()
+            };
             // Macroquad coordinate system with camera typically: +Y up.
             // Our game logic is +Y down (pixel coords).
             // To keep it simple, we use a camera that maps 0..SCREEN to -1..1 but with Y flipped?
@@ -295,15 +298,12 @@ impl DiggingGame {
             // Actually, Macroquad `draw_...` uses screen coords by default.
         }
 
-                        if !self.on_title_screen {
+        if !self.on_title_screen {
+            // Draw World elements with manual camera offset
 
-                             // Draw World elements with manual camera offset
+            let cx = self.input_handler.camera_x;
 
-                                          let cx = self.input_handler.camera_x;
-
-                                          let cy = self.input_handler.camera_y;
-
-                
+            let cy = self.input_handler.camera_y;
 
             let blocks = self.world_manager.get_active_blocks_in_view(cx, cy);
             for block in blocks {
@@ -473,37 +473,39 @@ impl DiggingGame {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-        let mut game = DiggingGame::new().await;
-        
-        // Hide system cursor
-        show_mouse(false);
-        
-                // Create render target once
-                let render_target = render_target(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
-                render_target.texture.set_filter(FilterMode::Nearest);
-        
-                loop {
-                    game.update();
-        
-                    // Render to the off-screen render target
-                                // Set camera to render target
-                                let mut camera_to_render_target = Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT));
-                                camera_to_render_target.render_target = Some(render_target);
-                                set_camera(&camera_to_render_target);
-                                clear_background(SKYBLUE); // Clear the render target
-                                game.draw();
-                                set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically        
-                    // Draw the render target to the screen, scaled
-                    draw_texture_ex(
-                        render_target.texture,
-                        0.0,
-                        screen_height(), // Move to bottom to compensate for negative height
-                        WHITE,
-                        DrawTextureParams {
-                            dest_size: Some(vec2(screen_width(), -screen_height())), // Flip vertically
-                            ..Default::default()
-                        },
-                    );
-        
-                    next_frame().await
-                }}
+    let mut game = DiggingGame::new().await;
+
+    // Hide system cursor
+    show_mouse(false);
+
+    // Create render target once
+    let render_target = render_target(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
+    render_target.texture.set_filter(FilterMode::Nearest);
+
+    loop {
+        game.update();
+
+        // Render to the off-screen render target
+        // Set camera to render target
+        let mut camera_to_render_target =
+            Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT));
+        camera_to_render_target.render_target = Some(render_target);
+        set_camera(&camera_to_render_target);
+        clear_background(SKYBLUE); // Clear the render target
+        game.draw();
+        set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically
+                              // Draw the render target to the screen, scaled
+        draw_texture_ex(
+            render_target.texture,
+            0.0,
+            screen_height(), // Move to bottom to compensate for negative height
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(screen_width(), -screen_height())), // Flip vertically
+                ..Default::default()
+            },
+        );
+
+        next_frame().await
+    }
+}
