@@ -1,0 +1,216 @@
+﻿cargo :     Checking digginggame v0.1.0 (C:\Users\teruc\Deskt
+op\programs\Digginggame)
+発生場所 行:1 文字:1
++ cargo check > build_log_2.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking di 
+   ...ms\Digginggame):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error[E0433]: failed to resolve: use of undeclared type `Noti
+ficationState`
+  --> src\managers\notification.rs:34:49
+   |
+34 |             if notif.is_alive && notif.state != Notifica
+tionState::FadingOut {
+   |                                                 ^^^^^^^^
+^^^^^^^^^ use of undeclared type `NotificationState`
+   |
+help: a struct with a similar name exists
+   |
+34 -             if notif.is_alive && notif.state != Notifica
+tionState::FadingOut {
+34 +             if notif.is_alive && notif.state != Notifica
+tion::FadingOut {
+   |
+help: consider importing this enum through its public re-expo
+rt
+   |
+ 1 + use crate::NotificationState;
+   |
+
+warning: unused import: `world_to_relative_in_chunk_coords`
+ --> src\components.rs:4:50
+  |
+4 | use crate::utils::{chunk_coords_to_world_origin, world_to
+_relative_in_chunk_coords};
+  |                                                  ^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `BlockSaveData`
+ --> src\managers\world.rs:3:39
+  |
+3 | use crate::components::{Chunk, Block, BlockSaveData};
+  |                                       ^^^^^^^^^^^^^
+
+warning: unused import: `estimate_text_width`
+  --> src\main.rs:13:13
+   |
+13 | use utils::{estimate_text_width, calculate_text_center_p
+osition};
+   |             ^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\ui.rs:144:147
+    |
+144 | ...ams { font_size: FONT_SIZE as u16, font: font.copied
+(), color: text_col, ..Default::default() });
+    |                                             ^^^^^^^^^^^
+^^ expected `Font`, found `Option<Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<macroquad::t
+ext::Font>`
+help: consider using `Option::expect` to unwrap the `std::opt
+ion::Option<macroquad::text::Font>` value, panicking if the v
+alue is an `Option::None`
+    |
+144 |              draw_text_ex(line, self.current_x + NOTIFI
+CATION_PADDING_X, y_off + FONT_SIZE * 0.8, TextParams { font_
+size: FONT_SIZE as u16, font: font.copied().expect("REASON"),
+ color: text_col, ..Default::default() });
+    |                                                        
+                                                             
+                                           +++++++++++++++++
+
+error[E0308]: mismatched types
+   --> src\ui.rs:226:94
+    |
+226 | ...ams { font_size: FONT_SIZE as u16, font: font.copied
+(), color: COLOR_BUTTON_TEXT, ..Default::default() });
+    |                                             ^^^^^^^^^^^
+^^ expected `Font`, found `Option<Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<macroquad::t
+ext::Font>`
+help: consider using `Option::expect` to unwrap the `std::opt
+ion::Option<macroquad::text::Font>` value, panicking if the v
+alue is an `Option::None`
+    |
+226 |         draw_text_ex(&label, x + tx, y + ty, TextParams
+ { font_size: FONT_SIZE as u16, font: font.copied().expect("R
+EASON"), color: COLOR_BUTTON_TEXT, ..Default::default() });
+    |                                                        
+                                                   ++++++++++
++++++++
+
+error[E0308]: mismatched types
+   --> src\main.rs:174:101
+    |
+174 | ...ont_size: FONT_SIZE as u16, font: self.font.as_ref()
+.copied(), color: DARKGRAY, ..Default::default() });
+    |                                      ^^^^^^^^^^^^^^^^^^
+^^^^^^^^^ expected `Font`, found `Option<Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<macroquad::t
+ext::Font>`
+help: consider using `Option::expect` to unwrap the `std::opt
+ion::Option<macroquad::text::Font>` value, panicking if the v
+alue is an `Option::None`
+    |
+174 |              draw_text_ex(title, tx+1.0, ty*0.5+1.0, Te
+xtParams{ font_size: FONT_SIZE as u16, font: self.font.as_ref
+().copied().expect("REASON"), color: DARKGRAY, ..Default::def
+ault() });
+    |                                                        
+                                                             
+           +++++++++++++++++
+
+error[E0308]: mismatched types
+   --> src\main.rs:175:93
+    |
+175 | ...ont_size: FONT_SIZE as u16, font: self.font.as_ref()
+.copied(), color: WHITE, ..Default::default() });
+    |                                      ^^^^^^^^^^^^^^^^^^
+^^^^^^^^^ expected `Font`, found `Option<Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<macroquad::t
+ext::Font>`
+help: consider using `Option::expect` to unwrap the `std::opt
+ion::Option<macroquad::text::Font>` value, panicking if the v
+alue is an `Option::None`
+    |
+175 |              draw_text_ex(title, tx, ty*0.5, TextParams
+{ font_size: FONT_SIZE as u16, font: self.font.as_ref().copie
+d().expect("REASON"), color: WHITE, ..Default::default() });
+    |                                                        
+                                                             
+   +++++++++++++++++
+
+warning: unused variable: `text_y`
+  --> src\utils.rs:16:9
+   |
+16 |     let text_y = (box_height + text_dims.height) / 2.0; 
+   |         ^^^^^^ help: if this is intentional, prefix it w
+ith an underscore: `_text_y`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `cx`
+  --> src\utils.rs:35:10
+   |
+35 |     let (cx, cy) = world_to_chunk_coords(world_x, world_
+y);
+   |          ^^ help: if this is intentional, prefix it with
+ an underscore: `_cx`
+
+warning: unused variable: `cy`
+  --> src\utils.rs:35:14
+   |
+35 |     let (cx, cy) = world_to_chunk_coords(world_x, world_
+y);
+   |              ^^ help: if this is intentional, prefix it 
+with an underscore: `_cy`
+
+warning: variable does not need to be mutable
+  --> src\utils.rs:40:9
+   |
+40 |     let mut block_x = (world_x / BLOCK_SIZE).floor() as 
+i32;
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+  --> src\utils.rs:41:9
+   |
+41 |     let mut block_y = (world_y / BLOCK_SIZE).floor() as 
+i32;
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: unused variable: `gen_coords`
+   --> src\managers\world.rs:117:50
+    |
+117 |     pub fn regenerate_world_from_save(&mut self, gen_co
+ords: HashSet<(i32, i32)>, mod_data: Vec<crate::components::C
+hunk>) {
+    |                                                  ^^^^^^
+^^^^ help: if this is intentional, prefix it with an undersco
+re: `_gen_coords`
+
+warning: unused variable: `mod_data`
+   --> src\managers\world.rs:117:83
+    |
+117 |     pub fn regenerate_world_from_save(&mut self, gen_co
+ords: HashSet<(i32, i32)>, mod_data: Vec<crate::components::C
+hunk>) {
+    |                                                        
+                           ^^^^^^^^ help: if this is intentio
+nal, prefix it with an underscore: `_mod_data`
+
+Some errors have detailed explanations: E0308, E0433.
+For more information about an error, try `rustc --explain E03
+08`.
+warning: `digginggame` (bin "digginggame") generated 10 warni
+ngs
+error: could not compile `digginggame` (bin "digginggame") du
+e to 5 previous errors; 10 warnings emitted

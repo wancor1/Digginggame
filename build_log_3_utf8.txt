@@ -1,0 +1,153 @@
+﻿cargo :     Checking digginggame v0.1.0 (C:\Users\teruc\Deskt
+op\programs\Digginggame)
+発生場所 行:1 文字:1
++ cargo check > build_log_3.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking di 
+   ...ms\Digginggame):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: unused import: `world_to_relative_in_chunk_coords`
+ --> src\components.rs:4:50
+  |
+4 | use crate::utils::{chunk_coords_to_world_origin, world_to
+_relative_in_chunk_coords};
+  |                                                  ^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `BlockSaveData`
+ --> src\managers\world.rs:3:39
+  |
+3 | use crate::components::{Chunk, Block, BlockSaveData};
+  |                                       ^^^^^^^^^^^^^
+
+warning: unused import: `estimate_text_width`
+  --> src\main.rs:13:13
+   |
+13 | use utils::{estimate_text_width, calculate_text_center_p
+osition};
+   |             ^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\ui.rs:144:147
+    |
+144 | ...tParams { font_size: FONT_SIZE as u16, font: font, c
+olor: text_col, ..Default::default() });
+    |                                                 ^^^^ ex
+pected `Font`, found `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0308]: mismatched types
+   --> src\ui.rs:226:94
+    |
+226 | ...   draw_text_ex(&label, x + tx, y + ty, TextParams {
+ font_size: FONT_SIZE as u16, font: font, color: COLOR_BUTTON
+_TEXT, ..Default::def...
+    |                                                        
+                                    ^^^^ expected `Font`, fou
+nd `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0308]: mismatched types
+   --> src\main.rs:174:101
+    |
+174 | ...s{ font_size: FONT_SIZE as u16, font: self.font.as_r
+ef(), color: DARKGRAY, ..Default::default() });
+    |                                          ^^^^^^^^^^^^^^
+^^^^ expected `Font`, found `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0308]: mismatched types
+   --> src\main.rs:175:93
+    |
+175 | ...s{ font_size: FONT_SIZE as u16, font: self.font.as_r
+ef(), color: WHITE, ..Default::default() });
+    |                                          ^^^^^^^^^^^^^^
+^^^^ expected `Font`, found `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+warning: unused variable: `text_y`
+  --> src\utils.rs:16:9
+   |
+16 |     let text_y = (box_height + text_dims.height) / 2.0; 
+   |         ^^^^^^ help: if this is intentional, prefix it w
+ith an underscore: `_text_y`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `cx`
+  --> src\utils.rs:35:10
+   |
+35 |     let (cx, cy) = world_to_chunk_coords(world_x, world_
+y);
+   |          ^^ help: if this is intentional, prefix it with
+ an underscore: `_cx`
+
+warning: unused variable: `cy`
+  --> src\utils.rs:35:14
+   |
+35 |     let (cx, cy) = world_to_chunk_coords(world_x, world_
+y);
+   |              ^^ help: if this is intentional, prefix it 
+with an underscore: `_cy`
+
+warning: variable does not need to be mutable
+  --> src\utils.rs:40:9
+   |
+40 |     let mut block_x = (world_x / BLOCK_SIZE).floor() as 
+i32;
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+  --> src\utils.rs:41:9
+   |
+41 |     let mut block_y = (world_y / BLOCK_SIZE).floor() as 
+i32;
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: unused variable: `gen_coords`
+   --> src\managers\world.rs:117:50
+    |
+117 |     pub fn regenerate_world_from_save(&mut self, gen_co
+ords: HashSet<(i32, i32)>, mod_data: Vec<crate::components::C
+hunk>) {
+    |                                                  ^^^^^^
+^^^^ help: if this is intentional, prefix it with an undersco
+re: `_gen_coords`
+
+warning: unused variable: `mod_data`
+   --> src\managers\world.rs:117:83
+    |
+117 |     pub fn regenerate_world_from_save(&mut self, gen_co
+ords: HashSet<(i32, i32)>, mod_data: Vec<crate::components::C
+hunk>) {
+    |                                                        
+                           ^^^^^^^^ help: if this is intentio
+nal, prefix it with an underscore: `_mod_data`
+
+For more information about this error, try `rustc --explain E
+0308`.
+warning: `digginggame` (bin "digginggame") generated 10 warni
+ngs
+error: could not compile `digginggame` (bin "digginggame") du
+e to 4 previous errors; 10 warnings emitted

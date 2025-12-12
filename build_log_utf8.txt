@@ -1,0 +1,355 @@
+﻿cargo :     Checking digginggame v0.1.0 (C:\Users\teruc\Deskt
+op\programs\Digginggame)
+発生場所 行:1 文字:1
++ cargo check > build_log.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (    Checking di 
+   ...ms\Digginggame):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+error[E0432]: unresolved import `rand::Rng`
+ --> src\components.rs:6:5
+  |
+6 | use rand::Rng;
+  |     ^^^^^^^^^ no `Rng` in the root
+  |
+help: consider importing this trait instead
+  |
+6 | use ::rand::Rng;
+  |     ++
+
+error[E0432]: unresolved import `rand::Rng`
+ --> src\managers\world.rs:7:5
+  |
+7 | use rand::Rng;
+  |     ^^^^^^^^^ no `Rng` in the root
+  |
+help: consider importing this trait instead
+  |
+7 | use ::rand::Rng;
+  |     ++
+
+error[E0425]: cannot find function `thread_rng` in crate `ran
+d`
+  --> src\components.rs:28:29
+   |
+28 |         let mut rng = rand::thread_rng();
+   |                             ^^^^^^^^^^ not found in `ran
+d`
+   |
+help: consider importing this function
+   |
+ 1 + use ::rand::thread_rng;
+   |
+help: if you import `thread_rng`, refer to it directly
+   |
+28 -         let mut rng = rand::thread_rng();
+28 +         let mut rng = thread_rng();
+   |
+
+error[E0425]: cannot find function `thread_rng` in crate `ran
+d`
+   --> src\components.rs:190:31
+    |
+190 |             let count = rand::thread_rng().gen_range(5.
+.15);
+    |                               ^^^^^^^^^^ not found in `
+rand`
+    |
+help: consider importing this function
+    |
+  1 + use ::rand::thread_rng;
+    |
+help: if you import `thread_rng`, refer to it directly
+    |
+190 -             let count = rand::thread_rng().gen_range(5.
+.15);
+190 +             let count = thread_rng().gen_range(5..15);
+    |
+
+error[E0425]: cannot find function `thread_rng` in crate `ran
+d`
+  --> src\managers\world.rs:20:29
+   |
+20 |         let mut rng = rand::thread_rng();
+   |                             ^^^^^^^^^^ not found in `ran
+d`
+   |
+help: consider importing this function
+   |
+ 1 + use ::rand::thread_rng;
+   |
+help: if you import `thread_rng`, refer to it directly
+   |
+20 -         let mut rng = rand::thread_rng();
+20 +         let mut rng = thread_rng();
+   |
+
+error[E0659]: `rand` is ambiguous
+ --> src\components.rs:6:5
+  |
+6 | use rand::Rng;
+  |     ^^^^ ambiguous name
+  |
+  = note: ambiguous because of a conflict between a name from
+ a glob import and an outer scope during import or macro reso
+lution
+  = note: `rand` could refer to a crate passed with `--extern
+`
+  = help: use `::rand` to refer to this crate unambiguously
+note: `rand` could also refer to the crate imported here
+ --> src\components.rs:1:5
+  |
+1 | use macroquad::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+  = help: consider adding an explicit import of `rand` to dis
+ambiguate
+  = help: or use `self::rand` to refer to this crate unambigu
+ously
+
+error[E0659]: `rand` is ambiguous
+ --> src\managers\world.rs:7:5
+  |
+7 | use rand::Rng;
+  |     ^^^^ ambiguous name
+  |
+  = note: ambiguous because of a conflict between a name from
+ a glob import and an outer scope during import or macro reso
+lution
+  = note: `rand` could refer to a crate passed with `--extern
+`
+  = help: use `::rand` to refer to this crate unambiguously
+note: `rand` could also refer to the crate imported here
+ --> src\managers\world.rs:2:5
+  |
+2 | use macroquad::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+  = help: consider adding an explicit import of `rand` to dis
+ambiguate
+  = help: or use `self::rand` to refer to this crate unambigu
+ously
+
+warning: unused import: `world_to_relative_in_chunk_coords`
+ --> src\components.rs:4:50
+  |
+4 | use crate::utils::{chunk_coords_to_world_origin, world_to
+_relative_in_chunk_coords};
+  |                                                  ^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `BlockSaveData`
+ --> src\managers\world.rs:3:39
+  |
+3 | use crate::components::{Chunk, Block, BlockSaveData};
+  |                                       ^^^^^^^^^^^^^
+
+warning: unused import: `estimate_text_width`
+  --> src\main.rs:13:13
+   |
+13 | use utils::{estimate_text_width, calculate_text_center_p
+osition};
+   |             ^^^^^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src\utils.rs:5:41
+    |
+  5 |     let dimensions = measure_text(text, font, FONT_SIZE
+ as u16, 1.0);
+    |                      ------------       ^^^^ expected `
+Option<Font>`, found `Option<&Font>`
+    |                      |
+    |                      arguments to this function are inc
+orrect
+    |
+    = note: expected enum `std::option::Option<macroquad::tex
+t::Font>`
+               found enum `std::option::Option<&macroquad::te
+xt::Font>`
+note: function defined here
+   --> C:\Users\teruc\.cargo\registry\src\index.crates.io-194
+9cf8c6b5b557f\macroquad-0.3.26\src\text.rs:394:8
+    |
+394 | pub fn measure_text(
+    |        ^^^^^^^^^^^^
+help: use `std::option::Option::copied` to copy the value ins
+ide the `std::option::Option`
+    |
+  5 |     let dimensions = measure_text(text, font.copied(), 
+FONT_SIZE as u16, 1.0);
+    |                                             +++++++++
+
+error[E0308]: mismatched types
+   --> src\utils.rs:13:48
+    |
+ 13 |     let text_dims = measure_text(text_content, font, FO
+NT_SIZE as u16, 1.0);
+    |                     ------------               ^^^^ exp
+ected `Option<Font>`, found `Option<&Font>`
+    |                     |
+    |                     arguments to this function are inco
+rrect
+    |
+    = note: expected enum `std::option::Option<macroquad::tex
+t::Font>`
+               found enum `std::option::Option<&macroquad::te
+xt::Font>`
+note: function defined here
+   --> C:\Users\teruc\.cargo\registry\src\index.crates.io-194
+9cf8c6b5b557f\macroquad-0.3.26\src\text.rs:394:8
+    |
+394 | pub fn measure_text(
+    |        ^^^^^^^^^^^^
+help: use `std::option::Option::copied` to copy the value ins
+ide the `std::option::Option`
+    |
+ 13 |     let text_dims = measure_text(text_content, font.cop
+ied(), FONT_SIZE as u16, 1.0);
+    |                                                    ++++
++++++
+
+error[E0308]: mismatched types
+  --> src\managers\notification.rs:34:49
+   |
+34 |             if notif.is_alive && notif.state != "fading_
+out" {
+   |                                  -----------    ^^^^^^^^
+^^^^ expected `NotificationState`, found `&str`
+   |                                  |
+   |                                  expected because this i
+s `NotificationState`
+
+error[E0308]: mismatched types
+   --> src\ui.rs:144:141
+    |
+144 | ...8, TextParams { font_size: FONT_SIZE as u16, font, c
+olor: text_col, ..Default::default() });
+    |                                                 ^^^^ ex
+pected `Font`, found `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0308]: mismatched types
+   --> src\ui.rs:224:88
+    |
+224 | ...   draw_text_ex(&label, x + tx, y + ty, TextParams {
+ font_size: FONT_SIZE as u16, font, color: COLOR_BUTTON_TEXT,
+ ..Default::default()...
+    |                                                        
+                              ^^^^ expected `Font`, found `Op
+tion<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0308]: mismatched types
+   --> src\main.rs:174:101
+    |
+174 | ...s{ font_size: FONT_SIZE as u16, font: self.font.as_r
+ef(), color: DARKGRAY, ..Default::default() });
+    |                                          ^^^^^^^^^^^^^^
+^^^^ expected `Font`, found `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0308]: mismatched types
+   --> src\main.rs:175:93
+    |
+175 | ...s{ font_size: FONT_SIZE as u16, font: self.font.as_r
+ef(), color: WHITE, ..Default::default() });
+    |                                          ^^^^^^^^^^^^^^
+^^^^ expected `Font`, found `Option<&Font>`
+    |
+    = note: expected struct `macroquad::text::Font`
+                 found enum `std::option::Option<&macroquad::
+text::Font>`
+
+error[E0616]: field `is_effect_active` of struct `ui::SelectB
+lock` is private
+   --> src\main.rs:343:51
+    |
+343 |     pub fn is_effect_active(&self) -> bool { self.is_ef
+fect_active }
+    |                                                   ^^^^^
+^^^^^^^^^^^ private field
+    |
+help: a method `is_effect_active` also exists, call it with p
+arentheses
+    |
+343 |     pub fn is_effect_active(&self) -> bool { self.is_ef
+fect_active() }
+    |                                                        
+           ++
+
+warning: unused variable: `cx`
+  --> src\utils.rs:35:10
+   |
+35 |     let (cx, cy) = world_to_chunk_coords(world_x, world_
+y);
+   |          ^^ help: if this is intentional, prefix it with
+ an underscore: `_cx`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `cy`
+  --> src\utils.rs:35:14
+   |
+35 |     let (cx, cy) = world_to_chunk_coords(world_x, world_
+y);
+   |              ^^ help: if this is intentional, prefix it 
+with an underscore: `_cy`
+
+warning: variable does not need to be mutable
+  --> src\utils.rs:40:9
+   |
+40 |     let mut block_x = (world_x / BLOCK_SIZE).floor() as 
+i32;
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+  --> src\utils.rs:41:9
+   |
+41 |     let mut block_y = (world_y / BLOCK_SIZE).floor() as 
+i32;
+   |         ----^^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: unused variable: `gen_coords`
+   --> src\managers\world.rs:116:50
+    |
+116 |     pub fn regenerate_world_from_save(&mut self, gen_co
+ords: HashSet<(i32, i32)>, mod_data: Vec<crate::components::C
+hunk>) {
+    |                                                  ^^^^^^
+^^^^ help: if this is intentional, prefix it with an undersco
+re: `_gen_coords`
+
+warning: unused variable: `mod_data`
+   --> src\managers\world.rs:116:83
+    |
+116 |     pub fn regenerate_world_from_save(&mut self, gen_co
+ords: HashSet<(i32, i32)>, mod_data: Vec<crate::components::C
+hunk>) {
+    |                                                        
+                           ^^^^^^^^ help: if this is intentio
+nal, prefix it with an underscore: `_mod_data`
+
+Some errors have detailed explanations: E0308, E0425, E0432, 
+E0616, E0659.
+For more information about an error, try `rustc --explain E03
+08`.
+warning: `digginggame` (bin "digginggame") generated 9 warnin
+gs
+error: could not compile `digginggame` (bin "digginggame") du
+e to 15 previous errors; 9 warnings emitted
