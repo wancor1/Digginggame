@@ -1,4 +1,4 @@
-use image::load_from_memory;
+
 use macroquad::prelude::*;
 use macroquad::text::load_ttf_font_from_bytes;
 
@@ -11,7 +11,7 @@ mod utils;
 use constants::*;
 use managers::*;
 use ui::*;
-use utils::{calculate_text_center_position, estimate_text_width};
+use utils::{calculate_text_center_position};
 
 fn window_conf() -> Conf {
     Conf {
@@ -217,11 +217,7 @@ impl DiggingGame {
                 (ty * 0.5 + 1.0).floor(),
                 TextParams {
                     font_size: FONT_SIZE as u16,
-                    font: self
-                        .font
-                        .as_ref()
-                        .copied()
-                        .unwrap_or(TextParams::default().font),
+                    font: self.font.as_ref().or_else(|| TextParams::default().font),
                     color: DARKGRAY,
                     ..Default::default()
                 },
@@ -232,11 +228,7 @@ impl DiggingGame {
                 (ty * 0.5).floor(),
                 TextParams {
                     font_size: FONT_SIZE as u16,
-                    font: self
-                        .font
-                        .as_ref()
-                        .copied()
-                        .unwrap_or(TextParams::default().font),
+                    font: self.font.as_ref().or_else(|| TextParams::default().font),
                     color: WHITE,
                     ..Default::default()
                 },
@@ -271,7 +263,7 @@ impl DiggingGame {
             }
         } else {
             // Game World
-            let cam = Camera2D {
+            let _cam = Camera2D {
                 target: vec2(
                     self.input_handler.camera_x + SCREEN_WIDTH / 2.0,
                     self.input_handler.camera_y + SCREEN_HEIGHT / 2.0,
@@ -290,7 +282,7 @@ impl DiggingGame {
             // `set_default_camera` resets.
 
             // Pixel-perfect camera setup:
-            let zoom = vec2(2.0 / SCREEN_WIDTH, 2.0 / SCREEN_HEIGHT); // flips Y by default? No.
+            let _zoom = vec2(2.0 / SCREEN_WIDTH, 2.0 / SCREEN_HEIGHT); // flips Y by default? No.
                                                                       // Standard 2D: (0,0) center.
                                                                       // We want (0,0) top-left.
                                                                       // Let's stick to manual subtraction for clarity in porting without wrestling coord systems.
@@ -313,7 +305,7 @@ impl DiggingGame {
                 if let (Some(rect), Some(atlas)) = (block.sprite_rect, self.atlas.as_ref()) {
                     // Draw block from atlas.
                     draw_texture_ex(
-                        *atlas,
+                        atlas,
                         draw_x,
                         draw_y,
                         WHITE,
@@ -335,7 +327,7 @@ impl DiggingGame {
                             let crack_rect =
                                 Rect::new(SPRITE_BREAK_ANIM_U, anim_v, BLOCK_SIZE, BLOCK_SIZE);
                             draw_texture_ex(
-                                *atlas,
+                                atlas,
                                 draw_x,
                                 draw_y,
                                 WHITE,
@@ -368,7 +360,7 @@ impl DiggingGame {
             // And we draw at (grid_x - cx, grid_y - cy).
             // We'll adjust SelectBlock to return rect or take offset.
             // For now, let's skip drawing select block cursor to keep it simple or implement quickly:
-            if let Some(atlas) = self.atlas.as_ref() {
+            if let Some(_atlas) = self.atlas.as_ref() {
                 let mx = mouse_position().0 + cx;
                 let my = mouse_position().1 + cy;
                 let grid_x = (mx / BLOCK_SIZE).floor() * BLOCK_SIZE;
@@ -443,7 +435,7 @@ impl DiggingGame {
         let curs_y = ((mouse_position().1 / screen_height()) * SCREEN_HEIGHT).floor();
         if let Some(atlas) = self.atlas.as_ref() {
             draw_texture_ex(
-                *atlas,
+                atlas,
                 curs_x,
                 curs_y,
                 WHITE,
@@ -489,14 +481,14 @@ async fn main() {
         // Set camera to render target
         let mut camera_to_render_target =
             Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT));
-        camera_to_render_target.render_target = Some(render_target);
+        camera_to_render_target.render_target = Some(render_target.clone());
         set_camera(&camera_to_render_target);
         clear_background(SKYBLUE); // Clear the render target
         game.draw();
         set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically
                               // Draw the render target to the screen, scaled
         draw_texture_ex(
-            render_target.texture,
+            &render_target.texture,
             0.0,
             screen_height(), // Move to bottom to compensate for negative height
             WHITE,

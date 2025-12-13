@@ -49,12 +49,6 @@ pub const SPRITE_CURSOR: Rect = Rect {
 // So Bank 1 V start = 16.
 const BANK_1_OFFSET_Y: f32 = 24.0;
 
-pub const SPRITE_BLOCK_ERROR: Rect = Rect {
-    x: 8.0,
-    y: 0.0,
-    w: 8.0,
-    h: 8.0,
-};
 pub const SPRITE_BLOCK_DIRT: Rect = Rect {
     x: 8.0,
     y: BANK_1_OFFSET_Y + 0.0,
@@ -100,14 +94,6 @@ pub const COLOR_BUTTON_BG: Color = macroquad::color::GRAY; // 13
 pub const COLOR_BUTTON_BORDER: Color = macroquad::color::WHITE; // 7
 pub const COLOR_BUTTON_TEXT: Color = macroquad::color::WHITE; // 7
 pub const COLOR_BUTTON_PRESSED_BG: Color = macroquad::color::YELLOW; // 10
-pub const COLOR_BUTTON_PRESSED_TEXT: Color = macroquad::color::WHITE; // 7
-
-pub const MENU_ITEM_HEIGHT: f32 = 10.0;
-pub const MENU_PADDING: f32 = 5.0;
-pub const CHECKBOX_SIZE: f32 = 7.0;
-pub const CHECKBOX_TEXT_GAP: f32 = 3.0;
-pub const DROPDOWN_ARROW_WIDTH: f32 = 8.0;
-pub const DROPDOWN_ARROW_HEIGHT: f32 = 5.0;
 
 pub const SAVE_FILE_NAME: &str = "savegame.json";
 pub const LANG_FOLDER: &str = "lang";

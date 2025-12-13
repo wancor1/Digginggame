@@ -1,10 +1,10 @@
-use crate::components::{Block, BlockSaveData, Chunk};
+use crate::components::{Block, Chunk};
 use crate::constants::{
     BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH,
     SPRITE_BLOCK_COAL, SPRITE_BLOCK_DIRT, SPRITE_BLOCK_GRASS, SPRITE_BLOCK_STONE,
 };
 use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
-use ::rand::thread_rng;
+
 use ::rand::Rng;
 use macroquad::prelude::*;
 use noise::{Perlin, Seedable};
@@ -21,12 +21,12 @@ pub struct WorldManager {
 
 impl WorldManager {
     pub fn new() -> Self {
-        let mut rng = thread_rng();
-        let seed_main = rng.gen::<u32>();
-        let seed_ore = rng.gen::<u32>();
+        let mut rng = ::rand::thread_rng();
+        let seed_main = rng.random::<u32>();
+        let seed_ore = rng.random::<u32>();
 
-        let noise_main = Perlin::new().set_seed(seed_main);
-        let noise_ore = Perlin::new().set_seed(seed_ore);
+        let noise_main = Perlin::new(seed_main).set_seed(seed_main);
+        let noise_ore = Perlin::new(seed_ore).set_seed(seed_ore);
 
         Self {
             chunks: HashMap::new(),
@@ -41,8 +41,8 @@ impl WorldManager {
     pub fn seed(&mut self, main: u32, ore: u32) {
         self.world_seed_main = main;
         self.world_seed_ore = ore;
-        self.noise_main = Perlin::new().set_seed(main);
-        self.noise_ore = Perlin::new().set_seed(ore);
+        self.noise_main = Perlin::new(main).set_seed(main);
+        self.noise_ore = Perlin::new(ore).set_seed(ore);
         self.chunks.clear();
         self.generated_chunk_coords.clear();
     }
@@ -135,8 +135,8 @@ impl WorldManager {
 
     pub fn regenerate_world_from_save(
         &mut self,
-        gen_coords: HashSet<(i32, i32)>,
-        mod_data: Vec<crate::components::Chunk>,
+        _gen_coords: HashSet<(i32, i32)>,
+        _mod_data: Vec<crate::components::Chunk>,
     ) {
         // Since Chunk in save data format is complex to map directly back to struct with current logic,
         // we assumed PersistentManager passes parsed data.

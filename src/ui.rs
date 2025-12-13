@@ -188,7 +188,7 @@ impl Notification {
                 (y_off + FONT_SIZE * 0.8).floor(),
                 TextParams {
                     font_size: FONT_SIZE as u16,
-                    font: font.copied().unwrap_or(TextParams::default().font),
+                    font: font.or_else(|| TextParams::default().font),
                     color: text_col,
                     ..Default::default()
                 },
@@ -247,7 +247,7 @@ impl SelectBlock {
 
         if elapsed <= 1.0 {
             draw_texture_ex(
-                *atlas,
+                atlas,
                 grid_x,
                 grid_y,
                 WHITE,
@@ -258,7 +258,7 @@ impl SelectBlock {
             );
         } else if elapsed <= 2.0 {
             draw_texture_ex(
-                *atlas,
+                atlas,
                 (grid_x - 1.0).floor(),
                 (grid_y - 1.0).floor(),
                 WHITE,
@@ -330,7 +330,7 @@ impl ButtonBox {
             (y + ty).floor(),
             TextParams {
                 font_size: FONT_SIZE as u16,
-                font: font.copied().unwrap_or(TextParams::default().font),
+                font: font.or_else(|| TextParams::default().font),
                 color: COLOR_BUTTON_TEXT,
                 ..Default::default()
             },

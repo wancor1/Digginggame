@@ -1,6 +1,5 @@
 use crate::constants::*;
-use crate::utils::{chunk_coords_to_world_origin, world_to_relative_in_chunk_coords};
-use ::rand::thread_rng;
+use crate::utils::{chunk_coords_to_world_origin};
 use ::rand::Rng;
 use macroquad::prelude::*;
 use noise::{NoiseFn, Perlin};
@@ -26,20 +25,20 @@ impl Particle {
     const FRICTION_ON_GROUND: f32 = 0.85;
 
     pub fn new(x_start: f32, y_start: f32, block_max_hardness: i32) -> Self {
-        let mut rng = thread_rng();
+        let mut rng = ::rand::thread_rng();
         let center_x = x_start + BLOCK_SIZE / 2.0;
         let center_y = y_start + BLOCK_SIZE / 2.0;
-        let angle = rng.gen_range(0.0..std::f32::consts::TAU);
-        let speed = rng.gen_range(Self::PARTICLE_SPEED_MIN..Self::PARTICLE_SPEED_MAX);
+        let angle = rng.random_range(0.0..std::f32::consts::TAU);
+        let speed = rng.random_range(Self::PARTICLE_SPEED_MIN..Self::PARTICLE_SPEED_MAX);
 
         let color = if block_max_hardness <= 5 {
-            if rng.gen::<f32>() < 0.9 {
+            if rng.random::<f32>() < 0.9 {
                 LIGHTGRAY
             } else {
                 WHITE
             } // 9/13 approximation
         } else if block_max_hardness <= 10 {
-            if rng.gen::<f32>() < 0.9 {
+            if rng.random::<f32>() < 0.9 {
                 LIGHTGRAY
             } else {
                 DARKGRAY
@@ -162,8 +161,8 @@ impl Block {
     pub fn new(
         x: f32,
         y: f32,
-        noise_fn_hardness: &impl NoiseFn<[f64; 3]>,
-        noise_fn_ore: &impl NoiseFn<[f64; 3]>,
+        noise_fn_hardness: &impl NoiseFn<f64, 3>,
+        noise_fn_ore: &impl NoiseFn<f64, 3>,
     ) -> Self {
         let y_block = (y / BLOCK_SIZE).floor() as i32;
 
@@ -243,7 +242,7 @@ impl Block {
             self.current_hp = 0;
             self.is_broken = true;
             self.is_modified = true;
-            let count = thread_rng().gen_range(5..15);
+            let count = ::rand::thread_rng().random_range(5..15);
             let particles = (0..count)
                 .map(|_| Particle::new(self.x, self.y, self.max_hp))
                 .collect();
