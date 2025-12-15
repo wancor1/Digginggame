@@ -12,12 +12,12 @@ mod ui;
 mod utils;
 
 use crate::components::Camera;
+use crate::utils::world_to_chunk_coords;
 use constants::*;
 use events::{CameraMoveIntent, GameEvent};
 use managers::*;
 use render::game_renderer::GameRenderer;
 use ui::*;
-use crate::utils::world_to_chunk_coords;
 
 fn window_conf() -> Conf {
     Conf {
@@ -44,7 +44,7 @@ pub struct Game {
     on_new_game_input_screen: bool,
     is_menu_visible: bool,
     show_debug_blocks: bool,
-    
+
     // Save/Load State
     pub save_files: Vec<String>,
     pub current_save_name: String,
@@ -125,7 +125,11 @@ impl Game {
         }
 
         // Handle UI screen logic if any of them are active
-        if self.on_title_screen || self.on_save_select_screen || self.on_new_game_input_screen || self.is_menu_visible {
+        if self.on_title_screen
+            || self.on_save_select_screen
+            || self.on_new_game_input_screen
+            || self.is_menu_visible
+        {
             // Specific update logic for these screens.
             // Currently, only the in-game menu needs an update check here.
             if self.is_menu_visible {
@@ -191,7 +195,7 @@ impl Game {
                     }
                 })
                 .flatten(); // Flatten Option<Option<T>> to Option<T>
-                        self.select_block.update(hovered_block_coords);
+            self.select_block.update(hovered_block_coords);
 
             if is_mouse_button_pressed(MouseButton::Left) {
                 let (cx, cy) = world_to_chunk_coords(world_mx, world_my);
@@ -296,6 +300,21 @@ impl Game {
             "modified_chunks": modified_chunks_data
         })
     }
+
+    fn return_to_title_screen(&mut self) {
+        self.world_manager = WorldManager::new(); // Reset world
+        self.particle_manager = ParticleManager::new(); // Reset particles
+        self.camera = Camera::new(); // Reset camera
+        self.on_title_screen = true;
+        self.on_save_select_screen = false;
+        self.on_new_game_input_screen = false;
+        self.is_menu_visible = false;
+        self.save_files = Vec::new(); // Clear save file list
+        self.current_save_name = "savegame.json".to_string(); // Reset default
+        self.input_buffer = String::new(); // Clear input buffer
+        self.notification_manager
+            .add_notification("Returned to Title Screen".to_string(), "info");
+    }
 }
 
 #[macroquad::main(window_conf)]
@@ -323,133 +342,104 @@ async fn main() {
         let ui_events = game_renderer.draw(&mut game);
         set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically
 
-                let mut additional_ui_events = Vec::new(); // Moved here
+        let mut additional_ui_events = Vec::new(); // Moved here
 
-                // Input handling for new game screen
+        // Input handling for new game screen
 
-                if game.on_new_game_input_screen {
+        if game.on_new_game_input_screen {
+            while let Some(c) = get_char_pressed() {
+                if c.is_alphanumeric() || c == '_' || c == '-' {
+                    game.input_buffer.push(c);
+                }
+            }
 
-                     while let Some(c) = get_char_pressed() {
+            if is_key_pressed(KeyCode::Backspace) {
+                game.input_buffer.pop();
+            }
 
-                         if c.is_alphanumeric() || c == '_' || c == '-' {
+            if is_key_pressed(KeyCode::Enter) {
+                additional_ui_events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
+            }
+        }
 
-                              game.input_buffer.push(c);
+        // Process UI events
 
-                         }
+        for event in ui_events
+            .into_iter()
+            .chain(additional_ui_events.into_iter())
+        {
+            match event {
+                GameEvent::StartGame => {
 
-                     }
-
-                     if is_key_pressed(KeyCode::Backspace) {
-
-                         game.input_buffer.pop();
-
-                     }
-
-                     if is_key_pressed(KeyCode::Enter) {
-
-                        additional_ui_events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
-
-                     }
-
+                    // Legacy, not used directly now
                 }
 
-        
+                GameEvent::OpenSaveSelection => {
+                    game.save_files = PersistenceManager::list_save_files();
 
-                // Process UI events
+                    game.on_title_screen = false;
 
-                for event in ui_events.into_iter().chain(additional_ui_events.into_iter()) {
+                    if game.save_files.is_empty() {
+                        game.on_new_game_input_screen = true;
 
-                    match event {
+                        game.input_buffer.clear();
+                    } else {
+                        game.on_save_select_screen = true;
+                    }
+                }
 
-                        GameEvent::StartGame => {
+                GameEvent::LoadSave(filename) => {
+                    game.current_save_name = filename.clone();
 
-                             // Legacy, not used directly now
+                    game.persistence_manager.load_game(filename);
 
-                        }
+                    game.on_save_select_screen = false;
 
-                        GameEvent::OpenSaveSelection => {
+                    // Loading handled in update() via check_load_status
+                }
 
-                            game.save_files = PersistenceManager::list_save_files();
+                GameEvent::StartNewGameSetup => {
+                    game.on_save_select_screen = false;
 
-                            game.on_title_screen = false;
+                    game.on_new_game_input_screen = true;
 
-                            if game.save_files.is_empty() {
+                    game.input_buffer.clear();
+                }
 
-                                game.on_new_game_input_screen = true;
+                GameEvent::ConfirmNewGame(name) => {
+                    let mut filename = name.clone();
 
-                                game.input_buffer.clear();
-
-                            } else {
-
-                                game.on_save_select_screen = true;
-
-                            }
-
-                        }
-
-                        GameEvent::LoadSave(filename) => {
-
-                            game.current_save_name = filename.clone();
-
-                            game.persistence_manager.load_game(filename);
-
-                            game.on_save_select_screen = false;
-
-                            // Loading handled in update() via check_load_status
-
-                        }
-
-                        GameEvent::StartNewGameSetup => {
-
-                            game.on_save_select_screen = false;
-
-                            game.on_new_game_input_screen = true;
-
-                            game.input_buffer.clear();
-
-                        }
-
-                        GameEvent::ConfirmNewGame(name) => {
-
-                            let mut filename = name.clone();
-
-                            if !filename.ends_with(".json") {
-
-                                filename.push_str(".json");
-
-                            }
-
-                            game.current_save_name = filename;
-
-                            game.on_new_game_input_screen = false;
-
-        
-
-                            // Start new game logic
-
-                            game.world_manager.seed(::rand::random(), ::rand::random());
-
-                            game.world_manager.generate_visible_chunks(0.0, 0.0);
-
-                            game.notification_manager.add_notification("New Game!".to_string(), "success");
-
-                        }
-
-                        GameEvent::SaveGame => {
-
-                            game.persistence_manager.save_game(game.current_save_name.clone(), game.make_save_data());
-
-                        }
-
-                        GameEvent::QuitGame => {
-
-                            std::process::exit(0);
-
-                        }
-
+                    if !filename.ends_with(".json") {
+                        filename.push_str(".json");
                     }
 
+                    game.current_save_name = filename;
+
+                    game.on_new_game_input_screen = false;
+
+                    // Start new game logic
+
+                    game.world_manager.seed(::rand::random(), ::rand::random());
+
+                    game.world_manager.generate_visible_chunks(0.0, 0.0);
+
+                    game.notification_manager
+                        .add_notification("New Game!".to_string(), "success");
                 }
+
+                GameEvent::SaveGame => {
+                    game.persistence_manager
+                        .save_game(game.current_save_name.clone(), game.make_save_data());
+                }
+
+                GameEvent::QuitGame => {
+                    std::process::exit(0);
+                }
+                GameEvent::ReturnToTitle => {
+                    game.return_to_title_screen();
+                }
+            }
+        }
 
         // Calculate aspect ratio and scaling for letterboxing/pillarboxing
         let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;

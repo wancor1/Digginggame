@@ -6,6 +6,7 @@ pub enum GameEvent {
     ConfirmNewGame(String),
     SaveGame,
     QuitGame,
+    ReturnToTitle,
     // Add more UI events as needed
 }
 

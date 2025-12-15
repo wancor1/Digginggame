@@ -17,6 +17,8 @@
   "button.menu.load.pressed": "Loading Game...",
   "button.menu.quit.pressed": "Quitting Game...",
   "button.menu.new_game.pressed": "Starting Game...",
+  "button.menu.quit_to_title.default": "Quit to Title",
+  "button.menu.quit_to_title.pressed": "Returning to Title...",
   "main.debug.fps": "FPS: {fps}",
   "main.debug.camera_coord": "cam:({cam_x},{cam_y})",
   "main.debug.mouse_coord": "mouse:({mouse_x},{mouse_y})",
