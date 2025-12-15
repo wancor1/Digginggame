@@ -40,8 +40,15 @@ pub struct Game {
 
     // UI State
     on_title_screen: bool,
+    on_save_select_screen: bool,
+    on_new_game_input_screen: bool,
     is_menu_visible: bool,
     show_debug_blocks: bool,
+    
+    // Save/Load State
+    pub save_files: Vec<String>,
+    pub current_save_name: String,
+    pub input_buffer: String,
 }
 
 impl Game {
@@ -58,8 +65,13 @@ impl Game {
             select_block: SelectBlock::new(),
             camera: Camera::new(),
             on_title_screen: true,
+            on_save_select_screen: false,
+            on_new_game_input_screen: false,
             is_menu_visible: false,
             show_debug_blocks: false,
+            save_files: Vec::new(),
+            current_save_name: "savegame.json".to_string(), // Default
+            input_buffer: String::new(),
         }
     }
 
@@ -112,14 +124,17 @@ impl Game {
             return; // Block updates while loading
         }
 
-        if self.on_title_screen {
-            // Check start button click in Draw
-        } else if self.is_menu_visible {
-            // Menu logic
-            if is_key_pressed(KeyCode::Escape) {
-                self.is_menu_visible = false;
+        // Handle UI screen logic if any of them are active
+        if self.on_title_screen || self.on_save_select_screen || self.on_new_game_input_screen || self.is_menu_visible {
+            // Specific update logic for these screens.
+            // Currently, only the in-game menu needs an update check here.
+            if self.is_menu_visible {
+                if is_key_pressed(KeyCode::Escape) {
+                    self.is_menu_visible = false;
+                }
             }
         } else {
+            // MAIN GAME LOGIC: This block will now only execute when NO overlay UI is active.
             if is_key_pressed(KeyCode::Escape) {
                 self.is_menu_visible = true;
             }
@@ -308,27 +323,133 @@ async fn main() {
         let ui_events = game_renderer.draw(&mut game);
         set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically
 
-        // Process UI events
-        for event in ui_events {
-            match event {
-                GameEvent::StartGame => {
-                    game.persistence_manager.load_game();
-                    // If load fails or file missing, we should probably start new game.
-                    // For now, load_game triggers thread. If it returns false/empty, we init default.
-                    // Logic simplifies to: just start for now.
-                    game.world_manager.generate_visible_chunks(0.0, 0.0);
-                    game.on_title_screen = false;
-                    game.notification_manager
-                        .add_notification("Welcome!".to_string(), "success");
+                let mut additional_ui_events = Vec::new(); // Moved here
+
+                // Input handling for new game screen
+
+                if game.on_new_game_input_screen {
+
+                     while let Some(c) = get_char_pressed() {
+
+                         if c.is_alphanumeric() || c == '_' || c == '-' {
+
+                              game.input_buffer.push(c);
+
+                         }
+
+                     }
+
+                     if is_key_pressed(KeyCode::Backspace) {
+
+                         game.input_buffer.pop();
+
+                     }
+
+                     if is_key_pressed(KeyCode::Enter) {
+
+                        additional_ui_events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
+
+                     }
+
                 }
-                GameEvent::SaveGame => {
-                    game.persistence_manager.save_game(game.make_save_data());
+
+        
+
+                // Process UI events
+
+                for event in ui_events.into_iter().chain(additional_ui_events.into_iter()) {
+
+                    match event {
+
+                        GameEvent::StartGame => {
+
+                             // Legacy, not used directly now
+
+                        }
+
+                        GameEvent::OpenSaveSelection => {
+
+                            game.save_files = PersistenceManager::list_save_files();
+
+                            game.on_title_screen = false;
+
+                            if game.save_files.is_empty() {
+
+                                game.on_new_game_input_screen = true;
+
+                                game.input_buffer.clear();
+
+                            } else {
+
+                                game.on_save_select_screen = true;
+
+                            }
+
+                        }
+
+                        GameEvent::LoadSave(filename) => {
+
+                            game.current_save_name = filename.clone();
+
+                            game.persistence_manager.load_game(filename);
+
+                            game.on_save_select_screen = false;
+
+                            // Loading handled in update() via check_load_status
+
+                        }
+
+                        GameEvent::StartNewGameSetup => {
+
+                            game.on_save_select_screen = false;
+
+                            game.on_new_game_input_screen = true;
+
+                            game.input_buffer.clear();
+
+                        }
+
+                        GameEvent::ConfirmNewGame(name) => {
+
+                            let mut filename = name.clone();
+
+                            if !filename.ends_with(".json") {
+
+                                filename.push_str(".json");
+
+                            }
+
+                            game.current_save_name = filename;
+
+                            game.on_new_game_input_screen = false;
+
+        
+
+                            // Start new game logic
+
+                            game.world_manager.seed(::rand::random(), ::rand::random());
+
+                            game.world_manager.generate_visible_chunks(0.0, 0.0);
+
+                            game.notification_manager.add_notification("New Game!".to_string(), "success");
+
+                        }
+
+                        GameEvent::SaveGame => {
+
+                            game.persistence_manager.save_game(game.current_save_name.clone(), game.make_save_data());
+
+                        }
+
+                        GameEvent::QuitGame => {
+
+                            std::process::exit(0);
+
+                        }
+
+                    }
+
                 }
-                GameEvent::QuitGame => {
-                    std::process::exit(0);
-                }
-            }
-        }
 
         // Calculate aspect ratio and scaling for letterboxing/pillarboxing
         let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;

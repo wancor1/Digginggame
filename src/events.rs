@@ -1,5 +1,9 @@
 pub enum GameEvent {
-    StartGame,
+    StartGame, // Just kept for compatibility or used as "Game Started" signal
+    OpenSaveSelection,
+    LoadSave(String),
+    StartNewGameSetup,
+    ConfirmNewGame(String),
     SaveGame,
     QuitGame,
     // Add more UI events as needed

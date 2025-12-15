@@ -83,9 +83,101 @@ impl GameRenderer {
                 &game.lang_manager,
                 self.font.as_ref(),
             ) {
-                events.push(GameEvent::StartGame);
+                // events.push(GameEvent::StartGame); // Changed flow
+                events.push(GameEvent::OpenSaveSelection);
             }
-        } else {
+        } else if game.on_save_select_screen {
+            let title = "Select Save File";
+            let (tx, ty) = calculate_text_center_position(SCREEN_WIDTH, SCREEN_HEIGHT, title);
+             draw_text_ex(
+                title,
+                tx.floor(),
+                20.0,
+                TextParams {
+                    font_size: FONT_SIZE as u16,
+                    font: self.font.as_ref().or_else(|| TextParams::default().font),
+                    color: WHITE,
+                    ..Default::default()
+                },
+            );
+            
+            let btn_h = 10.0;
+            let start_y = 35.0;
+            let mut current_y = start_y;
+            
+            // New Game Button (Always at top)
+             if ButtonBox::draw_button(
+                10.0,
+                current_y,
+                SCREEN_WIDTH - 20.0,
+                btn_h,
+                "button.menu.new_game.default", 
+                "button.menu.new_game.pressed",
+                &game.lang_manager,
+                self.font.as_ref(),
+             ) {
+                 events.push(GameEvent::StartNewGameSetup);
+             }
+             current_y += 15.0;
+            
+            // List Save Files
+            for file in &game.save_files {
+                 if ButtonBox::draw_button(
+                    10.0,
+                    current_y,
+                    SCREEN_WIDTH - 20.0,
+                    btn_h,
+                    file, 
+                    file, 
+                    &game.lang_manager,
+                    self.font.as_ref(), 
+                 ) {
+                     events.push(GameEvent::LoadSave(file.clone()));
+                 }
+                 current_y += 12.0;
+            }
+             
+        } else if game.on_new_game_input_screen {
+             let title = "Enter Filename:";
+             draw_text_ex(
+                title,
+                10.0,
+                30.0,
+                TextParams {
+                    font_size: FONT_SIZE as u16,
+                    font: self.font.as_ref().or_else(|| TextParams::default().font),
+                    color: WHITE,
+                    ..Default::default()
+                },
+            );
+            
+            // Draw box for input
+            draw_rectangle(10.0, 40.0, SCREEN_WIDTH - 20.0, 12.0, DARKGRAY);
+            draw_text_ex(
+                &format!("{}{}", game.input_buffer, if (get_time() * 2.0) as i32 % 2 == 0 { "|" } else { "" }), // simple cursor
+                12.0,
+                49.0,
+                 TextParams {
+                    font_size: FONT_SIZE as u16,
+                    font: self.font.as_ref().or_else(|| TextParams::default().font),
+                    color: WHITE,
+                    ..Default::default()
+                },
+            );
+            
+            if ButtonBox::draw_button(
+                10.0,
+                60.0,
+                60.0,
+                10.0,
+                "Confirm",
+                "Confirm",
+                &game.lang_manager,
+                self.font.as_ref(),
+            ) {
+                 events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
+            }
+        } else { // This 'else' covers the case where none of the UI screens are active.
             // Game World
             let _cam = Camera2D {
                 target: vec2(
@@ -95,9 +187,7 @@ impl GameRenderer {
                 zoom: vec2(1.0 / (SCREEN_WIDTH / 2.0), 1.0 / (SCREEN_HEIGHT / 2.0)), // No longer invert Y
                 ..Default::default()
             };
-        }
 
-        if !game.on_title_screen {
             // Draw World elements with manual camera offset
 
             let cx = game.camera.x;
