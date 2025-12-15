@@ -17,6 +17,7 @@ use events::{CameraMoveIntent, GameEvent};
 use managers::*;
 use render::game_renderer::GameRenderer;
 use ui::*;
+use crate::utils::world_to_chunk_coords;
 
 fn window_conf() -> Conf {
     Conf {
@@ -167,18 +168,21 @@ impl Game {
             let hovered_block_coords = self
                 .world_manager
                 .get_block_at_world_coords(world_mx, world_my)
-                .map(|b| {
-                    if !b.is_broken {
-                        Some((b.x, b.y)) // Return block's grid coordinates if not broken
+                .map(|(_, _, _, _, block)| {
+                    if !block.is_broken {
+                        Some((block.x, block.y)) // Return block's grid coordinates if not broken
                     } else {
                         None // Block is broken, no hover effect
                     }
                 })
                 .flatten(); // Flatten Option<Option<T>> to Option<T>
-            self.select_block.update(hovered_block_coords);
+                        self.select_block.update(hovered_block_coords);
 
             if is_mouse_button_pressed(MouseButton::Left) {
-                if let Some(block) = self
+                let (cx, cy) = world_to_chunk_coords(world_mx, world_my);
+                self.world_manager.ensure_chunk_exists_and_generated(cx, cy);
+
+                if let Some((cx, cy, _rel_x, _rel_y, block)) = self
                     .world_manager
                     .get_block_at_world_coords(world_mx, world_my)
                 {
@@ -200,6 +204,11 @@ impl Game {
                                 .map(|_| Particle::new(block.x, block.y, block.max_hp))
                                 .collect();
                             self.particle_manager.add_particles(particles);
+                        }
+
+                        // Mark the parent chunk as modified
+                        if let Some(chunk) = self.world_manager.get_chunk_mut(cx, cy) {
+                            chunk.is_modified_in_session = true;
                         }
                     }
                 }

@@ -153,12 +153,26 @@ impl WorldManager {
         }
     }
 
-    pub fn get_block_at_world_coords(&mut self, world_x: f32, world_y: f32) -> Option<&mut Block> {
+    pub fn get_block_at_world_coords(
+        &mut self,
+        world_x: f32,
+        world_y: f32,
+    ) -> Option<(i32, i32, usize, usize, &mut Block)> {
         let (cx, cy) = world_to_chunk_coords(world_x, world_y);
-        self.ensure_chunk_exists_and_generated(cx, cy); // Ensure the chunk exists and is generated
-        let chunk = self.get_chunk_mut(cx, cy)?;
         let (rel_x, rel_y) = world_to_relative_in_chunk_coords(world_x, world_y);
-        chunk.get_block(rel_x, rel_y)
+
+        // Ensure the chunk exists and is generated, then get mutable access
+        // We ensure it here, but can't borrow mutably again inside.
+        // So we just rely on `ensure_chunk_exists_and_generated` being called beforehand in main.rs loop
+        // to populate the chunk.
+        // self.ensure_chunk_exists_and_generated(cx, cy);
+
+        let chunk = self.chunks.get_mut(&(cx, cy))?;
+        if chunk.is_generated {
+            Some((cx, cy, rel_x, rel_y, chunk.get_block(rel_x, rel_y)?))
+        } else {
+            None
+        }
     }
 
     pub fn get_active_blocks_in_view<'a>(
