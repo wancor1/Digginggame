@@ -36,7 +36,36 @@ impl PersistenceManager {
         }
     }
 
-    pub fn save_game(&mut self, data: Value) {
+    pub fn list_save_files() -> Vec<String> {
+        let mut files = Vec::new();
+        if let Ok(entries) = fs::read_dir(".") {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let path = entry.path();
+                    if let Some(ext) = path.extension() {
+                        if ext == "json" {
+                            if let Some(stem) = path.file_stem() {
+                                if let Some(str_stem) = stem.to_str() {
+                                    // Optional: specific naming convention check?
+                                    // For now, accept all .json files as potential saves,
+                                    // or maybe filter by prefix if needed.
+                                    // User said "show json name".
+                                    if let Some(file_name) = path.file_name() {
+                                        if let Some(name_str) = file_name.to_str() {
+                                            files.push(name_str.to_string());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        files
+    }
+
+    pub fn save_game(&mut self, filename: String, data: Value) {
         if self.is_saving {
             return;
         }
@@ -46,7 +75,7 @@ impl PersistenceManager {
 
         thread::spawn(move || {
             let json_str = serde_json::to_string_pretty(&data).unwrap_or_default();
-            let res = match fs::write(SAVE_FILE_NAME, json_str) {
+            let res = match fs::write(&filename, json_str) {
                 Ok(_) => (true, "Save Successful".to_string()),
                 Err(e) => (false, e.to_string()),
             };
@@ -55,7 +84,7 @@ impl PersistenceManager {
         });
     }
 
-    pub fn load_game(&mut self) {
+    pub fn load_game(&mut self, filename: String) {
         if self.is_loading {
             return;
         }
@@ -64,7 +93,7 @@ impl PersistenceManager {
         let result_clone = self.load_result.clone();
 
         thread::spawn(move || {
-            let res = match fs::read_to_string(SAVE_FILE_NAME) {
+            let res = match fs::read_to_string(&filename) {
                 Ok(content) => match serde_json::from_str::<Value>(&content) {
                     Ok(v) => (true, v),
                     Err(e) => (false, Value::String(e.to_string())),
