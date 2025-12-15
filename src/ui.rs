@@ -31,13 +31,7 @@ pub struct Notification {
 }
 
 impl Notification {
-    pub fn new(
-        message: String,
-        duration: f64,
-        msg_type: &str,
-        max_width: f32,
-        font: Option<&Font>,
-    ) -> Self {
+    pub fn new(message: String, duration: f64, msg_type: &str, max_width: f32) -> Self {
         let mut n = Self {
             message: message.clone(),
             duration,
@@ -54,11 +48,11 @@ impl Notification {
             box_height: 0.0,
             wrapped_lines: Vec::new(),
         };
-        n.calculate_dimensions(max_width, font);
+        n.calculate_dimensions(max_width);
         n
     }
 
-    fn calculate_dimensions(&mut self, max_width: f32, font: Option<&Font>) {
+    fn calculate_dimensions(&mut self, max_width: f32) {
         // Simple word wrap
         let words: Vec<&str> = self.message.split(' ').collect();
         let mut lines = Vec::new();
@@ -70,7 +64,7 @@ impl Notification {
             } else {
                 format!("{} {}", current_line, word)
             };
-            if estimate_text_width(&test_line, font) > max_width {
+            if estimate_text_width(&test_line) > max_width {
                 if !current_line.is_empty() {
                     lines.push(current_line);
                     current_line = word.to_string();
@@ -96,7 +90,7 @@ impl Notification {
         let max_line_w = self
             .wrapped_lines
             .iter()
-            .map(|l| estimate_text_width(l, font))
+            .map(|l| estimate_text_width(l))
             .fold(0.0f32, f32::max);
         self.box_width = (max_line_w + NOTIFICATION_PADDING_X * 2.0).min(NOTIFICATION_MAX_WIDTH);
     }
@@ -208,6 +202,7 @@ impl Notification {
 pub struct SelectBlock {
     selection_effect_start_time: f64,
     is_effect_active: bool,
+    block_coords: Option<(f32, f32)>, // New field to store the hovered block's coordinates
 }
 
 impl SelectBlock {
@@ -215,6 +210,7 @@ impl SelectBlock {
         Self {
             selection_effect_start_time: 0.0,
             is_effect_active: false,
+            block_coords: None, // Initialize to None
         }
     }
 
@@ -222,54 +218,73 @@ impl SelectBlock {
         self.is_effect_active
     }
 
-    pub fn update(&mut self, is_mouse_over: bool) {
-        if is_mouse_over && !self.is_effect_active {
+    pub fn update(&mut self, hovered_block_coords: Option<(f32, f32)>) {
+        if let Some(coords) = hovered_block_coords {
+            if !self.is_effect_active {
+                // Effect just became active
+                self.selection_effect_start_time = get_time();
+            } else if self.block_coords != Some(coords) {
+                // Hovered block changed, reset timer for new pulse
+                self.selection_effect_start_time = get_time();
+            }
             self.is_effect_active = true;
-            self.selection_effect_start_time = get_time();
-        } else if !is_mouse_over {
+            self.block_coords = Some(coords);
+        } else {
             self.is_effect_active = false;
+            self.block_coords = None;
         }
     }
 
-    pub fn draw(&mut self, mouse_x: f32, mouse_y: f32, atlas: &Texture2D) {
+    pub fn draw(
+        &mut self,
+        camera_x: f32, // camera_x and camera_y are still needed for world-to-screen conversion
+        camera_y: f32,
+        atlas: &Texture2D,
+    ) {
         if !self.is_effect_active {
             return;
         }
 
-        let grid_x = (mouse_x / BLOCK_SIZE).floor() * BLOCK_SIZE;
-        let grid_y = (mouse_y / BLOCK_SIZE).floor() * BLOCK_SIZE;
+        let (world_block_x, world_block_y) = self.block_coords.unwrap(); // We know it's Some if is_effect_active is true
+
+        let screen_x = (world_block_x - camera_x).floor();
+        let screen_y = (world_block_y - camera_y).floor();
         let elapsed = get_time() - self.selection_effect_start_time;
 
         // Reset every 2s
-        if elapsed > 2.0 {
+        if elapsed > SELECTION_PULSE_DURATION {
             self.selection_effect_start_time = get_time();
         }
 
-        if elapsed <= 1.0 {
+        if elapsed <= (SELECTION_PULSE_DURATION / 2.0) {
             draw_texture_ex(
                 atlas,
-                grid_x,
-                grid_y,
+                screen_x,
+                screen_y,
                 WHITE,
                 DrawTextureParams {
                     source: Some(SPRITE_SELECT_NORMAL),
                     ..Default::default()
                 },
             );
-        } else if elapsed <= 2.0 {
+        } else {
             draw_texture_ex(
                 atlas,
-                (grid_x - 1.0).floor(),
-                (grid_y - 1.0).floor(),
+                screen_x - SELECTION_ENLARGE_AMOUNT,
+                screen_y - SELECTION_ENLARGE_AMOUNT,
                 WHITE,
                 DrawTextureParams {
                     source: Some(SPRITE_SELECT_LARGE),
+                    dest_size: Some(vec2(
+                        BLOCK_SIZE + SELECTION_ENLARGE_AMOUNT * 2.0,
+                        BLOCK_SIZE + SELECTION_ENLARGE_AMOUNT * 2.0,
+                    )),
                     ..Default::default()
                 },
             );
         }
     }
-}
+} // Added missing closing brace
 
 pub struct ButtonBox;
 
@@ -322,12 +337,16 @@ impl ButtonBox {
         let key = if is_pressed { press_key } else { text_key };
         let label = lang.get_string(key);
 
-        let (tx, ty) = calculate_text_center_position(w, h, &label, font);
+        let (tx, ty) = calculate_text_center_position(w, h, &label);
+
+        let text_offset_x = if is_pressed { 1.0 } else { 0.0 };
+        let text_offset_y = if is_pressed { 1.0 } else { 0.0 };
+
         // Ensure color is correct using TextParams
         draw_text_ex(
             &label,
-            (x + tx).floor(),
-            (y + ty).floor(),
+            (x + tx + text_offset_x).floor(),
+            (y + ty + text_offset_y).floor(),
             TextParams {
                 font_size: FONT_SIZE as u16,
                 font: font.or_else(|| TextParams::default().font),
@@ -335,7 +354,6 @@ impl ButtonBox {
                 ..Default::default()
             },
         );
-
         is_released
     }
 }

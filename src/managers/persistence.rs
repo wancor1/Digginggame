@@ -1,8 +1,17 @@
 use crate::constants::SAVE_FILE_NAME;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use std::thread;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BlockSaveData {
+    pub x: f32,
+    pub y: f32,
+    pub current_hp: i32,
+    pub sprite_id: String,
+}
 
 // We use simplified threading or just sync IO for MVP because Macroquad is single threaded mostly,
 // but we can spawn threads for IO.

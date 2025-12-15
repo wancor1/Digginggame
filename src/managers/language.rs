@@ -46,9 +46,9 @@ impl LanguageManager {
                         .unwrap_or_default()
                         .to_string();
                     let display_name = file_stem.clone(); // Fallback
-                                                          // Try to read metadata for display name
-                                                          // Omitted for brevity/perf, or we can read it.
-                                                          // Python code reads it.
+                    // Try to read metadata for display name
+                    // Omitted for brevity/perf, or we can read it.
+                    // Python code reads it.
                     self.languages.insert(file_stem, display_name);
                 }
             }

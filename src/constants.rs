@@ -55,9 +55,9 @@ pub const SPRITE_BLOCK_DIRT: Rect = Rect {
     w: 8.0,
     h: 8.0,
 }; // Same as error in python code? Check lines 13-14 of constants.py
-   // Line 13: SPRITE_BLOCK_ERROR = (SPRITE_BANK_UI, 8, 0, 8, 8, 1)
-   // Line 14: SPRITE_BLOCK_DIRT = (SPRITE_BANK_UI, 8, 0, 8, 8, 0)
-   // They share the same UV in Python, just different colkey.
+// Line 13: SPRITE_BLOCK_ERROR = (SPRITE_BANK_UI, 8, 0, 8, 8, 1)
+// Line 14: SPRITE_BLOCK_DIRT = (SPRITE_BANK_UI, 8, 0, 8, 8, 0)
+// They share the same UV in Python, just different colkey.
 
 pub const SPRITE_BLOCK_GRASS: Rect = Rect {
     x: 16.0,
@@ -121,3 +121,7 @@ pub const NOTIFICATION_TEXT_COLOR_SUCCESS: Color = macroquad::color::GREEN; // 5
 
 pub const CHUNK_SIZE_X_BLOCKS: usize = 16;
 pub const CHUNK_SIZE_Y_BLOCKS: usize = 16;
+
+// Selection Effect Constants
+pub const SELECTION_PULSE_DURATION: f64 = 2.0; // Duration of one full pulse cycle in seconds
+pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite enlarges

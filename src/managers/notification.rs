@@ -13,14 +13,13 @@ impl NotificationManager {
         }
     }
 
-    pub fn add_notification(&mut self, message: String, msg_type: &str, font: Option<&Font>) {
+    pub fn add_notification(&mut self, message: String, msg_type: &str) {
         let max_width = NOTIFICATION_MAX_WIDTH - NOTIFICATION_PADDING_X * 2.0;
         let notif = Notification::new(
             message,
             NOTIFICATION_MAX_DISPLAY_TIME as f64,
             msg_type,
             max_width,
-            font,
         );
         self.notifications.push(notif);
         if self.notifications.len() > MAX_NOTIFICATIONS {
