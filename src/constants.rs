@@ -125,3 +125,26 @@ pub const CHUNK_SIZE_Y_BLOCKS: usize = 16;
 // Selection Effect Constants
 pub const SELECTION_PULSE_DURATION: f64 = 2.0; // Duration of one full pulse cycle in seconds
 pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite enlarges
+
+// Camera Speed Constants
+pub const CAMERA_SPEED_NORMAL: f32 = 8.0;
+pub const CAMERA_SPEED_FAST: f32 = 16.0;
+
+// World Generation Constants
+pub const HARDNESS_MIN: i32 = 3;
+pub const SURFACE_Y_LEVEL: i32 = 7;
+pub const NOISE_SCALE_HARDNESS: f64 = 0.005;
+pub const NOISE_SCALE_ORE: f64 = 0.04;
+pub const ORE_THRESHOLD: f64 = 0.4;
+pub const HARDNESS_INCREASE_PER_BLOCK: f64 = 0.1;
+pub const NOISE_HARDNESS_RANGE: f64 = 20.0;
+
+// Particle Constants
+pub const GRAVITY: f32 = 0.19;
+pub const MAX_LIFESPAN_ON_GROUND_SEC: f64 = 5.0;
+pub const BOUNCE_DAMPENING_X: f32 = -0.4;
+pub const FRICTION_ON_GROUND: f32 = 0.85;
+
+// Component Constants
+pub const PARTICLE_SPEED_MIN: f32 = 20.0 / 60.0;
+pub const PARTICLE_SPEED_MAX: f32 = 60.0 / 60.0;

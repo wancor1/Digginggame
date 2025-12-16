@@ -26,15 +26,12 @@ pub struct Particle {
 }
 
 impl Particle {
-    const PARTICLE_SPEED_MIN: f32 = 20.0 / 60.0;
-    const PARTICLE_SPEED_MAX: f32 = 60.0 / 60.0;
-
     pub fn new(x_start: f32, y_start: f32, block_max_hardness: i32) -> Self {
         let mut rng = ::rand::thread_rng();
         let center_x = x_start + BLOCK_SIZE / 2.0;
         let center_y = y_start + BLOCK_SIZE / 2.0;
         let angle = rng.random_range(0.0..std::f32::consts::TAU);
-        let speed = rng.random_range(Self::PARTICLE_SPEED_MIN..Self::PARTICLE_SPEED_MAX);
+        let speed = rng.random_range(PARTICLE_SPEED_MIN..PARTICLE_SPEED_MAX);
 
         let color = if block_max_hardness <= 5 {
             if rng.random::<f32>() < 0.9 {

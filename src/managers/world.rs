@@ -1,7 +1,9 @@
 use crate::components::{Block, Chunk};
 use crate::constants::{
-    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH,
-    SPRITE_BLOCK_COAL, SPRITE_BLOCK_DIRT, SPRITE_BLOCK_GRASS, SPRITE_BLOCK_STONE,
+    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, HARDNESS_INCREASE_PER_BLOCK,
+    HARDNESS_MIN, NOISE_HARDNESS_RANGE, NOISE_SCALE_HARDNESS, NOISE_SCALE_ORE, ORE_THRESHOLD,
+    SCREEN_HEIGHT, SCREEN_WIDTH, SPRITE_BLOCK_COAL, SPRITE_BLOCK_DIRT, SPRITE_BLOCK_GRASS,
+    SPRITE_BLOCK_STONE, SURFACE_Y_LEVEL,
 };
 use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
 
@@ -21,14 +23,6 @@ pub struct WorldManager {
 }
 
 impl WorldManager {
-    const HARDNESS_MIN: i32 = 3;
-    const SURFACE_Y_LEVEL: i32 = 7;
-    const NOISE_SCALE_HARDNESS: f64 = 0.005;
-    const NOISE_SCALE_ORE: f64 = 0.04;
-    const ORE_THRESHOLD: f64 = 0.4;
-    const HARDNESS_INCREASE_PER_BLOCK: f64 = 0.1;
-    const NOISE_HARDNESS_RANGE: f64 = 20.0;
-
     fn chunk_coords_to_world_origin(chunk_x: i32, chunk_y: i32) -> (f32, f32) {
         let world_x = chunk_x as f32 * CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE;
         let world_y = chunk_y as f32 * CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE;
@@ -85,39 +79,39 @@ impl WorldManager {
 
                     let y_block = (wy / BLOCK_SIZE).floor() as i32;
 
-                    if y_block < Self::SURFACE_Y_LEVEL {
+                    if y_block < SURFACE_Y_LEVEL {
                         // Air blocks, max_hp will be 0
                     } else {
-                        if y_block == Self::SURFACE_Y_LEVEL {
+                        if y_block == SURFACE_Y_LEVEL {
                             sprite_rect = Some(SPRITE_BLOCK_GRASS);
-                            max_hp = Self::HARDNESS_MIN;
+                            max_hp = HARDNESS_MIN;
                         } else {
-                            let depth = (y_block - (Self::SURFACE_Y_LEVEL + 1)) as f64;
-                            let base_hardness = Self::HARDNESS_MIN as f64
-                                + depth * Self::HARDNESS_INCREASE_PER_BLOCK;
+                            let depth = (y_block - (SURFACE_Y_LEVEL + 1)) as f64;
+                            let base_hardness =
+                                HARDNESS_MIN as f64 + depth * HARDNESS_INCREASE_PER_BLOCK;
                             let noise_val = noise_main_ref.get([
-                                wx as f64 * Self::NOISE_SCALE_HARDNESS,
-                                wy as f64 * Self::NOISE_SCALE_HARDNESS,
+                                wx as f64 * NOISE_SCALE_HARDNESS,
+                                wy as f64 * NOISE_SCALE_HARDNESS,
                                 0.0,
                             ]);
 
                             let noise_contribution = noise_val
-                                * Self::NOISE_HARDNESS_RANGE
+                                * NOISE_HARDNESS_RANGE
                                 * (if noise_val >= 0.0 { 1.0 } else { 0.25 });
                             max_hp = (base_hardness + noise_contribution)
                                 .floor()
-                                .max(Self::HARDNESS_MIN as f64)
+                                .max(HARDNESS_MIN as f64)
                                 as i32;
 
                             if max_hp <= 10 {
                                 sprite_rect = Some(SPRITE_BLOCK_DIRT);
                             } else {
                                 let ore_val = noise_ore_ref.get([
-                                    wx as f64 * Self::NOISE_SCALE_ORE,
-                                    wy as f64 * Self::NOISE_SCALE_ORE,
+                                    wx as f64 * NOISE_SCALE_ORE,
+                                    wy as f64 * NOISE_SCALE_ORE,
                                     256.0,
                                 ]);
-                                sprite_rect = Some(if ore_val >= Self::ORE_THRESHOLD {
+                                sprite_rect = Some(if ore_val >= ORE_THRESHOLD {
                                     SPRITE_BLOCK_COAL
                                 } else {
                                     SPRITE_BLOCK_STONE

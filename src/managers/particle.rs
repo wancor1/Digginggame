@@ -1,5 +1,8 @@
 use crate::components::{Block, Particle};
-use crate::constants::{BLOCK_SIZE, SCREEN_HEIGHT};
+use crate::constants::{
+    BLOCK_SIZE, BOUNCE_DAMPENING_X, FRICTION_ON_GROUND, GRAVITY, MAX_LIFESPAN_ON_GROUND_SEC,
+    SCREEN_HEIGHT,
+};
 use macroquad::prelude::*; // For get_time()
 
 pub struct ParticleManager {
@@ -7,11 +10,6 @@ pub struct ParticleManager {
 }
 
 impl ParticleManager {
-    const GRAVITY: f32 = 0.19;
-    const MAX_LIFESPAN_ON_GROUND_SEC: f64 = 5.0;
-    const BOUNCE_DAMPENING_X: f32 = -0.4;
-    const FRICTION_ON_GROUND: f32 = 0.85;
-
     pub fn new() -> Self {
         Self {
             active_particles: Vec::new(),
@@ -29,7 +27,7 @@ impl ParticleManager {
                 continue;
             }
 
-            particle.vy += Self::GRAVITY;
+            particle.vy += GRAVITY;
             particle.x += particle.vx;
 
             for block in collidable_blocks {
@@ -39,7 +37,7 @@ impl ParticleManager {
                     } else {
                         particle.x = block.x + BLOCK_SIZE + 0.1;
                     }
-                    particle.vx *= Self::BOUNCE_DAMPENING_X;
+                    particle.vx *= BOUNCE_DAMPENING_X;
                     break;
                 }
             }
@@ -52,7 +50,7 @@ impl ParticleManager {
                     if particle.vy > 0.0 {
                         particle.y = block.y - 0.1;
                         particle.vy = 0.0;
-                        particle.vx *= Self::FRICTION_ON_GROUND;
+                        particle.vx *= FRICTION_ON_GROUND;
                         is_on_ground = true;
                     } else if particle.vy < 0.0 {
                         particle.y = block.y + BLOCK_SIZE + 0.1;
@@ -66,7 +64,7 @@ impl ParticleManager {
                 let now = get_time();
                 if particle.time_landed.is_none() {
                     particle.time_landed = Some(now);
-                } else if now - particle.time_landed.unwrap() > Self::MAX_LIFESPAN_ON_GROUND_SEC {
+                } else if now - particle.time_landed.unwrap() > MAX_LIFESPAN_ON_GROUND_SEC {
                     particle.alive = false;
                 }
             } else {

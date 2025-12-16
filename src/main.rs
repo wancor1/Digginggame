@@ -52,8 +52,6 @@ pub struct Game {
 }
 
 impl Game {
-    const CAMERA_SPEED_NORMAL: f32 = 8.0;
-    const CAMERA_SPEED_FAST: f32 = 16.0;
     async fn new() -> Self {
         Self {
             world_manager: WorldManager::new(),
@@ -146,9 +144,9 @@ impl Game {
             let camera_intents = self.input_handler.handle_camera_movement();
             let mut moved = false;
             let speed = if is_key_down(KeyCode::LeftShift) {
-                Self::CAMERA_SPEED_FAST
+                CAMERA_SPEED_FAST
             } else {
-                Self::CAMERA_SPEED_NORMAL
+                CAMERA_SPEED_NORMAL
             };
 
             for intent in camera_intents {
