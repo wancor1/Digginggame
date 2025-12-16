@@ -1,4 +1,3 @@
-use crate::constants::SAVE_FILE_NAME;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
