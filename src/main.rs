@@ -73,7 +73,7 @@ impl Game {
         }
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, game_renderer: &GameRenderer) {
         if self.persistence_manager.is_loading {
             if let Some((success, data)) = self.persistence_manager.check_load_status() {
                 if success {
@@ -217,8 +217,13 @@ impl Game {
                             block.is_broken = true;
                             block.is_modified = true;
                             let count = ::rand::thread_rng().random_range(5..15); // Particle count
-                            let particles = (0..count)
-                                .map(|_| Particle::new(block.x, block.y, block.max_hp))
+                            let particles: Vec<Particle> = (0..count)
+                                .map(|_| {
+                                    let particle_color = block.sprite_rect.map_or(WHITE, |rect| {
+                                        game_renderer.get_random_pixel_color(rect)
+                                    });
+                                    Particle::new(block.x, block.y, particle_color)
+                                })
                                 .collect();
                             self.particle_manager.add_particles(particles);
                         }
@@ -328,7 +333,7 @@ async fn main() {
     render_target.texture.set_filter(FilterMode::Nearest);
 
     loop {
-        game.update();
+        game.update(&game_renderer);
 
         // Render to the off-screen render target
         // Set camera to render target
