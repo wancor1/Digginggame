@@ -96,6 +96,9 @@ pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite 
 pub const CAMERA_SPEED_NORMAL: f32 = 8.0;
 pub const CAMERA_SPEED_FAST: f32 = 16.0;
 
+pub const INITIAL_CAMERA_DELAY_SECONDS: f64 = 0.01; // Initial delay before continuous movement starts
+pub const CAMERA_MOVE_INTERVAL_SECONDS: f64 = 0.05; // Interval between continuous movements
+
 // World Generation Constants
 pub const HARDNESS_MIN: i32 = 3;
 pub const SURFACE_Y_LEVEL: i32 = 7;

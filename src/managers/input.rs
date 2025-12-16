@@ -1,13 +1,11 @@
 use crate::events::CameraMoveIntent;
 use macroquad::prelude::*;
+use crate::constants::{INITIAL_CAMERA_DELAY_SECONDS, CAMERA_MOVE_INTERVAL_SECONDS};
 
 pub struct InputHandler {
     key_pressed_start: [f64; 512], // Simple array map for key timings
     last_move_time: [f64; 512], // Time when the last move intent was sent for a key
 }
-
-const INITIAL_CAMERA_DELAY_SECONDS: f64 = 0.5; // Initial delay before continuous movement starts
-const CAMERA_MOVE_INTERVAL_SECONDS: f64 = 0.1; // Interval between continuous movements
 
 impl InputHandler {
     pub fn new() -> Self {
