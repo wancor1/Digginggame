@@ -141,6 +141,10 @@ impl GameRenderer {
         }
     }
 
+    pub fn get_font(&self) -> Option<&Font> {
+        self.font.as_ref()
+    }
+
     pub fn draw(&mut self, game: &mut Game) -> Vec<GameEvent> {
         let mut events = Vec::new();
         clear_background(SKYBLUE);

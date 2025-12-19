@@ -109,13 +109,20 @@ impl Game {
                         }
                     }
 
-                    self.notification_manager
-                        .add_notification("Loaded!".to_string(), "success");
+                    self.notification_manager.add_notification(
+                        "Loaded!".to_string(),
+                        "success",
+                        game_renderer.get_font(),
+                    );
                     self.on_title_screen = false;
                     self.is_menu_visible = false;
                 } else {
                     if let serde_json::Value::String(msg) = data {
-                        self.notification_manager.add_notification(msg, "error");
+                        self.notification_manager.add_notification(
+                            msg,
+                            "error",
+                            game_renderer.get_font(),
+                        );
                     }
                 }
             }
@@ -247,7 +254,8 @@ impl Game {
         // Check Save
         if let Some((success, msg)) = self.persistence_manager.check_save_status() {
             let t = if success { "success" } else { "error" };
-            self.notification_manager.add_notification(msg, t);
+            self.notification_manager
+                .add_notification(msg, t, game_renderer.get_font());
         }
     }
 
@@ -304,7 +312,7 @@ impl Game {
         })
     }
 
-    fn return_to_title_screen(&mut self) {
+    fn return_to_title_screen(&mut self, game_renderer: &GameRenderer) {
         self.world_manager = WorldManager::new(); // Reset world
         self.particle_manager = ParticleManager::new(); // Reset particles
         self.camera = Camera::new(); // Reset camera
@@ -315,8 +323,11 @@ impl Game {
         self.save_files = Vec::new(); // Clear save file list
         self.current_save_name = "savegame.json".to_string(); // Reset default
         self.input_buffer = String::new(); // Clear input buffer
-        self.notification_manager
-            .add_notification("Returned to Title Screen".to_string(), "info");
+        self.notification_manager.add_notification(
+            "Returned to Title Screen".to_string(),
+            "info",
+            game_renderer.get_font(),
+        );
     }
 }
 
@@ -426,8 +437,11 @@ async fn main() {
 
                     game.world_manager.generate_visible_chunks(0.0, 0.0);
 
-                    game.notification_manager
-                        .add_notification("New Game!".to_string(), "success");
+                    game.notification_manager.add_notification(
+                        "New Game!".to_string(),
+                        "success",
+                        game_renderer.get_font(),
+                    );
                 }
 
                 GameEvent::SaveGame => {
@@ -439,7 +453,7 @@ async fn main() {
                     std::process::exit(0);
                 }
                 GameEvent::ReturnToTitle => {
-                    game.return_to_title_screen();
+                    game.return_to_title_screen(&game_renderer);
                 }
             }
         }

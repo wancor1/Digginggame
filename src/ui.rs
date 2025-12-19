@@ -31,7 +31,13 @@ pub struct Notification {
 }
 
 impl Notification {
-    pub fn new(message: String, duration: f64, msg_type: &str, max_width: f32) -> Self {
+    pub fn new(
+        message: String,
+        duration: f64,
+        msg_type: &str,
+        max_width: f32,
+        font: Option<&Font>,
+    ) -> Self {
         let mut n = Self {
             message: message.clone(),
             duration,
@@ -48,32 +54,70 @@ impl Notification {
             box_height: 0.0,
             wrapped_lines: Vec::new(),
         };
-        n.calculate_dimensions(max_width);
+        n.calculate_dimensions(max_width, font);
         n
     }
 
-    fn calculate_dimensions(&mut self, max_width: f32) {
-        // Simple word wrap
+    fn calculate_dimensions(&mut self, max_width: f32, font: Option<&Font>) {
+        let font = match font {
+            Some(f) => f,
+            None => return, // Cannot calculate without a font
+        };
+
+        let measure = |s: &str| -> f32 { measure_text(s, Some(font), FONT_SIZE as u16, 1.0).width };
+
+        let space_width = measure(" ");
         let words: Vec<&str> = self.message.split(' ').collect();
         let mut lines = Vec::new();
         let mut current_line = String::new();
+        let mut current_line_width = 0.0;
 
         for word in words {
-            let test_line = if current_line.is_empty() {
-                word.to_string()
-            } else {
-                format!("{} {}", current_line, word)
-            };
-            if estimate_text_width(&test_line) > max_width {
+            let word_width = measure(word);
+
+            if word_width > max_width {
                 if !current_line.is_empty() {
                     lines.push(current_line);
-                    current_line = word.to_string();
-                } else {
-                    // Word itself is too long, force break logic omitted for brevity
-                    lines.push(word.to_string());
+                    current_line = String::new();
+                    current_line_width = 0.0;
+                }
+
+                let mut temp_word_line = String::new();
+                let mut temp_word_width = 0.0;
+                for char in word.chars() {
+                    let char_str = char.to_string();
+                    let char_width = measure(&char_str);
+                    if temp_word_width + char_width > max_width {
+                        lines.push(temp_word_line);
+                        temp_word_line = char_str;
+                        temp_word_width = char_width;
+                    } else {
+                        temp_word_line.push(char);
+                        temp_word_width += char_width;
+                    }
+                }
+                if !temp_word_line.is_empty() {
+                    current_line = temp_word_line;
+                    current_line_width = temp_word_width;
                 }
             } else {
-                current_line = test_line;
+                let width_if_added = if current_line.is_empty() {
+                    word_width
+                } else {
+                    current_line_width + space_width + word_width
+                };
+
+                if width_if_added > max_width && !current_line.is_empty() {
+                    lines.push(current_line);
+                    current_line = word.to_string();
+                    current_line_width = word_width;
+                } else {
+                    if !current_line.is_empty() {
+                        current_line.push(' ');
+                    }
+                    current_line.push_str(word);
+                    current_line_width = measure(&current_line);
+                }
             }
         }
         if !current_line.is_empty() {
@@ -90,8 +134,9 @@ impl Notification {
         let max_line_w = self
             .wrapped_lines
             .iter()
-            .map(|l| estimate_text_width(l))
+            .map(|l| measure(l))
             .fold(0.0f32, f32::max);
+
         self.box_width = (max_line_w + NOTIFICATION_PADDING_X * 2.0).min(NOTIFICATION_MAX_WIDTH);
     }
 

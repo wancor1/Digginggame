@@ -1,10 +1,10 @@
+use crate::constants::{CAMERA_MOVE_INTERVAL_SECONDS, INITIAL_CAMERA_DELAY_SECONDS};
 use crate::events::CameraMoveIntent;
 use macroquad::prelude::*;
-use crate::constants::{INITIAL_CAMERA_DELAY_SECONDS, CAMERA_MOVE_INTERVAL_SECONDS};
 
 pub struct InputHandler {
     key_pressed_start: [f64; 512], // Simple array map for key timings
-    last_move_time: [f64; 512], // Time when the last move intent was sent for a key
+    last_move_time: [f64; 512],    // Time when the last move intent was sent for a key
 }
 
 impl InputHandler {
@@ -19,12 +19,7 @@ impl InputHandler {
         let mut intents = Vec::new();
         let current_time = get_time();
 
-        self.process_key_input(
-            KeyCode::W,
-            CameraMoveIntent::Up,
-            &mut intents,
-            current_time,
-        );
+        self.process_key_input(KeyCode::W, CameraMoveIntent::Up, &mut intents, current_time);
         self.process_key_input(
             KeyCode::S,
             CameraMoveIntent::Down,
