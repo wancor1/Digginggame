@@ -329,6 +329,13 @@ impl Game {
             game_renderer.get_font(),
         );
     }
+
+    fn returntotitlescreenbutthisisloadscreenonly(&mut self) {
+        self.on_title_screen = true;
+        self.on_save_select_screen = false;
+        self.on_new_game_input_screen = false;
+        self.is_menu_visible = false;
+    }
 }
 
 #[macroquad::main(window_conf)]
@@ -454,6 +461,9 @@ async fn main() {
                 }
                 GameEvent::ReturnToTitle => {
                     game.return_to_title_screen(&game_renderer);
+                }
+                GameEvent::ReturnToTitlesScreenButThisIsLoadScreenOnly => {
+                    game.returntotitlescreenbutthisisloadscreenonly();
                 }
             }
         }

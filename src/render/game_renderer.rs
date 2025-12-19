@@ -243,7 +243,19 @@ impl GameRenderer {
                 &game.lang_manager,
                 self.font.as_ref(),
             ) {
-                events.push(GameEvent::StartNewGameSetup);
+                events.push(GameEvent::ReturnToTitle);
+            }
+            if ButtonBox::draw_button(
+                2.0,
+                2.0,
+                30.0,
+                btn_h,
+                "button.menu.return.default",
+                "button.menu.return.pressed",
+                &game.lang_manager,
+                self.font.as_ref(),
+            ) {
+                events.push(GameEvent::ReturnToTitlesScreenButThisIsLoadScreenOnly);
             }
             current_y += 15.0;
 

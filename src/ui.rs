@@ -365,7 +365,7 @@ impl ButtonBox {
                 (x + w - 1.0).floor(),
                 (y + 1.0).floor(),
                 (x + w - 1.0).floor(),
-                (y + h - 2.0).floor(),
+                (y + h - 1.0).floor(),
                 1.0,
                 BLACK,
             );
@@ -391,7 +391,7 @@ impl ButtonBox {
         draw_text_ex(
             &label,
             (x + tx + text_offset_x).floor(),
-            (y + ty + text_offset_y).floor(),
+            (y + ty + text_offset_y + 1.0).floor(),
             TextParams {
                 font_size: FONT_SIZE as u16,
                 font: font.or_else(|| TextParams::default().font),

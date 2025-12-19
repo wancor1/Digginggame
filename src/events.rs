@@ -7,6 +7,7 @@ pub enum GameEvent {
     SaveGame,
     QuitGame,
     ReturnToTitle,
+    ReturnToTitlesScreenButThisIsLoadScreenOnly,
     // Add more UI events as needed
 }
 
