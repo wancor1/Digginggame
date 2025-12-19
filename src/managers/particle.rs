@@ -1,7 +1,7 @@
-use crate::components::{Block, Particle};
+use crate::components::{Block, Camera, Particle};
 use crate::constants::{
     BLOCK_SIZE, BOUNCE_DAMPENING_X, FRICTION_ON_GROUND, GRAVITY, MAX_LIFESPAN_ON_GROUND_SEC,
-    SCREEN_HEIGHT,
+    SCREEN_HEIGHT, SCREEN_WIDTH,
 };
 use macroquad::prelude::*; // For get_time()
 
@@ -20,7 +20,7 @@ impl ParticleManager {
         self.active_particles.extend(new_particles);
     }
 
-    pub fn update(&mut self, collidable_blocks: &[&Block]) {
+    pub fn update(&mut self, collidable_blocks: &[&Block], camera: &Camera) {
         // Keep collidable_blocks for now
         for particle in &mut self.active_particles {
             if !particle.alive {
@@ -71,7 +71,12 @@ impl ParticleManager {
                 particle.time_landed = None;
             }
 
-            if particle.y > SCREEN_HEIGHT + BLOCK_SIZE * 5.0 {
+            let margin = BLOCK_SIZE * 10.0;
+            if particle.x < camera.x - margin
+                || particle.x > camera.x + SCREEN_WIDTH + margin
+                || particle.y < camera.y - margin
+                || particle.y > camera.y + SCREEN_HEIGHT + margin
+            {
                 particle.alive = false;
             }
         }

@@ -246,7 +246,7 @@ impl Game {
             let blocks = self
                 .world_manager
                 .get_active_blocks_in_view(self.camera.x, self.camera.y);
-            self.particle_manager.update(&blocks); // Pass ref to slice
+            self.particle_manager.update(&blocks, &self.camera); // Pass ref to slice
         }
 
         self.notification_manager.update();
