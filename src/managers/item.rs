@@ -38,7 +38,10 @@ impl ItemManager {
             let mut y = item.y;
 
             // Check X Collision
-            let item_rect_x = Rect::new(x, y, 4.0, 4.0);
+            let mut item_rect_x = Rect::new(x, y, 4.0, 4.0);
+            item_rect_x.y += 0.1;
+            item_rect_x.h -= 0.2;
+
             for block in blocks {
                 let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
                 if item_rect_x.overlaps(&block_rect) {
@@ -47,13 +50,17 @@ impl ItemManager {
                     } else if item.vx < 0.0 {
                         x = block.x + BLOCK_SIZE;
                     }
-                    item.vx *= -0.5; // Bounce X
+                    item.vx *= -0.1; // Bounce X
+                    break;
                 }
             }
             item.x = x;
 
             y = item.y + item.vy;
-            let item_rect_y = Rect::new(x, y, 4.0, 4.0);
+            let mut item_rect_y = Rect::new(x, y, 4.0, 4.0);
+            item_rect_y.x += 0.1;
+            item_rect_y.w -= 0.2;
+
             let mut _on_ground = false;
 
             for block in blocks {
@@ -68,6 +75,7 @@ impl ItemManager {
                         y = block.y + BLOCK_SIZE;
                         item.vy = 0.0;
                     }
+                    break;
                 }
             }
             item.y = y;

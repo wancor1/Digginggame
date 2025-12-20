@@ -25,12 +25,12 @@ impl PlayerManager {
         }
 
         // Tuning constants
-        let base_accel = 0.4 + (self.player.engine_level as f32 - 1.0) * 0.15;
-        let base_thrust = 0.25 + (self.player.engine_level as f32 - 1.0) * 0.1;
+        let base_accel = 0.2 + (self.player.engine_level as f32 - 1.0) * 0.1;
+        let base_thrust = 0.15 + (self.player.engine_level as f32 - 1.0) * 0.08;
         let mut dash_mult = 1.0;
 
         if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
-            dash_mult = 1.8;
+            dash_mult = 1.4;
             if self.player.fuel > 0.0 {
                 self.player.fuel -= 0.05; // Extra cost for dashing
             } else {

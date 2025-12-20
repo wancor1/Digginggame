@@ -170,6 +170,8 @@ impl Game {
                         None
                     };
                     if let Some(it) = item_type {
+                        // Item is 4x4, Block is 8x8.
+                        // Center is (block.x + 4, block.y + 4), so top-left of item should be (block.x + 2, block.y + 2)
                         self.item_manager
                             .spawn_item(block.x + 2.0, block.y + 2.0, it, rect);
                     }

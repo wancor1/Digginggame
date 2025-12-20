@@ -117,4 +117,4 @@ pub const PLAYER_INITIAL_CARGO: usize = 30;
 pub const PLAYER_GRAVITY: f32 = 0.1;
 pub const PLAYER_FRICTION_AIR: f32 = 0.95;
 pub const PLAYER_FRICTION_GROUND: f32 = 0.8;
-pub const PLAYER_TERMINAL_VELOCITY: f32 = 4.0;
+pub const PLAYER_TERMINAL_VELOCITY: f32 = 2.5;

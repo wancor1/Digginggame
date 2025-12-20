@@ -179,8 +179,8 @@ impl Item {
         Self {
             x,
             y,
-            vx: rng.random_range(-1.0..1.0),
-            vy: rng.random_range(-2.0..-1.0),
+            vx: rng.random_range(-0.2..0.2),
+            vy: rng.random_range(-0.5..0.0),
             item_type,
             sprite_rect,
             alive: true,
