@@ -255,7 +255,7 @@ impl GameRenderer {
                 &game.lang_manager,
                 self.font.as_ref(),
             ) {
-                events.push(GameEvent::ReturnToTitlesScreenButThisIsLoadScreenOnly);
+                events.push(GameEvent::ReturnToTitleFromSaveSelect);
             }
             current_y += 15.0;
 

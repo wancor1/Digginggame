@@ -330,7 +330,7 @@ impl Game {
         );
     }
 
-    fn returntotitlescreenbutthisisloadscreenonly(&mut self) {
+    fn return_to_title_from_save_select(&mut self) {
         self.on_title_screen = true;
         self.on_save_select_screen = false;
         self.on_new_game_input_screen = false;
@@ -462,8 +462,8 @@ async fn main() {
                 GameEvent::ReturnToTitle => {
                     game.return_to_title_screen(&game_renderer);
                 }
-                GameEvent::ReturnToTitlesScreenButThisIsLoadScreenOnly => {
-                    game.returntotitlescreenbutthisisloadscreenonly();
+                GameEvent::ReturnToTitleFromSaveSelect => {
+                    game.return_to_title_from_save_select();
                 }
             }
         }
