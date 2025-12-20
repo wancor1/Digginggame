@@ -2,6 +2,9 @@ pub const SCREEN_WIDTH: f32 = 160.0;
 pub const SCREEN_HEIGHT: f32 = 120.0;
 pub const BLOCK_SIZE: f32 = 8.0;
 
+pub const TARGET_FPS: f32 = 60.0;
+pub const FRAME_TIME: f32 = 1.0 / TARGET_FPS;
+
 // Animation
 use macroquad::color::Color;
 
@@ -56,7 +59,7 @@ pub const BOUNCE_DAMPENING_X: f32 = -0.4;
 pub const FRICTION_ON_GROUND: f32 = 0.85;
 
 // Component Constants
-pub const PARTICLE_SPEED_MIN: f32 = 20.0 / 60.0;
+pub const PARTICLE_SPEED_MIN: f32 = 20.0 / TARGET_FPS;
 pub const PARTICLE_SPEED_MAX: f32 = 1.0;
 
 // Player Constants
