@@ -92,6 +92,12 @@ pub const SPRITE_BLOCK_PYRITE: Rect = Rect {
     w: 8.0,
     h: 8.0,
 };
+pub const SPRITE_BLOCK_HEMATITE: Rect = Rect {
+    x: 56.0,
+    y: 64.0,
+    w: 8.0,
+    h: 8.0,
+};
 
 // gem blocks
 pub const SPRITE_BLOCK_DIAMOND: Rect = Rect {
