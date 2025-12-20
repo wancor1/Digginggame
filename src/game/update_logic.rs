@@ -2,6 +2,7 @@ use super::Game;
 use crate::components::Particle;
 use crate::constants::*;
 use crate::render::game_renderer::GameRenderer;
+use crate::render::sprites::*;
 use crate::utils::world_to_chunk_coords;
 use ::rand::Rng;
 use macroquad::prelude::*;

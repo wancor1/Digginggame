@@ -2,9 +2,9 @@ use crate::components::{Block, Chunk};
 use crate::constants::{
     BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, HARDNESS_INCREASE_PER_BLOCK,
     HARDNESS_MIN, NOISE_HARDNESS_RANGE, NOISE_SCALE_HARDNESS, NOISE_SCALE_ORE, ORE_THRESHOLD,
-    SCREEN_HEIGHT, SCREEN_WIDTH, SPRITE_BLOCK_COAL, SPRITE_BLOCK_DIRT, SPRITE_BLOCK_GRASS,
-    SPRITE_BLOCK_STONE, SURFACE_Y_LEVEL,
+    SCREEN_HEIGHT, SCREEN_WIDTH, SURFACE_Y_LEVEL,
 };
+use crate::render::sprites::*;
 use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
 
 use ::rand::Rng;

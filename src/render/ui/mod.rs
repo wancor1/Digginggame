@@ -1,6 +1,7 @@
 use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
+use crate::render::sprites::*;
 use macroquad::prelude::*;
 
 pub mod common;

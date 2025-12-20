@@ -1,5 +1,5 @@
 use super::Game;
-use crate::constants::*;
+use crate::render::sprites::*;
 use crate::managers::persistence::BlockSaveData;
 
 impl Game {
