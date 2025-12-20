@@ -11,6 +11,17 @@ pub struct GameRenderer {
     font: Option<Font>,
 }
 
+pub struct ButtonParams<'a> {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub text_key: &'a str,
+    pub press_key: &'a str,
+    pub lang: &'a crate::managers::LanguageManager,
+    pub font_size: u16,
+}
+
 impl GameRenderer {
     pub async fn new() -> Self {
         // Load Assets
@@ -251,28 +262,28 @@ impl GameRenderer {
             let bx = (screen_width() - bw) / 2.0;
             let by = center_y;
 
-            if self.draw_high_res_button(
-                bx,
-                by,
-                bw,
-                bh,
-                "button.title_screen.start.default",
-                "button.title_screen.start.pressed",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: bx,
+                y: by,
+                w: bw,
+                h: bh,
+                text_key: "button.title_screen.start.default",
+                press_key: "button.title_screen.start.pressed",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::OpenSaveSelection);
             }
-            if self.draw_high_res_button(
-                bx,
-                by + 15.0 * scale,
-                bw,
-                bh,
-                "button.menu.quit.default",
-                "button.menu.quit.pressed",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: bx,
+                y: by + 15.0 * scale,
+                w: bw,
+                h: bh,
+                text_key: "button.menu.quit.default",
+                press_key: "button.menu.quit.pressed",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::QuitGame);
             }
         } else if game.on_save_select_screen {
@@ -288,42 +299,42 @@ impl GameRenderer {
                 },
             );
             let mut cy = offset_y + 35.0 * scale;
-            if self.draw_high_res_button(
-                offset_x + 10.0 * scale,
-                cy,
-                (SCREEN_WIDTH - 20.0) * scale,
-                10.0 * scale,
-                "button.menu.new_game.default",
-                "button.menu.new_game.pressed",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: offset_x + 10.0 * scale,
+                y: cy,
+                w: (SCREEN_WIDTH - 20.0) * scale,
+                h: 10.0 * scale,
+                text_key: "button.menu.new_game.default",
+                press_key: "button.menu.new_game.pressed",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::StartNewGameSetup);
             }
-            if self.draw_high_res_button(
-                offset_x + 2.0 * scale,
-                offset_y + 2.0 * scale,
-                30.0 * scale,
-                10.0 * scale,
-                "button.menu.return.default",
-                "button.menu.return.pressed",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: offset_x + 2.0 * scale,
+                y: offset_y + 2.0 * scale,
+                w: 30.0 * scale,
+                h: 10.0 * scale,
+                text_key: "button.menu.return.default",
+                press_key: "button.menu.return.pressed",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::ReturnToTitleFromSaveSelect);
             }
             cy += 15.0 * scale;
             for file in &game.save_files {
-                if self.draw_high_res_button(
-                    offset_x + 10.0 * scale,
-                    cy,
-                    (SCREEN_WIDTH - 20.0) * scale,
-                    10.0 * scale,
-                    file,
-                    file,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: offset_x + 10.0 * scale,
+                    y: cy,
+                    w: (SCREEN_WIDTH - 20.0) * scale,
+                    h: 10.0 * scale,
+                    text_key: file,
+                    press_key: file,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::LoadSave(file.clone()));
                 }
                 cy += 12.0 * scale;
@@ -363,16 +374,16 @@ impl GameRenderer {
                     ..Default::default()
                 },
             );
-            if self.draw_high_res_button(
-                offset_x + 10.0 * scale,
-                offset_y + 60.0 * scale,
-                60.0 * scale,
-                10.0 * scale,
-                "Confirm",
-                "Confirm",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: offset_x + 10.0 * scale,
+                y: offset_y + 60.0 * scale,
+                w: 60.0 * scale,
+                h: 10.0 * scale,
+                text_key: "Confirm",
+                press_key: "Confirm",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
             }
         } else if game.on_warp_place_screen {
@@ -410,16 +421,16 @@ impl GameRenderer {
                     ..Default::default()
                 },
             );
-            if self.draw_high_res_button(
-                offset_x + 10.0 * scale,
-                offset_y + 60.0 * scale,
-                60.0 * scale,
-                10.0 * scale,
-                "Confirm",
-                "Confirm",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: offset_x + 10.0 * scale,
+                y: offset_y + 60.0 * scale,
+                w: 60.0 * scale,
+                h: 10.0 * scale,
+                text_key: "Confirm",
+                press_key: "Confirm",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::ConfirmWarpGateName(game.input_buffer.clone()));
             }
         } else if game.on_warp_select_screen {
@@ -435,32 +446,32 @@ impl GameRenderer {
                 },
             );
 
-            if self.draw_high_res_button(
-                offset_x + 2.0 * scale,
-                offset_y + 2.0 * scale,
-                30.0 * scale,
-                10.0 * scale,
-                "shop.back_to_game",
-                "shop.back_to_game",
-                &game.lang_manager,
-                s_font_size,
-            ) {
+            if self.draw_button(ButtonParams {
+                x: offset_x + 2.0 * scale,
+                y: offset_y + 2.0 * scale,
+                w: 30.0 * scale,
+                h: 10.0 * scale,
+                text_key: "shop.back_to_game",
+                press_key: "shop.back_to_game",
+                lang: &game.lang_manager,
+                font_size: s_font_size,
+            }) {
                 events.push(GameEvent::CloseMenu);
             }
 
             let mut cy = offset_y + 35.0 * scale;
             for (i, gate) in game.player_manager.player.warp_gates.iter().enumerate() {
                 let label = format!("> {}", gate.name);
-                if self.draw_high_res_button(
-                    offset_x + 10.0 * scale,
-                    cy,
-                    (SCREEN_WIDTH - 20.0) * scale,
-                    10.0 * scale,
-                    &label,
-                    &label,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: offset_x + 10.0 * scale,
+                    y: cy,
+                    w: (SCREEN_WIDTH - 20.0) * scale,
+                    h: 10.0 * scale,
+                    text_key: &label,
+                    press_key: &label,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::TeleportToWarp(i));
                 }
                 cy += 12.0 * scale;
@@ -531,28 +542,28 @@ impl GameRenderer {
 
             if game.on_surface {
                 if !game.is_menu_visible && !game.is_shop_open {
-                    if self.draw_high_res_button(
-                        offset_x + (SCREEN_WIDTH - 40.0) * scale,
-                        offset_y + 25.0 * scale,
-                        35.0 * scale,
-                        10.0 * scale,
-                        "SHOP",
-                        "SHOP",
-                        &game.lang_manager,
-                        s_font_size,
-                    ) {
+                    if self.draw_button(ButtonParams {
+                        x: offset_x + (SCREEN_WIDTH - 40.0) * scale,
+                        y: offset_y + 25.0 * scale,
+                        w: 35.0 * scale,
+                        h: 10.0 * scale,
+                        text_key: "SHOP",
+                        press_key: "SHOP",
+                        lang: &game.lang_manager,
+                        font_size: s_font_size,
+                    }) {
                         game.is_shop_open = true;
                     }
-                    if self.draw_high_res_button(
-                        offset_x + 5.0 * scale,
-                        offset_y + 25.0 * scale,
-                        35.0 * scale,
-                        10.0 * scale,
-                        "hud.warp_menu",
-                        "hud.warp_menu.pressed",
-                        &game.lang_manager,
-                        s_font_size,
-                    ) {
+                    if self.draw_button(ButtonParams {
+                        x: offset_x + 5.0 * scale,
+                        y: offset_y + 25.0 * scale,
+                        w: 35.0 * scale,
+                        h: 10.0 * scale,
+                        text_key: "hud.warp_menu",
+                        press_key: "hud.warp_menu.pressed",
+                        lang: &game.lang_manager,
+                        font_size: s_font_size,
+                    }) {
                         events.push(GameEvent::OpenWarpMenu);
                     }
                 }
@@ -574,16 +585,16 @@ impl GameRenderer {
                             ..Default::default()
                         },
                     );
-                    if self.draw_high_res_button(
-                        offset_x + 5.0 * scale,
-                        offset_y + 35.0 * scale,
-                        60.0 * scale,
-                        10.0 * scale,
-                        "hud.place_gate",
-                        "hud.place_gate.pressed",
-                        &game.lang_manager,
-                        s_font_size,
-                    ) {
+                    if self.draw_button(ButtonParams {
+                        x: offset_x + 5.0 * scale,
+                        y: offset_y + 35.0 * scale,
+                        w: 60.0 * scale,
+                        h: 10.0 * scale,
+                        text_key: "hud.place_gate",
+                        press_key: "hud.place_gate.pressed",
+                        lang: &game.lang_manager,
+                        font_size: s_font_size,
+                    }) {
                         events.push(GameEvent::StartPlaceWarpGate);
                     }
                 }
@@ -600,16 +611,16 @@ impl GameRenderer {
                 draw_rectangle_lines(mx, my, mw, mh, 1.0, BLACK);
 
                 let mut cur_y = (my + 10.0 * scale).floor();
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    "shop.back_to_game",
-                    "shop.back_to_game",
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: "shop.back_to_game",
+                    press_key: "shop.back_to_game",
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::CloseMenu);
                 }
 
@@ -634,16 +645,16 @@ impl GameRenderer {
                     drill_name, game.player_manager.player.drill_level, dc
                 );
                 let purchase_label = game.lang_manager.get_string("shop.purchase");
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    &drill_label,
-                    &purchase_label,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: &drill_label,
+                    press_key: &purchase_label,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::UpgradeDrill);
                 }
                 cur_y += 12.0 * scale;
@@ -654,16 +665,16 @@ impl GameRenderer {
                     "{} Lv{} (${})",
                     tank_name, game.player_manager.player.tank_level, tc
                 );
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    &tank_label,
-                    &purchase_label,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: &tank_label,
+                    press_key: &purchase_label,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::UpgradeTank);
                 }
                 cur_y += 12.0 * scale;
@@ -674,16 +685,16 @@ impl GameRenderer {
                     "{} Lv{} (${})",
                     engine_name, game.player_manager.player.engine_level, ec
                 );
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    &engine_label,
-                    &purchase_label,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: &engine_label,
+                    press_key: &purchase_label,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::UpgradeEngine);
                 }
                 cur_y += 12.0 * scale;
@@ -694,32 +705,32 @@ impl GameRenderer {
                     "{} Lv{} (${})",
                     cargo_name, game.player_manager.player.cargo_level, cc
                 );
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    &cargo_label,
-                    &purchase_label,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: &cargo_label,
+                    press_key: &purchase_label,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::UpgradeCargo);
                 }
                 cur_y += 12.0 * scale;
 
                 let wg_name = game.lang_manager.get_string("shop.buy.warpgate");
                 let wg_label = format!("{} ($500)", wg_name);
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    &wg_label,
-                    &purchase_label,
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: &wg_label,
+                    press_key: &purchase_label,
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::BuyWarpGate);
                 }
             }
@@ -735,42 +746,42 @@ impl GameRenderer {
                 draw_rectangle_lines(mx, my, mw, mh, 1.0, BLACK);
 
                 let mut cur_y = (my + 10.0 * scale).floor();
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    "button.menu.return.default",
-                    "button.menu.return.pressed",
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: "button.menu.return.default",
+                    press_key: "button.menu.return.pressed",
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::CloseMenu);
                 }
                 cur_y += 15.0 * scale;
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    "button.menu.save.default",
-                    "button.menu.save.pressed",
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: "button.menu.save.default",
+                    press_key: "button.menu.save.pressed",
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::SaveGame);
                 }
                 cur_y += 12.0 * scale;
-                if self.draw_high_res_button(
-                    mx + 5.0 * scale,
-                    cur_y,
-                    mw - 10.0 * scale,
-                    10.0 * scale,
-                    "button.menu.quit_to_title.default",
-                    "button.menu.quit_to_title.pressed",
-                    &game.lang_manager,
-                    s_font_size,
-                ) {
+                if self.draw_button(ButtonParams {
+                    x: mx + 5.0 * scale,
+                    y: cur_y,
+                    w: mw - 10.0 * scale,
+                    h: 10.0 * scale,
+                    text_key: "button.menu.quit_to_title.default",
+                    press_key: "button.menu.quit_to_title.pressed",
+                    lang: &game.lang_manager,
+                    font_size: s_font_size,
+                }) {
                     events.push(GameEvent::ReturnToTitle);
                 }
             }
@@ -798,20 +809,13 @@ impl GameRenderer {
         events
     }
 
-    fn draw_high_res_button(
+    fn draw_button(
         &self,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        text_key: &str,
-        press_key: &str,
-        lang: &crate::managers::LanguageManager,
-        font_size: u16,
+        params: ButtonParams,
     ) -> bool {
         let mouse_pos = mouse_position();
         let is_hover =
-            mouse_pos.0 >= x && mouse_pos.0 < x + w && mouse_pos.1 >= y && mouse_pos.1 < y + h;
+            mouse_pos.0 >= params.x && mouse_pos.0 < params.x + params.w && mouse_pos.1 >= params.y && mouse_pos.1 < params.y + params.h;
         let is_pressed = is_hover && is_mouse_button_down(MouseButton::Left);
         let is_released = is_hover && is_mouse_button_released(MouseButton::Left);
 
@@ -820,22 +824,22 @@ impl GameRenderer {
         } else {
             COLOR_BUTTON_BG
         };
-        draw_rectangle(x.floor(), y.floor(), w, h, bg_col);
-        draw_rectangle_lines(x.floor(), y.floor(), w, h, 1.0, COLOR_BUTTON_BORDER);
+        draw_rectangle(params.x.floor(), params.y.floor(), params.w, params.h, bg_col);
+        draw_rectangle_lines(params.x.floor(), params.y.floor(), params.w, params.h, 1.0, COLOR_BUTTON_BORDER);
 
-        let key = if is_pressed { press_key } else { text_key };
-        let label = lang.get_string(key);
+        let key = if is_pressed { params.press_key } else { params.text_key };
+        let label = params.lang.get_string(key);
 
-        let t_measure = measure_text(&label, self.font.as_ref(), font_size, 1.0);
-        let tx = x + (w - t_measure.width) / 2.0;
-        let ty = y + (h + t_measure.height) / 2.0;
+        let t_measure = measure_text(&label, self.font.as_ref(), params.font_size, 1.0);
+        let tx = params.x + (params.w - t_measure.width) / 2.0;
+        let ty = params.y + (params.h + t_measure.height) / 2.0;
 
         draw_text_ex(
             &label,
             tx.floor(),
             ty.floor(),
             TextParams {
-                font_size,
+                font_size: params.font_size,
                 font: self.font.as_ref(),
                 color: COLOR_BUTTON_TEXT,
                 ..Default::default()
