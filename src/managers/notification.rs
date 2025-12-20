@@ -52,4 +52,10 @@ impl NotificationManager {
             notif.draw(font);
         }
     }
+
+    pub fn draw_high_res(&self, font: Option<&Font>, scale_fac: f32, off_x: f32, off_y: f32) {
+        for notif in &self.notifications {
+            notif.draw_high_res(font, scale_fac, off_x, off_y);
+        }
+    }
 }

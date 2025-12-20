@@ -8,7 +8,16 @@ pub enum GameEvent {
     QuitGame,
     ReturnToTitle,
     ReturnToTitleFromSaveSelect,
-    // Add more UI events as needed
+    UpgradeDrill,
+    UpgradeTank,
+    UpgradeEngine,
+    UpgradeCargo,
+    BuyWarpGate,
+    StartPlaceWarpGate,
+    ConfirmWarpGateName(String),
+    OpenWarpMenu,
+    TeleportToWarp(usize),
+    CloseMenu,
 }
 
 pub enum CameraMoveIntent {

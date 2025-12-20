@@ -219,8 +219,6 @@ impl Notification {
 
         let mut y_off = self.current_y + NOTIFICATION_PADDING_Y;
         for line in &self.wrapped_lines {
-            // draw_text uses baseline, so add approx ascent. FONT_SIZE is usually roughly height.
-            // We'll add FONT_SIZE * 0.8 as baseline offset.
             draw_text_ex(
                 line,
                 (self.current_x + NOTIFICATION_PADDING_X).floor(),
@@ -233,6 +231,46 @@ impl Notification {
                 },
             );
             y_off += FONT_SIZE + NOTIFICATION_LINE_SPACING;
+        }
+    }
+
+    pub fn draw_high_res(&self, font: Option<&Font>, scale: f32, off_x: f32, off_y: f32) {
+        if !self.is_alive {
+            return;
+        }
+
+        let sx = off_x + self.current_x * scale;
+        let sy = off_y + self.current_y * scale;
+        let sw = self.box_width * scale;
+        let sh = self.box_height * scale;
+
+        draw_rectangle(sx.floor(), sy.floor(), sw, sh, NOTIFICATION_BG_COLOR);
+
+        let text_col = if self.msg_type == "error" {
+            NOTIFICATION_TEXT_COLOR_ERROR
+        } else if self.msg_type == "success" {
+            NOTIFICATION_TEXT_COLOR_SUCCESS
+        } else {
+            NOTIFICATION_TEXT_COLOR_INFO
+        };
+
+        draw_rectangle_lines(sx.floor(), sy.floor(), sw, sh, 1.0, text_col);
+
+        let mut y_off = sy + NOTIFICATION_PADDING_Y * scale;
+        let s_font_size = (FONT_SIZE * scale).floor() as u16;
+        for line in &self.wrapped_lines {
+            draw_text_ex(
+                line,
+                (sx + NOTIFICATION_PADDING_X * scale).floor(),
+                (y_off + FONT_SIZE * scale * 0.8).floor(),
+                TextParams {
+                    font_size: s_font_size,
+                    font: font.or_else(|| TextParams::default().font),
+                    color: text_col,
+                    ..Default::default()
+                },
+            );
+            y_off += (FONT_SIZE + NOTIFICATION_LINE_SPACING) * scale;
         }
     }
 

@@ -40,5 +40,20 @@
   "notification.load.success.debug": "ゲームを {filename} からロードしました",
   "notification.load.error.not_found.debug": "セーブファイルが見つかりません：{filename}",
   "notification.load.error.decode.debug": "セーブファイル ({filename}) のデコード中にエラーが発生しました：無効なJSON形式です。エラー: {error}",
-  "notification.load.error.unexpected.debug": "ロード中に予期せぬエラーが発生しました：{error}"
+  "notification.load.error.unexpected.debug": "ロード中に予期せぬエラーが発生しました：{error}",
+  "shop.title": "強化ショップ",
+  "shop.back_to_game": "ゲームに戻る",
+  "shop.upgrade.drill": "ドリル",
+  "shop.upgrade.tank": "燃料タンク",
+  "shop.upgrade.engine": "エンジン",
+  "shop.upgrade.cargo": "貨物ベイ",
+  "shop.buy.warpgate": "ワープゲート",
+  "shop.purchase": "購入",
+  "hud.warp_gates": "ゲート所持数: {count}",
+  "hud.place_gate": "ゲートを設置",
+  "hud.place_gate.pressed": "設置中...",
+  "hud.warp_menu": "ワープ",
+  "hud.warp_menu.pressed": "開いています...",
+  "warp.title": "行き先を選択",
+  "warp.name_prompt": "ゲート名を入力:"
 }

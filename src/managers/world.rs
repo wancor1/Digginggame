@@ -10,7 +10,6 @@ use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
 use ::rand::Rng;
 use macroquad::prelude::*;
 use noise::{NoiseFn, Perlin, Seedable};
-use serde_json::Value;
 use std::collections::{HashMap, HashSet}; // Needed for apply_modifications
 
 pub struct WorldManager {
@@ -52,6 +51,11 @@ impl WorldManager {
         self.world_seed_ore = ore;
         self.noise_main = Perlin::new(main).set_seed(main);
         self.noise_ore = Perlin::new(ore).set_seed(ore);
+        self.chunks.clear();
+        self.generated_chunk_coords.clear();
+    }
+
+    pub fn reset(&mut self) {
         self.chunks.clear();
         self.generated_chunk_coords.clear();
     }

@@ -14,6 +14,13 @@ impl Camera {
     }
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct WarpGate {
+    pub x: f32,
+    pub y: f32,
+    pub name: String,
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct Particle {
     pub x: f32,
@@ -98,5 +105,83 @@ impl Chunk {
         } else {
             None
         }
+    }
+}
+
+pub struct Player {
+    pub x: f32,
+    pub y: f32,
+    pub vx: f32,
+    pub vy: f32,
+    pub fuel: f32,
+    pub max_fuel: f32,
+    pub money: i32,
+    pub cargo: Vec<String>, // Simplistic for now
+    pub max_cargo: usize,
+    pub width: f32,
+    pub height: f32,
+    pub drill_level: i32,
+    pub tank_level: i32,
+    pub engine_level: i32,
+    pub cargo_level: i32,
+    pub warp_gates: Vec<WarpGate>,
+    pub inventory_warp_gates: i32,
+}
+
+impl Player {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self {
+            x,
+            y,
+            vx: 0.0,
+            vy: 0.0,
+            fuel: PLAYER_INITIAL_FUEL,
+            max_fuel: PLAYER_INITIAL_FUEL,
+            money: 0,
+            cargo: Vec::new(),
+            max_cargo: PLAYER_INITIAL_CARGO,
+            width: 6.0,
+            height: 6.0,
+            drill_level: 1,
+            tank_level: 1,
+            engine_level: 1,
+            cargo_level: 1,
+            warp_gates: Vec::new(),
+            inventory_warp_gates: 0,
+        }
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(self.x, self.y, self.width, self.height)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Item {
+    pub x: f32,
+    pub y: f32,
+    pub vx: f32,
+    pub vy: f32,
+    pub item_type: String,
+    pub sprite_rect: Rect,
+    pub alive: bool,
+}
+
+impl Item {
+    pub fn new(x: f32, y: f32, item_type: String, sprite_rect: Rect) -> Self {
+        let mut rng = ::rand::thread_rng();
+        Self {
+            x,
+            y,
+            vx: rng.random_range(-1.0..1.0),
+            vy: rng.random_range(-2.0..-1.0),
+            item_type,
+            sprite_rect,
+            alive: true,
+        }
+    }
+
+    pub fn rect(&self) -> Rect {
+        Rect::new(self.x, self.y, 4.0, 4.0) // Smaller than blocks
     }
 }

@@ -40,5 +40,20 @@
   "notification.load.success.debug": "Game loaded from {filename}",
   "notification.load.error.not_found.debug": "Save file not found: {filename}",
   "notification.load.error.decode.debug": "Error decoding save file ({filename}): Invalid JSON format. {error}",
-  "notification.load.error.unexpected.debug": "An unexpected error occurred during loading: {error}"
+  "notification.load.error.unexpected.debug": "An unexpected error occurred during loading: {error}",
+  "shop.title": "UPGRADES",
+  "shop.back_to_game": "Return to Game",
+  "shop.upgrade.drill": "Drill",
+  "shop.upgrade.tank": "Fuel Tank",
+  "shop.upgrade.engine": "Engine",
+  "shop.upgrade.cargo": "Cargo Bay",
+  "shop.buy.warpgate": "Warp Gate",
+  "shop.purchase": "Purchase",
+  "hud.warp_gates": "Gates: {count}",
+  "hud.place_gate": "Place Warp Gate",
+  "hud.place_gate.pressed": "Placing...",
+  "hud.warp_menu": "WARP",
+  "hud.warp_menu.pressed": "Opening...",
+  "warp.title": "Select Destination",
+  "warp.name_prompt": "Name Warp Gate:"
 }
