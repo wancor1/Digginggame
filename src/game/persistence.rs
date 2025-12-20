@@ -1,6 +1,6 @@
 use super::Game;
-use crate::render::sprites::*;
 use crate::managers::persistence::BlockSaveData;
+use crate::render::sprites::*;
 
 impl Game {
     pub fn make_save_data(&self) -> serde_json::Value {
