@@ -7,16 +7,7 @@ pub enum GameEvent {
     QuitGame,
     ReturnToTitle,
     ReturnToTitleFromSaveSelect,
-    UpgradeDrill,
-    UpgradeTank,
-    UpgradeEngine,
-    UpgradeCargo,
-    BuyWarpGate,
-    StartPlaceWarpGate,
-    ConfirmWarpGateName(String),
-    OpenWarpMenu,
-    TeleportToWarp(usize),
-    CloseMenu,
+    // Add more UI events as needed
 }
 
 

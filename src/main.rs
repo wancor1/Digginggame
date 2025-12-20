@@ -3,7 +3,7 @@ use crate::managers::persistence::BlockSaveData;
 use ::rand::Rng;
 use image::{ImageFormat, load_from_memory_with_format};
 use macroquad::prelude::*;
-use miniquad::conf::Icon; // Import miniquad's Icon struct
+use macroquad::miniquad::{conf::Icon};
 
 mod components;
 mod constants;
@@ -21,48 +21,31 @@ use managers::*;
 use render::game_renderer::GameRenderer;
 use ui::*;
 
+
 fn window_conf() -> Conf {
-    let icon_bytes = include_bytes!("../src/icon.png");
-    let dyn_image = load_from_memory_with_format(icon_bytes, ImageFormat::Png)
-        .expect("Failed to load icon image");
+    let img = image::open("icon.png").expect("icon load failed");
+    let img = img.to_rgba8();
 
-    let to_rgba8 = |img: image::DynamicImage| -> Vec<u8> { img.to_rgba8().into_vec() };
+    let small = image::imageops::resize(&img, 16, 16, image::imageops::FilterType::Lanczos3)
+        .into_raw()
+        .try_into()
+        .expect("16x16 icon must be 1024 bytes (RGBA)");
+    let medium = image::imageops::resize(&img, 32, 32, image::imageops::FilterType::Lanczos3)
+        .into_raw()
+        .try_into()
+        .expect("32x32 icon must be 4096 bytes (RGBA)");
+    let big = image::imageops::resize(&img, 64, 64, image::imageops::FilterType::Lanczos3)
+        .into_raw()
+        .try_into()
+        .expect("64x64 icon must be 16384 bytes (RGBA)");
 
-    let small_icon_data: [u8; 16 * 16 * 4] = {
-        let resized = dyn_image.resize_exact(16, 16, image::imageops::FilterType::Triangle);
-        let rgba_data = to_rgba8(resized);
-        let mut data_array = [0u8; 16 * 16 * 4];
-        data_array.copy_from_slice(&rgba_data);
-        data_array
-    };
-
-    let medium_icon_data: [u8; 32 * 32 * 4] = {
-        let resized = dyn_image.resize_exact(32, 32, image::imageops::FilterType::Triangle);
-        let rgba_data = to_rgba8(resized);
-        let mut data_array = [0u8; 32 * 32 * 4];
-        data_array.copy_from_slice(&rgba_data);
-        data_array
-    };
-
-    let big_icon_data: [u8; 64 * 64 * 4] = {
-        let resized = dyn_image.resize_exact(64, 64, image::imageops::FilterType::Triangle);
-        let rgba_data = to_rgba8(resized);
-        let mut data_array = [0u8; 64 * 64 * 4];
-        data_array.copy_from_slice(&rgba_data);
-        data_array
-    };
-
-    let icon = Icon {
-        small: small_icon_data,
-        medium: medium_icon_data,
-        big: big_icon_data,
-    };
+    let icon = Icon { small, medium, big };
 
     Conf {
         window_title: "Digging Game".to_owned(),
         window_width: SCREEN_WIDTH as i32 * 4, // Scale up for visibility
         window_height: SCREEN_HEIGHT as i32 * 4,
-        icon: Some(icon), // Set the window icon
+        icon: Some(icon),
         ..Default::default()
     }
 }
@@ -75,19 +58,13 @@ pub struct Game {
     notification_manager: NotificationManager,
     select_block: SelectBlock,
     pub camera: Camera,
-    pub player_manager: PlayerManager,
-    pub item_manager: ItemManager,
 
     // UI State
     on_title_screen: bool,
     on_save_select_screen: bool,
     on_new_game_input_screen: bool,
-    pub is_menu_visible: bool,
-    pub is_shop_open: bool,
-    pub on_warp_place_screen: bool,
-    pub on_warp_select_screen: bool,
-    pub show_debug_blocks: bool,
-    pub on_surface: bool,
+    is_menu_visible: bool,
+    show_debug_blocks: bool,
 
     // Save/Load State
     pub save_files: Vec<String>,
@@ -105,17 +82,11 @@ impl Game {
             notification_manager: NotificationManager::new(),
             select_block: SelectBlock::new(),
             camera: Camera::new(),
-            player_manager: PlayerManager::new(80.0, 48.0), // Spawn at middle top
-            item_manager: ItemManager::new(),
             on_title_screen: true,
             on_save_select_screen: false,
             on_new_game_input_screen: false,
             is_menu_visible: false,
-            is_shop_open: false,
-            on_warp_place_screen: false,
-            on_warp_select_screen: false,
             show_debug_blocks: false,
-            on_surface: true, // Start at surface
             save_files: Vec::new(),
             current_save_name: "savegame.json".to_string(), // Default
             input_buffer: String::new(),
@@ -188,39 +159,45 @@ impl Game {
                 self.is_menu_visible = false;
             }
         } else {
-            // Process Player Movement
+            // MAIN GAME LOGIC: This block will now only execute when NO overlay UI is active.
             if is_key_pressed(KeyCode::Escape) {
-                if self.is_shop_open {
-                    self.is_shop_open = false;
-                } else if self.on_warp_select_screen {
-                    self.on_warp_select_screen = false;
-                } else if self.on_warp_place_screen {
-                    self.on_warp_place_screen = false;
-                } else {
-                    self.is_menu_visible = true;
+                self.is_menu_visible = true;
+            }
+
+            let camera_intents = self.input_handler.handle_camera_movement();
+            let mut moved = false;
+            let speed = if is_key_down(KeyCode::LeftShift) {
+                CAMERA_SPEED_FAST
+            } else {
+                CAMERA_SPEED_NORMAL
+            };
+
+            for intent in camera_intents {
+                match intent {
+                    CameraMoveIntent::Up => {
+                        self.camera.y -= speed;
+                        moved = true;
+                    }
+                    CameraMoveIntent::Down => {
+                        self.camera.y += speed;
+                        moved = true;
+                    }
+                    CameraMoveIntent::Left => {
+                        self.camera.x -= speed;
+                        moved = true;
+                    }
+                    CameraMoveIntent::Right => {
+                        self.camera.x += speed;
+                        moved = true;
+                    }
+                    _ => {} // None or other intents
                 }
             }
 
-            if !self.is_menu_visible
-                && !self.is_shop_open
-                && !self.on_warp_place_screen
-                && !self.on_warp_select_screen
-            {
-                self.player_manager.update(&mut self.world_manager);
+            if moved {
+                self.world_manager
+                    .generate_visible_chunks(self.camera.x, self.camera.y);
             }
-
-            // Update Camera to follow player
-            self.camera.x = self.player_manager.player.x - SCREEN_WIDTH / 2.0
-                + self.player_manager.player.width / 2.0;
-            self.camera.y = self.player_manager.player.y - SCREEN_HEIGHT / 2.0
-                + self.player_manager.player.height / 2.0;
-
-            self.on_surface =
-                self.player_manager.player.y < (SURFACE_Y_LEVEL as f32 * BLOCK_SIZE) + 8.0;
-
-            // Generate chunks based on camera
-            self.world_manager
-                .generate_visible_chunks(self.camera.x, self.camera.y);
 
             // Mouse Interaction
             let mx = (mouse_position().0 / screen_width()) * SCREEN_WIDTH;
@@ -255,7 +232,7 @@ impl Game {
                         if block.current_hp == block.max_hp {
                             block.is_modified = true;
                         }
-                        block.current_hp -= self.player_manager.player.drill_level;
+                        block.current_hp -= 1;
 
                         if block.current_hp <= 0 {
                             block.current_hp = 0;
@@ -271,27 +248,6 @@ impl Game {
                                 })
                                 .collect();
                             self.particle_manager.add_particles(particles);
-
-                            // Spawn Items
-                            if let Some(rect) = block.sprite_rect {
-                                let item_type = if rect == SPRITE_BLOCK_COAL {
-                                    Some("Coal".to_string())
-                                } else if rect == SPRITE_BLOCK_STONE {
-                                    Some("Stone".to_string())
-                                } else if rect == SPRITE_BLOCK_DIRT {
-                                    Some("Dirt".to_string())
-                                } else {
-                                    None
-                                };
-                                if let Some(it) = item_type {
-                                    self.item_manager.spawn_item(
-                                        block.x + 2.0,
-                                        block.y + 2.0,
-                                        it,
-                                        rect,
-                                    );
-                                }
-                            }
                         }
 
                         // Mark the parent chunk as modified
@@ -306,8 +262,6 @@ impl Game {
                 .world_manager
                 .get_active_blocks_in_view(self.camera.x, self.camera.y);
             self.particle_manager.update(&blocks, &self.camera); // Pass ref to slice
-            self.item_manager
-                .update(&mut self.player_manager.player, &blocks);
         }
 
         self.notification_manager.update();
@@ -377,11 +331,7 @@ impl Game {
         self.on_save_select_screen = false;
         self.on_new_game_input_screen = false;
         self.is_menu_visible = false;
-        self.is_shop_open = false;
-        self.on_warp_place_screen = false;
-        self.on_warp_select_screen = false;
-
-        self.world_manager.reset();
+        self.save_files = Vec::new(); // Clear save file list
         self.current_save_name = "savegame.json".to_string(); // Reset default
         self.input_buffer = String::new(); // Clear input buffer
         self.notification_manager.add_notification(
@@ -421,8 +371,113 @@ async fn main() {
         camera_to_render_target.render_target = Some(render_target.clone());
         set_camera(&camera_to_render_target);
         clear_background(SKYBLUE); // Clear the render target
-        game_renderer.draw_world(&mut game);
-        set_default_camera(); // Switch back to drawing on screen
+        let ui_events = game_renderer.draw(&mut game);
+        set_default_camera(); // Switch back to drawing on screen, will unset the render target automatically
+
+        let mut additional_ui_events = Vec::new(); // Moved here
+
+        // Input handling for new game screen
+
+        if game.on_new_game_input_screen {
+            while let Some(c) = get_char_pressed() {
+                if c.is_alphanumeric() || c == '_' || c == '-' {
+                    game.input_buffer.push(c);
+                }
+            }
+
+            if is_key_pressed(KeyCode::Backspace) {
+                game.input_buffer.pop();
+            }
+
+            if is_key_pressed(KeyCode::Enter) {
+                additional_ui_events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
+            }
+        }
+
+        // Process UI events
+
+        for event in ui_events
+            .into_iter()
+            .chain(additional_ui_events.into_iter())
+        {
+            match event {
+                GameEvent::StartGame => {
+
+                    // Legacy, not used directly now
+                }
+
+                GameEvent::OpenSaveSelection => {
+                    game.save_files = PersistenceManager::list_save_files();
+
+                    game.on_title_screen = false;
+
+                    if game.save_files.is_empty() {
+                        game.on_new_game_input_screen = true;
+
+                        game.input_buffer.clear();
+                    } else {
+                        game.on_save_select_screen = true;
+                    }
+                }
+
+                GameEvent::LoadSave(filename) => {
+                    game.current_save_name = filename.clone();
+
+                    game.persistence_manager.load_game(filename);
+
+                    game.on_save_select_screen = false;
+
+                    // Loading handled in update() via check_load_status
+                }
+
+                GameEvent::StartNewGameSetup => {
+                    game.on_save_select_screen = false;
+
+                    game.on_new_game_input_screen = true;
+
+                    game.input_buffer.clear();
+                }
+
+                GameEvent::ConfirmNewGame(name) => {
+                    let mut filename = name.clone();
+
+                    if !filename.ends_with(".json") {
+                        filename.push_str(".json");
+                    }
+
+                    game.current_save_name = filename;
+
+                    game.on_new_game_input_screen = false;
+
+                    // Start new game logic
+
+                    game.world_manager.seed(::rand::random(), ::rand::random());
+
+                    game.world_manager.generate_visible_chunks(0.0, 0.0);
+
+                    game.notification_manager.add_notification(
+                        "New Game!".to_string(),
+                        "success",
+                        game_renderer.get_font(),
+                    );
+                }
+
+                GameEvent::SaveGame => {
+                    game.persistence_manager
+                        .save_game(game.current_save_name.clone(), game.make_save_data());
+                }
+
+                GameEvent::QuitGame => {
+                    std::process::exit(0);
+                }
+                GameEvent::ReturnToTitle => {
+                    game.return_to_title_screen(&game_renderer);
+                }
+                GameEvent::ReturnToTitleFromSaveSelect => {
+                    game.return_to_title_from_save_select();
+                }
+            }
+        }
 
         // Calculate aspect ratio and scaling for letterboxing/pillarboxing
         let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
