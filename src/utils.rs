@@ -24,3 +24,12 @@ pub fn world_to_relative_in_chunk_coords(world_x: f32, world_y: f32) -> (usize, 
 
     (rel_x as usize, rel_y as usize)
 }
+
+pub fn get_item_weight(item_type: &str) -> i32 {
+    match item_type {
+        "Coal" => 10,
+        "Stone" => 20,
+        "Dirt" => 5,
+        _ => 0,
+    }
+}

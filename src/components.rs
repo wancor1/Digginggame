@@ -1,4 +1,5 @@
 use crate::constants::*;
+use crate::utils::get_item_weight;
 
 use ::rand::Rng;
 use macroquad::prelude::*;
@@ -114,6 +115,13 @@ impl Chunk {
     }
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct OwnedItem {
+    pub item_type: String,
+    pub is_natural: bool,
+    pub is_auto_stored: bool,
+}
+
 pub struct Player {
     pub x: f32,
     pub y: f32,
@@ -122,8 +130,10 @@ pub struct Player {
     pub fuel: f32,
     pub max_fuel: f32,
     pub money: i32,
-    pub cargo: Vec<String>, // Simplistic for now
-    pub max_cargo: usize,
+    pub cargo: Vec<OwnedItem>, // Changed from Vec<String>
+    pub max_cargo: i32,
+    pub storage: Vec<OwnedItem>, // Changed from Vec<String>
+    pub max_storage: i32,
     pub width: f32,
     pub height: f32,
     pub drill_level: i32,
@@ -146,6 +156,8 @@ impl Player {
             money: 0,
             cargo: Vec::new(),
             max_cargo: PLAYER_INITIAL_CARGO,
+            storage: Vec::new(),
+            max_storage: 2000,
             width: 6.0,
             height: 6.0,
             drill_level: 1,
@@ -160,6 +172,13 @@ impl Player {
     pub fn rect(&self) -> Rect {
         Rect::new(self.x, self.y, self.width, self.height)
     }
+
+    pub fn total_cargo_weight(&self) -> i32 {
+        self.cargo
+            .iter()
+            .map(|it| get_item_weight(&it.item_type))
+            .sum()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -171,10 +190,19 @@ pub struct Item {
     pub item_type: String,
     pub sprite_rect: Rect,
     pub alive: bool,
+    pub weight: i32,
+    pub is_natural: bool,
 }
 
 impl Item {
-    pub fn new(x: f32, y: f32, item_type: String, sprite_rect: Rect) -> Self {
+    pub fn new(
+        x: f32,
+        y: f32,
+        item_type: String,
+        sprite_rect: Rect,
+        weight: i32,
+        is_natural: bool,
+    ) -> Self {
         let mut rng = ::rand::rng();
         Self {
             x,
@@ -184,6 +212,8 @@ impl Item {
             item_type,
             sprite_rect,
             alive: true,
+            weight,
+            is_natural,
         }
     }
 

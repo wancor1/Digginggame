@@ -116,7 +116,7 @@ impl Game {
                 if self.player_manager.player.money >= cost {
                     self.player_manager.player.money -= cost;
                     self.player_manager.player.cargo_level += 1;
-                    self.player_manager.player.max_cargo += 10;
+                    self.player_manager.player.max_cargo += 250;
                     self.notification_manager.add_notification(
                         "Cargo Upgraded!".to_string(),
                         "success",
@@ -187,14 +187,120 @@ impl Game {
                     );
                 }
             }
+            GameEvent::OpenShop => {
+                self.is_shop_open = true;
+            }
+            GameEvent::OpenWarehouse => {
+                self.is_warehouse_open = true;
+            }
+            GameEvent::SellItem(item_type, quantity) => {
+                let price = match item_type.as_str() {
+                    "Coal" => 10,
+                    "Stone" => 2,
+                    "Dirt" => 1,
+                    _ => 0,
+                };
+                let mut sold = 0;
+                while sold < quantity {
+                    if let Some(pos) = self
+                        .player_manager
+                        .player
+                        .storage
+                        .iter()
+                        .position(|it| it.item_type == item_type)
+                    {
+                        self.player_manager.player.storage.remove(pos);
+                        self.player_manager.player.money += price;
+                        sold += 1;
+                    } else if let Some(pos) = self
+                        .player_manager
+                        .player
+                        .cargo
+                        .iter()
+                        .position(|it| it.item_type == item_type)
+                    {
+                        self.player_manager.player.cargo.remove(pos);
+                        self.player_manager.player.money += price;
+                        sold += 1;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            GameEvent::DepositItem(item_type, quantity) => {
+                let mut moved = 0;
+                while moved < quantity
+                    && self.player_manager.player.storage.len()
+                        < self.player_manager.player.max_storage as usize
+                {
+                    if let Some(pos) = self
+                        .player_manager
+                        .player
+                        .cargo
+                        .iter()
+                        .position(|it| it.item_type == item_type)
+                    {
+                        let item = self.player_manager.player.cargo.remove(pos);
+                        self.player_manager.player.storage.push(item);
+                        moved += 1;
+                    } else {
+                        break;
+                    }
+                }
+                if moved < quantity
+                    && self.player_manager.player.storage.len()
+                        >= self.player_manager.player.max_storage as usize
+                {
+                    self.notification_manager.add_notification(
+                        "Storage Full!".to_string(),
+                        "error",
+                        game_renderer.get_font(),
+                    );
+                }
+            }
+            GameEvent::WithdrawItem(item_type, quantity) => {
+                let weight = crate::utils::get_item_weight(&item_type);
+                let mut moved = 0;
+                while moved < quantity
+                    && self.player_manager.player.total_cargo_weight() + weight
+                        <= self.player_manager.player.max_cargo
+                {
+                    if let Some(pos) = self
+                        .player_manager
+                        .player
+                        .storage
+                        .iter()
+                        .position(|it| it.item_type == item_type)
+                    {
+                        let mut item = self.player_manager.player.storage.remove(pos);
+                        item.is_auto_stored = false;
+                        self.player_manager.player.cargo.push(item);
+                        moved += 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                if moved < quantity
+                    && self.player_manager.player.total_cargo_weight() + weight
+                        > self.player_manager.player.max_cargo
+                {
+                    self.notification_manager.add_notification(
+                        "Cargo Full!".to_string(),
+                        "error",
+                        game_renderer.get_font(),
+                    );
+                }
+            }
+
             GameEvent::CloseMenu => {
                 self.is_menu_visible = false;
                 self.is_shop_open = false;
+                self.is_inventory_open = false;
+                self.is_warehouse_open = false;
                 self.on_warp_select_screen = false;
                 self.on_warp_place_screen = false;
-            }
-            GameEvent::OpenShop => {
-                self.is_shop_open = true;
             }
         }
     }

@@ -18,4 +18,8 @@ pub enum GameEvent {
     TeleportToWarp(usize),
     CloseMenu,
     OpenShop,
+    OpenWarehouse,
+    SellItem(String, usize),
+    DepositItem(String, usize),
+    WithdrawItem(String, usize),
 }

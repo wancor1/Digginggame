@@ -29,6 +29,8 @@ pub struct Game {
     pub on_new_game_input_screen: bool,
     pub is_menu_visible: bool,
     pub is_shop_open: bool,
+    pub is_inventory_open: bool,
+    pub is_warehouse_open: bool,
     pub on_warp_place_screen: bool,
     pub on_warp_select_screen: bool,
     pub on_surface: bool,
@@ -37,6 +39,7 @@ pub struct Game {
     pub save_files: Vec<String>,
     pub current_save_name: String,
     pub input_buffer: String,
+    pub warehouse_quantity: usize, // 1, 10, 100, or 0 for ALL
 }
 
 impl Game {
@@ -56,12 +59,15 @@ impl Game {
             on_new_game_input_screen: false,
             is_menu_visible: false,
             is_shop_open: false,
+            is_inventory_open: false,
+            is_warehouse_open: false,
             on_warp_place_screen: false,
             on_warp_select_screen: false,
             on_surface: true,
             save_files: Vec::new(),
             current_save_name: "savegame.json".to_string(),
             input_buffer: String::new(),
+            warehouse_quantity: 1,
         }
     }
 
@@ -102,6 +108,8 @@ impl Game {
         self.on_new_game_input_screen = false;
         self.is_menu_visible = false;
         self.is_shop_open = false;
+        self.is_inventory_open = false;
+        self.is_warehouse_open = false;
         self.on_warp_place_screen = false;
         self.on_warp_select_screen = false;
 

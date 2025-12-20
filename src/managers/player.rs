@@ -77,17 +77,19 @@ impl PlayerManager {
 
         // Surface Station Logic
         if self.player.y < (SURFACE_Y_LEVEL as f32 * BLOCK_SIZE) + 4.0 {
-            // Sell items
-            if !self.player.cargo.is_empty() {
-                for item in self.player.cargo.drain(..) {
-                    self.player.money += match item.as_str() {
-                        "Coal" => 10,
-                        "Stone" => 2,
-                        "Dirt" => 1,
-                        _ => 0,
-                    };
+            // Auto-store natural items
+            let mut i = 0;
+            while i < self.player.cargo.len() {
+                if self.player.cargo[i].is_auto_stored
+                    && self.player.storage.len() < self.player.max_storage as usize
+                {
+                    let item = self.player.cargo.remove(i);
+                    self.player.storage.push(item);
+                } else {
+                    i += 1;
                 }
             }
+
             // Refuel (Free on surface for now, maybe cost later)
             if self.player.fuel < self.player.max_fuel {
                 self.player.fuel = (self.player.fuel + 1.0).min(self.player.max_fuel);

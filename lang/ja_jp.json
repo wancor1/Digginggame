@@ -55,5 +55,6 @@
   "hud.warp_menu": "ワープ",
   "hud.warp_menu.pressed": "開いています...",
   "warp.title": "行き先を選択",
-  "warp.name_prompt": "ゲート名を入力:"
+  "warp.name_prompt": "ゲート名を入力:",
+  "inventory.title": "インベントリ"
 }

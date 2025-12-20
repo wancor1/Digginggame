@@ -1,5 +1,6 @@
 use crate::components::{Block, Item, Player};
 use crate::constants::*;
+use crate::utils::get_item_weight;
 use macroquad::prelude::*;
 
 pub struct ItemManager {
@@ -17,8 +18,17 @@ impl ItemManager {
         Self { items: Vec::new() }
     }
 
-    pub fn spawn_item(&mut self, x: f32, y: f32, item_type: String, sprite_rect: Rect) {
-        self.items.push(Item::new(x, y, item_type, sprite_rect));
+    pub fn spawn_item(
+        &mut self,
+        x: f32,
+        y: f32,
+        item_type: String,
+        sprite_rect: Rect,
+        is_natural: bool,
+    ) {
+        let weight = get_item_weight(&item_type);
+        self.items
+            .push(Item::new(x, y, item_type, sprite_rect, weight, is_natural));
     }
 
     pub fn update(&mut self, player: &mut Player, blocks: &[&Block]) {
@@ -81,9 +91,15 @@ impl ItemManager {
             item.y = y;
 
             // Collection by player
-            if player_rect.overlaps(&item.rect()) && player.cargo.len() < player.max_cargo {
-                player.cargo.push(item.item_type.clone());
-                item.alive = false;
+            if player_rect.overlaps(&item.rect()) {
+                if player.total_cargo_weight() + item.weight <= player.max_cargo {
+                    player.cargo.push(crate::components::OwnedItem {
+                        item_type: item.item_type.clone(),
+                        is_natural: item.is_natural,
+                        is_auto_stored: item.is_natural,
+                    });
+                    item.alive = false;
+                }
             }
         }
 

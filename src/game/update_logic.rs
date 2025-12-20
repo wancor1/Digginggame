@@ -25,6 +25,91 @@ impl Game {
                         self.player_manager.player.y = py as f32;
                     }
 
+                    if let Some(v) = map.get("player_money").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.money = v as i32;
+                    }
+                    if let Some(v) = map.get("player_fuel").and_then(|v| v.as_f64()) {
+                        self.player_manager.player.fuel = v as f32;
+                    }
+                    if let Some(v) = map.get("player_max_fuel").and_then(|v| v.as_f64()) {
+                        self.player_manager.player.max_fuel = v as f32;
+                    }
+                    if let Some(v) = map.get("player_max_cargo").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.max_cargo = v as i32;
+                    }
+                    if let Some(v) = map.get("player_max_storage").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.max_storage = v as i32;
+                    }
+                    if let Some(v) = map.get("player_drill_level").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.drill_level = v as i32;
+                    }
+                    if let Some(v) = map.get("player_tank_level").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.tank_level = v as i32;
+                    }
+                    if let Some(v) = map.get("player_engine_level").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.engine_level = v as i32;
+                    }
+                    if let Some(v) = map.get("player_cargo_level").and_then(|v| v.as_i64()) {
+                        self.player_manager.player.cargo_level = v as i32;
+                    }
+
+                    if let Some(serde_json::Value::Array(arr)) = map.get("player_cargo") {
+                        self.player_manager.player.cargo = arr
+                            .iter()
+                            .filter_map(|v| {
+                                if let Some(s) = v.as_str() {
+                                    Some(crate::components::OwnedItem {
+                                        item_type: s.to_string(),
+                                        is_natural: true,
+                                        is_auto_stored: true,
+                                    })
+                                } else if let Some(obj) = v.as_object() {
+                                    let it = obj.get("item_type")?.as_str()?.to_string();
+                                    let nat = obj.get("is_natural")?.as_bool()?;
+                                    let auto = obj
+                                        .get("is_auto_stored")
+                                        .and_then(|v| v.as_bool())
+                                        .unwrap_or(nat);
+                                    Some(crate::components::OwnedItem {
+                                        item_type: it,
+                                        is_natural: nat,
+                                        is_auto_stored: auto,
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                    }
+                    if let Some(serde_json::Value::Array(arr)) = map.get("player_storage") {
+                        self.player_manager.player.storage = arr
+                            .iter()
+                            .filter_map(|v| {
+                                if let Some(s) = v.as_str() {
+                                    Some(crate::components::OwnedItem {
+                                        item_type: s.to_string(),
+                                        is_natural: true,
+                                        is_auto_stored: true,
+                                    })
+                                } else if let Some(obj) = v.as_object() {
+                                    let it = obj.get("item_type")?.as_str()?.to_string();
+                                    let nat = obj.get("is_natural")?.as_bool()?;
+                                    let auto = obj
+                                        .get("is_auto_stored")
+                                        .and_then(|v| v.as_bool())
+                                        .unwrap_or(nat);
+                                    Some(crate::components::OwnedItem {
+                                        item_type: it,
+                                        is_natural: nat,
+                                        is_auto_stored: auto,
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                    }
+
                     // Update camera to match player position immediately
                     self.camera.x = self.player_manager.player.x - SCREEN_WIDTH / 2.0
                         + self.player_manager.player.width / 2.0;
@@ -69,6 +154,10 @@ impl Game {
         if is_key_pressed(KeyCode::Escape) {
             if self.is_shop_open {
                 self.is_shop_open = false;
+            } else if self.is_inventory_open {
+                self.is_inventory_open = false;
+            } else if self.is_warehouse_open {
+                self.is_warehouse_open = false;
             } else if self.on_warp_select_screen {
                 self.on_warp_select_screen = false;
             } else if self.on_warp_place_screen {
@@ -78,8 +167,20 @@ impl Game {
             }
         }
 
+        if is_key_pressed(KeyCode::I) || is_key_pressed(KeyCode::Tab) {
+            if !self.is_menu_visible
+                && !self.is_shop_open
+                && !self.on_warp_place_screen
+                && !self.on_warp_select_screen
+            {
+                self.is_inventory_open = !self.is_inventory_open;
+            }
+        }
+
         if !self.is_menu_visible
             && !self.is_shop_open
+            && !self.is_inventory_open
+            && !self.is_warehouse_open
             && !self.on_warp_place_screen
             && !self.on_warp_select_screen
         {
@@ -174,7 +275,7 @@ impl Game {
                         // Item is 4x4, Block is 8x8.
                         // Center is (block.x + 4, block.y + 4), so top-left of item should be (block.x + 2, block.y + 2)
                         self.item_manager
-                            .spawn_item(block.x + 2.0, block.y + 2.0, it, rect);
+                            .spawn_item(block.x + 2.0, block.y + 2.0, it, rect, true);
                     }
                 }
             }

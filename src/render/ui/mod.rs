@@ -90,6 +90,28 @@ impl UIRenderer {
                     &mut events,
                 );
             }
+            if game.is_inventory_open {
+                game_hud::draw_inventory(
+                    game,
+                    font,
+                    scale,
+                    offset_x,
+                    offset_y,
+                    s_font_size,
+                    &mut events,
+                );
+            }
+            if game.is_warehouse_open {
+                game_hud::draw_warehouse(
+                    game,
+                    font,
+                    scale,
+                    offset_x,
+                    offset_y,
+                    s_font_size,
+                    &mut events,
+                );
+            }
             if game.is_menu_visible {
                 menu_screens::draw_pause_menu(
                     game,
