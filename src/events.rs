@@ -17,6 +17,5 @@ pub enum GameEvent {
     OpenWarpMenu,
     TeleportToWarp(usize),
     CloseMenu,
+    OpenShop,
 }
-
-

@@ -225,23 +225,6 @@ impl WorldManager {
         blocks
     }
 
-    pub fn regenerate_world_from_save(
-        &mut self,
-        _gen_coords: HashSet<(i32, i32)>,
-        _mod_data: Vec<crate::components::Chunk>,
-    ) {
-        // Since Chunk in save data format is complex to map directly back to struct with current logic,
-        // we assumed PersistentManager passes parsed data.
-
-        // Actually, PersistenceManager logic in Python:
-        // 1. Set seeds.
-        // 2. Add generated coords to set.
-        // 3. Ensure chunks exist.
-        // 4. Apply modifications.
-
-        // We need a method to apply modifications to a chunk.
-    }
-
     pub fn apply_modifications(&mut self, mod_chunks_data: Vec<serde_json::Value>) {
         // passing intermediate json value or struct
         // Let's assume passed struct is simple.
