@@ -185,6 +185,12 @@ pub const SPRITE_ITEM_PYRITE: Rect = Rect {
     w: 8.0,
     h: 8.0,
 };
+pub const SPRITE_ITEM_HEMATITE: Rect = Rect {
+    x: 64.0,
+    y: 64.0,
+    w: 8.0,
+    h: 8.0,
+};
 
 // gem items
 pub const SPRITE_ITEM_DIAMOND: Rect = Rect {
