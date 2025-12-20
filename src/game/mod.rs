@@ -40,6 +40,12 @@ pub struct Game {
     pub current_save_name: String,
     pub input_buffer: String,
     pub warehouse_quantity: usize, // 1, 10, 100, or 0 for ALL
+
+    // Input buffering
+    pub key_presses: Vec<KeyCode>,
+    pub mouse_presses: Vec<MouseButton>,
+
+    pub alpha: f32, // Interpolation factor
 }
 
 impl Game {
@@ -68,10 +74,19 @@ impl Game {
             current_save_name: "savegame.json".to_string(),
             input_buffer: String::new(),
             warehouse_quantity: 1,
+            key_presses: Vec::new(),
+            mouse_presses: Vec::new(),
+            alpha: 0.0,
         }
     }
 
     pub fn update(&mut self, game_renderer: &GameRenderer) {
+        // Record previous positions for interpolation
+        self.player_manager.player.old_x = self.player_manager.player.x;
+        self.player_manager.player.old_y = self.player_manager.player.y;
+        self.camera.old_x = self.camera.x;
+        self.camera.old_y = self.camera.y;
+
         if self.persistence_manager.is_loading {
             self.handle_loading(game_renderer);
             return;
@@ -82,7 +97,7 @@ impl Game {
             || self.on_new_game_input_screen
             || self.is_menu_visible
         {
-            if self.is_menu_visible && is_key_pressed(KeyCode::Escape) {
+            if self.is_menu_visible && self.is_key_pressed_buffered(KeyCode::Escape) {
                 self.is_menu_visible = false;
             }
         } else {
@@ -95,6 +110,37 @@ impl Game {
             let t = if success { "success" } else { "error" };
             self.notification_manager
                 .add_notification(msg, t, game_renderer.get_font());
+        }
+    }
+
+    pub fn capture_input(&mut self) {
+        let keys_to_capture = [KeyCode::Escape, KeyCode::I, KeyCode::Tab];
+        for key in keys_to_capture {
+            if is_key_pressed(key) {
+                self.key_presses.push(key);
+            }
+        }
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            self.mouse_presses.push(MouseButton::Left);
+        }
+    }
+
+    pub fn is_key_pressed_buffered(&mut self, key: KeyCode) -> bool {
+        if let Some(pos) = self.key_presses.iter().position(|&k| k == key) {
+            self.key_presses.remove(pos);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_mouse_button_pressed_buffered(&mut self, button: MouseButton) -> bool {
+        if let Some(pos) = self.mouse_presses.iter().position(|&b| b == button) {
+            self.mouse_presses.remove(pos);
+            true
+        } else {
+            false
         }
     }
 

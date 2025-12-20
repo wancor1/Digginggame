@@ -7,8 +7,9 @@ pub struct WorldRenderer;
 
 impl WorldRenderer {
     pub fn draw(game: &mut Game, atlas: Option<&Texture2D>) {
-        let cx = game.camera.x;
-        let cy = game.camera.y;
+        let alpha = game.alpha;
+        let cx = game.camera.old_x + (game.camera.x - game.camera.old_x) * alpha;
+        let cy = game.camera.old_y + (game.camera.y - game.camera.old_y) * alpha;
 
         let blocks = game.world_manager.get_active_blocks_in_view(cx, cy);
         for block in blocks {
@@ -57,16 +58,19 @@ impl WorldRenderer {
         }
 
         let player = &game.player_manager.player;
+        let px = player.old_x + (player.x - player.old_x) * alpha;
+        let py = player.old_y + (player.y - player.old_y) * alpha;
+
         draw_rectangle(
-            (player.x - cx).floor(),
-            (player.y - cy).floor(),
+            (px - cx).floor(),
+            (py - cy).floor(),
             player.width,
             player.height,
             ORANGE,
         );
         draw_rectangle(
-            (player.x - cx + 1.0).floor(),
-            (player.y - cy + 1.0).floor(),
+            (px - cx + 1.0).floor(),
+            (py - cy + 1.0).floor(),
             player.width - 2.0,
             2.0,
             YELLOW,

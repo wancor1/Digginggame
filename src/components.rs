@@ -7,6 +7,8 @@ use macroquad::prelude::*;
 pub struct Camera {
     pub x: f32,
     pub y: f32,
+    pub old_x: f32,
+    pub old_y: f32,
 }
 
 impl Default for Camera {
@@ -17,7 +19,12 @@ impl Default for Camera {
 
 impl Camera {
     pub fn new() -> Self {
-        Self { x: 0.0, y: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            old_x: 0.0,
+            old_y: 0.0,
+        }
     }
 }
 
@@ -125,6 +132,8 @@ pub struct OwnedItem {
 pub struct Player {
     pub x: f32,
     pub y: f32,
+    pub old_x: f32,
+    pub old_y: f32,
     pub vx: f32,
     pub vy: f32,
     pub fuel: f32,
@@ -149,6 +158,8 @@ impl Player {
         Self {
             x,
             y,
+            old_x: x,
+            old_y: y,
             vx: 0.0,
             vy: 0.0,
             fuel: PLAYER_INITIAL_FUEL,

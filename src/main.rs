@@ -75,6 +75,7 @@ async fn main() {
     let mut accumulator = 0.0;
 
     loop {
+        game.capture_input();
         accumulator += get_frame_time();
 
         // Update logic at a fixed rate of 60 FPS
@@ -82,6 +83,8 @@ async fn main() {
             game.update(&game_renderer);
             accumulator -= FRAME_TIME;
         }
+
+        game.alpha = accumulator / FRAME_TIME;
 
         let mut camera_to_render_target =
             Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT));

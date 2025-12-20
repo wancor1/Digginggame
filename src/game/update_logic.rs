@@ -151,7 +151,7 @@ impl Game {
     }
 
     pub fn handle_gameplay_update(&mut self, game_renderer: &GameRenderer) {
-        if is_key_pressed(KeyCode::Escape) {
+        if self.is_key_pressed_buffered(KeyCode::Escape) {
             if self.is_shop_open {
                 self.is_shop_open = false;
             } else if self.is_inventory_open {
@@ -167,7 +167,7 @@ impl Game {
             }
         }
 
-        if is_key_pressed(KeyCode::I) || is_key_pressed(KeyCode::Tab) {
+        if self.is_key_pressed_buffered(KeyCode::I) || self.is_key_pressed_buffered(KeyCode::Tab) {
             if !self.is_menu_visible
                 && !self.is_shop_open
                 && !self.on_warp_place_screen
@@ -215,7 +215,7 @@ impl Game {
             });
         self.select_block.update(hovered_block_coords);
 
-        if is_mouse_button_pressed(MouseButton::Left) {
+        if self.is_mouse_button_pressed_buffered(MouseButton::Left) {
             self.handle_block_interaction(world_mx, world_my, game_renderer);
         }
 
