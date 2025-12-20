@@ -1,6 +1,5 @@
 use crate::constants::*;
-use crate::managers::LanguageManager;
-use crate::utils::{calculate_text_center_position, estimate_text_width};
+
 use macroquad::prelude::*;
 
 #[derive(PartialEq)]
@@ -187,53 +186,6 @@ impl Notification {
         }
     }
 
-    pub fn draw(&self, font: Option<&Font>) {
-        if !self.is_alive {
-            return;
-        }
-
-        draw_rectangle(
-            self.current_x.floor(),
-            self.current_y.floor(),
-            self.box_width,
-            self.box_height,
-            NOTIFICATION_BG_COLOR,
-        );
-
-        let text_col = if self.msg_type == "error" {
-            NOTIFICATION_TEXT_COLOR_ERROR
-        } else if self.msg_type == "success" {
-            NOTIFICATION_TEXT_COLOR_SUCCESS
-        } else {
-            NOTIFICATION_TEXT_COLOR_INFO
-        };
-
-        draw_rectangle_lines(
-            self.current_x.floor(),
-            self.current_y.floor(),
-            self.box_width,
-            self.box_height,
-            1.0,
-            text_col,
-        );
-
-        let mut y_off = self.current_y + NOTIFICATION_PADDING_Y;
-        for line in &self.wrapped_lines {
-            draw_text_ex(
-                line,
-                (self.current_x + NOTIFICATION_PADDING_X).floor(),
-                (y_off + FONT_SIZE * 0.8).floor(),
-                TextParams {
-                    font_size: FONT_SIZE as u16,
-                    font: font.or_else(|| TextParams::default().font),
-                    color: text_col,
-                    ..Default::default()
-                },
-            );
-            y_off += FONT_SIZE + NOTIFICATION_LINE_SPACING;
-        }
-    }
-
     pub fn draw_high_res(&self, font: Option<&Font>, scale: f32, off_x: f32, off_y: f32) {
         if !self.is_alive {
             return;
@@ -295,10 +247,6 @@ impl SelectBlock {
             is_effect_active: false,
             block_coords: None, // Initialize to None
         }
-    }
-
-    pub fn is_effect_active(&self) -> bool {
-        self.is_effect_active
     }
 
     pub fn update(&mut self, hovered_block_coords: Option<(f32, f32)>) {
@@ -369,89 +317,3 @@ impl SelectBlock {
     }
 } // Added missing closing brace
 
-pub struct ButtonBox;
-
-impl ButtonBox {
-    pub fn draw_button(
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        text_key: &str,
-        press_key: &str,
-        lang: &LanguageManager,
-        font: Option<&Font>,
-    ) -> bool {
-        let mouse_pos = mouse_position();
-        let mx = (mouse_pos.0 / screen_width()) * SCREEN_WIDTH;
-        let my = (mouse_pos.1 / screen_height()) * SCREEN_HEIGHT;
-
-        let is_hover = mx >= x && mx < x + w && my >= y && my < y + h;
-        let is_pressed = is_hover && is_mouse_button_down(MouseButton::Left);
-        let is_released = is_hover && is_mouse_button_released(MouseButton::Left);
-
-        let bg_col = if is_pressed {
-            COLOR_BUTTON_PRESSED_BG
-        } else {
-            COLOR_BUTTON_BG
-        };
-        draw_rectangle(x.floor(), y.floor(), w, h, bg_col);
-        draw_rectangle_lines(x.floor(), y.floor(), w, h, 1.0, COLOR_BUTTON_BORDER);
-
-        if !is_pressed {
-            draw_line(
-                (x + w - 1.0).floor(),
-                (y + 1.0).floor(),
-                (x + w - 1.0).floor(),
-                (y + h - 1.0).floor(),
-                1.0,
-                BLACK,
-            );
-            draw_line(
-                (x + 1.0).floor(),
-                (y + h - 1.0).floor(),
-                (x + w - 2.0).floor(),
-                (y + h - 1.0).floor(),
-                1.0,
-                BLACK,
-            );
-        }
-
-        let key = if is_pressed { press_key } else { text_key };
-        let label = lang.get_string(key);
-
-        let (tx, ty) = calculate_text_center_position(w, h, &label);
-
-        let text_offset_x = if is_pressed { 1.0 } else { 0.0 };
-        let text_offset_y = if is_pressed { 1.0 } else { 0.0 };
-
-        // Ensure color is correct using TextParams
-        draw_text_ex(
-            &label,
-            (x + tx + text_offset_x).floor(),
-            (y + ty + text_offset_y + 1.0).floor(),
-            TextParams {
-                font_size: FONT_SIZE as u16,
-                font: font.or_else(|| TextParams::default().font),
-                color: COLOR_BUTTON_TEXT,
-                ..Default::default()
-            },
-        );
-        is_released
-    }
-}
-
-pub struct GameMenu {
-    pub is_open: bool, // is_menu_visible
-    pub lang_dropdown_open: bool,
-}
-
-impl GameMenu {
-    pub fn new() -> Self {
-        Self {
-            is_open: false,
-            lang_dropdown_open: false,
-        }
-        // State is mostly managing interactions, which is handled in draw/update for IMGUI style here.
-    }
-}

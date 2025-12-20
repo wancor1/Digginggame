@@ -90,12 +90,7 @@ pub const CHUNK_SIZE_Y_BLOCKS: usize = 16;
 pub const SELECTION_PULSE_DURATION: f64 = 2.0; // Duration of one full pulse cycle in seconds
 pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite enlarges
 
-// Camera Speed Constants
-pub const CAMERA_SPEED_NORMAL: f32 = 8.0;
-pub const CAMERA_SPEED_FAST: f32 = 16.0;
 
-pub const INITIAL_CAMERA_DELAY_SECONDS: f64 = 0.01; // Initial delay before continuous movement starts
-pub const CAMERA_MOVE_INTERVAL_SECONDS: f64 = 0.05; // Interval between continuous movements
 
 // World Generation Constants
 pub const HARDNESS_MIN: i32 = 3;
@@ -114,14 +109,12 @@ pub const FRICTION_ON_GROUND: f32 = 0.85;
 
 // Component Constants
 pub const PARTICLE_SPEED_MIN: f32 = 20.0 / 60.0;
-pub const PARTICLE_SPEED_MAX: f32 = 60.0 / 60.0;
+pub const PARTICLE_SPEED_MAX: f32 = 1.0;
 
 // Player Constants
 pub const PLAYER_INITIAL_FUEL: f32 = 100.0;
 pub const PLAYER_INITIAL_CARGO: usize = 30;
 pub const PLAYER_GRAVITY: f32 = 0.1;
-pub const PLAYER_THRUST: f32 = 0.2;
-pub const PLAYER_MOVE_SPEED: f32 = 1.0;
 pub const PLAYER_FRICTION_AIR: f32 = 0.95;
 pub const PLAYER_FRICTION_GROUND: f32 = 0.8;
 pub const PLAYER_TERMINAL_VELOCITY: f32 = 4.0;

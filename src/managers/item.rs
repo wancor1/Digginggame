@@ -6,6 +6,12 @@ pub struct ItemManager {
     pub items: Vec<Item>,
 }
 
+impl Default for ItemManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ItemManager {
     pub fn new() -> Self {
         Self { items: Vec::new() }
@@ -48,7 +54,7 @@ impl ItemManager {
 
             y = item.y + item.vy;
             let item_rect_y = Rect::new(x, y, 4.0, 4.0);
-            let mut on_ground = false;
+            let mut _on_ground = false;
 
             for block in blocks {
                 let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
@@ -57,7 +63,7 @@ impl ItemManager {
                         y = block.y - 4.0;
                         item.vy = 0.0;
                         item.vx *= PLAYER_FRICTION_GROUND;
-                        on_ground = true;
+                        _on_ground = true;
                     } else if item.vy < 0.0 {
                         y = block.y + BLOCK_SIZE;
                         item.vy = 0.0;
@@ -67,11 +73,9 @@ impl ItemManager {
             item.y = y;
 
             // Collection by player
-            if player_rect.overlaps(&item.rect()) {
-                if player.cargo.len() < player.max_cargo {
-                    player.cargo.push(item.item_type.clone());
-                    item.alive = false;
-                }
+            if player_rect.overlaps(&item.rect()) && player.cargo.len() < player.max_cargo {
+                player.cargo.push(item.item_type.clone());
+                item.alive = false;
             }
         }
 

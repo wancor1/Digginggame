@@ -8,6 +8,12 @@ pub struct Camera {
     pub y: f32,
 }
 
+impl Default for Camera {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Camera {
     pub fn new() -> Self {
         Self { x: 0.0, y: 0.0 }
@@ -34,7 +40,7 @@ pub struct Particle {
 
 impl Particle {
     pub fn new(x_start: f32, y_start: f32, color: Color) -> Self {
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
         let center_x = x_start + BLOCK_SIZE / 2.0;
         let center_y = y_start + BLOCK_SIZE / 2.0;
         let angle = rng.random_range(0.0..std::f32::consts::TAU);
@@ -45,7 +51,7 @@ impl Particle {
             y: center_y,
             vx: angle.cos() * speed,
             vy: angle.sin() * speed - 1.5,
-            color: color,
+            color,
             alive: true,
             time_landed: None,
         }
@@ -169,7 +175,7 @@ pub struct Item {
 
 impl Item {
     pub fn new(x: f32, y: f32, item_type: String, sprite_rect: Rect) -> Self {
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
         Self {
             x,
             y,

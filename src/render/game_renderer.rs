@@ -1,8 +1,6 @@
 use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
-use crate::ui::ButtonBox;
-use crate::utils::calculate_text_center_position;
 use ::rand::Rng;
 use macroquad::prelude::*;
 use macroquad::text::load_ttf_font_from_bytes;
@@ -39,57 +37,7 @@ impl GameRenderer {
         }
     }
 
-    pub fn get_average_block_color(&self, rect: Rect) -> Color {
-        if let Some(atlas_image) = &self.atlas_image {
-            let mut total_r: u32 = 0;
-            let mut total_g: u32 = 0;
-            let mut total_b: u32 = 0;
-            let mut total_a: u32 = 0;
-            let mut pixel_count: u32 = 0;
 
-            let img_width = atlas_image.width as usize;
-            let img_height = atlas_image.height as usize;
-
-            let rect_x_start = rect.x as usize;
-            let rect_y_start = rect.y as usize;
-            let rect_x_end = (rect.x + rect.w) as usize;
-            let rect_y_end = (rect.y + rect.h) as usize;
-
-            for y in rect_y_start..rect_y_end {
-                for x in rect_x_start..rect_x_end {
-                    if x < img_width && y < img_height {
-                        let index = (y * img_width + x) * 4; // 4 bytes per pixel (RGBA)
-                        if index + 3 < atlas_image.bytes.len() {
-                            total_r += atlas_image.bytes[index] as u32;
-                            total_g += atlas_image.bytes[index + 1] as u32;
-                            total_b += atlas_image.bytes[index + 2] as u32;
-                            total_a += atlas_image.bytes[index + 3] as u32;
-                            pixel_count += 1;
-                        }
-                    }
-                }
-            }
-
-            if pixel_count > 0 {
-                let avg_r = (total_r / pixel_count) as u8;
-                let avg_g = (total_g / pixel_count) as u8;
-                let avg_b = (total_b / pixel_count) as u8;
-                let avg_a = (total_a / pixel_count) as u8;
-                Color::new(
-                    avg_r as f32 / 255.0,
-                    avg_g as f32 / 255.0,
-                    avg_b as f32 / 255.0,
-                    avg_a as f32 / 255.0,
-                )
-            } else {
-                // If rect is out of bounds or empty, return a default color
-                WHITE
-            }
-        } else {
-            // If atlas_image is not loaded, return a default color
-            WHITE
-        }
-    }
 
     pub fn get_random_pixel_color(&self, rect: Rect) -> Color {
         if let Some(atlas_image) = &self.atlas_image {
@@ -101,7 +49,7 @@ impl GameRenderer {
             let rect_x_end = (rect.x + rect.w) as usize;
             let rect_y_end = (rect.y + rect.h) as usize;
 
-            let mut rng = ::rand::thread_rng();
+            let mut rng = ::rand::rng();
 
             if rect_x_start >= img_width || rect_y_start >= img_height {
                 return WHITE; // Rect starts out of image bounds

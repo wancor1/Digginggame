@@ -38,25 +38,21 @@ impl PersistenceManager {
     pub fn list_save_files() -> Vec<String> {
         let mut files = Vec::new();
         if let Ok(entries) = fs::read_dir(".") {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let path = entry.path();
-                    if let Some(ext) = path.extension() {
-                        if ext == "json" {
-                            if let Some(stem) = path.file_stem() {
-                                if let Some(str_stem) = stem.to_str() {
-                                    // Optional: specific naming convention check?
-                                    // For now, accept all .json files as potential saves,
-                                    // or maybe filter by prefix if needed.
-                                    // User said "show json name".
-                                    if let Some(file_name) = path.file_name() {
-                                        if let Some(name_str) = file_name.to_str() {
-                                            files.push(name_str.to_string());
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(ext) = path.extension()
+                    && ext == "json"
+                    && let Some(stem) = path.file_stem()
+                    && let Some(_str_stem) = stem.to_str()
+                {
+                    // Optional: specific naming convention check?
+                    // For now, accept all .json files as potential saves,
+                    // or maybe filter by prefix if needed.
+                    // User said "show json name".
+                    if let Some(file_name) = path.file_name()
+                        && let Some(name_str) = file_name.to_str()
+                    {
+                        files.push(name_str.to_string());
                     }
                 }
             }

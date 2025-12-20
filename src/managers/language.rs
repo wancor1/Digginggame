@@ -19,10 +19,10 @@ impl LanguageManager {
         };
         manager.discover_languages();
 
-        if !manager.load_language(DEFAULT_LANGUAGE) {
-            if let Some(first_key) = manager.languages.keys().next().cloned() {
-                manager.load_language(&first_key);
-            }
+        if !manager.load_language(DEFAULT_LANGUAGE)
+            && let Some(first_key) = manager.languages.keys().next().cloned()
+        {
+            manager.load_language(&first_key);
         }
 
         manager
@@ -55,23 +55,23 @@ impl LanguageManager {
         }
     }
 
-    pub fn get_available_languages(&self) -> HashMap<String, String> {
+    pub fn _get_available_languages(&self) -> HashMap<String, String> {
         self.languages.clone()
     }
 
     pub fn load_language(&mut self, lang_code: &str) -> bool {
         let path = Path::new(LANG_FOLDER).join(format!("{}.json", lang_code));
-        if let Ok(content) = fs::read_to_string(path) {
-            if let Ok(json) = serde_json::from_str::<HashMap<String, Value>>(&content) {
-                self.translations.clear();
-                for (k, v) in json {
-                    if let Value::String(s) = v {
-                        self.translations.insert(k, s);
-                    }
+        if let Ok(content) = fs::read_to_string(path)
+            && let Ok(json) = serde_json::from_str::<HashMap<String, Value>>(&content)
+        {
+            self.translations.clear();
+            for (k, v) in json {
+                if let Value::String(s) = v {
+                    self.translations.insert(k, s);
                 }
-                self.current_lang_code = lang_code.to_string();
-                return true;
             }
+            self.current_lang_code = lang_code.to_string();
+            return true;
         }
         false
     }
@@ -86,7 +86,7 @@ impl LanguageManager {
     // Rust doesn't support **kwargs in the same way. We'll use a simple format replacement helper if needed,
     // or just return the string. The Python code uses .format(**kwargs).
     // Start with basic get_string.
-    pub fn get_string_fmt(&self, key: &str, args: &[(&str, &str)]) -> String {
+    pub fn _get_string_fmt(&self, key: &str, args: &[(&str, &str)]) -> String {
         let mut s = self.get_string(key);
         for (k, v) in args {
             s = s.replace(&format!("{{{}}}", k), v);

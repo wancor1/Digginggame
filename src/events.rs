@@ -1,5 +1,4 @@
 pub enum GameEvent {
-    StartGame, // Just kept for compatibility or used as "Game Started" signal
     OpenSaveSelection,
     LoadSave(String),
     StartNewGameSetup,
@@ -20,10 +19,4 @@ pub enum GameEvent {
     CloseMenu,
 }
 
-pub enum CameraMoveIntent {
-    Up,
-    Down,
-    Left,
-    Right,
-    None,
-}
+

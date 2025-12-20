@@ -1,7 +1,7 @@
 use crate::components::Particle;
 use crate::managers::persistence::BlockSaveData;
 use ::rand::Rng;
-use image::{GenericImageView, ImageFormat, load_from_memory_with_format};
+use image::{ImageFormat, load_from_memory_with_format};
 use macroquad::prelude::*;
 use miniquad::conf::Icon; // Import miniquad's Icon struct
 
@@ -16,7 +16,7 @@ mod utils;
 use crate::components::Camera;
 use crate::utils::world_to_chunk_coords;
 use constants::*;
-use events::{CameraMoveIntent, GameEvent};
+use events::GameEvent;
 use managers::*;
 use render::game_renderer::GameRenderer;
 use ui::*;
@@ -73,7 +73,6 @@ pub struct Game {
     persistence_manager: PersistenceManager,
     lang_manager: LanguageManager,
     notification_manager: NotificationManager,
-    input_handler: InputHandler,
     select_block: SelectBlock,
     pub camera: Camera,
     pub player_manager: PlayerManager,
@@ -104,7 +103,6 @@ impl Game {
             persistence_manager: PersistenceManager::new(),
             lang_manager: LanguageManager::new(),
             notification_manager: NotificationManager::new(),
-            input_handler: InputHandler::new(),
             select_block: SelectBlock::new(),
             camera: Camera::new(),
             player_manager: PlayerManager::new(80.0, 48.0), // Spawn at middle top
@@ -167,14 +165,12 @@ impl Game {
                     );
                     self.on_title_screen = false;
                     self.is_menu_visible = false;
-                } else {
-                    if let serde_json::Value::String(msg) = data {
-                        self.notification_manager.add_notification(
-                            msg,
-                            "error",
-                            game_renderer.get_font(),
-                        );
-                    }
+                } else if let serde_json::Value::String(msg) = data {
+                    self.notification_manager.add_notification(
+                        msg,
+                        "error",
+                        game_renderer.get_font(),
+                    );
                 }
             }
             return; // Block updates while loading
@@ -188,10 +184,8 @@ impl Game {
         {
             // Specific update logic for these screens.
             // Currently, only the in-game menu needs an update check here.
-            if self.is_menu_visible {
-                if is_key_pressed(KeyCode::Escape) {
-                    self.is_menu_visible = false;
-                }
+            if self.is_menu_visible && is_key_pressed(KeyCode::Escape) {
+                self.is_menu_visible = false;
             }
         } else {
             // Process Player Movement
@@ -237,14 +231,13 @@ impl Game {
             let hovered_block_coords = self
                 .world_manager
                 .get_block_at_world_coords(world_mx, world_my)
-                .map(|(_, _, _, _, block)| {
+                .and_then(|(_, _, _, _, block)| {
                     if !block.is_broken {
                         Some((block.x, block.y)) // Return block's grid coordinates if not broken
                     } else {
                         None // Block is broken, no hover effect
                     }
-                })
-                .flatten(); // Flatten Option<Option<T>> to Option<T>
+                });
             self.select_block.update(hovered_block_coords);
 
             if is_mouse_button_pressed(MouseButton::Left) {
@@ -268,7 +261,7 @@ impl Game {
                             block.current_hp = 0;
                             block.is_broken = true;
                             block.is_modified = true;
-                            let count = ::rand::thread_rng().random_range(5..15); // Particle count
+                            let count = ::rand::rng().random_range(5..15); // Particle count
                             let particles: Vec<Particle> = (0..count)
                                 .map(|_| {
                                     let particle_color = block.sprite_rect.map_or(WHITE, |rect| {
@@ -325,10 +318,6 @@ impl Game {
             self.notification_manager
                 .add_notification(msg, t, game_renderer.get_font());
         }
-    }
-
-    fn draw(&mut self) {
-        println!("Game: Drawing is now handled by GameRenderer.");
     }
 
     // Helper to gather save data
@@ -521,7 +510,6 @@ async fn main() {
             .chain(additional_ui_events.into_iter())
         {
             match event {
-                GameEvent::StartGame => {}
                 GameEvent::OpenSaveSelection => {
                     game.save_files = PersistenceManager::list_save_files();
                     game.on_title_screen = false;
