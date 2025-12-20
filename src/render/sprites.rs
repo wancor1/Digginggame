@@ -83,6 +83,12 @@ pub const SPRITE_BLOCK_URANIUM: Rect = Rect {
     w: 8.0,
     h: 8.0,
 };
+pub const SPRITE_BLOCK_PYRITE: Rect = Rect {
+    x: 56.0,
+    y: 56.0,
+    w: 8.0,
+    h: 8.0,
+};
 
 // gem blocks
 pub const SPRITE_BLOCK_DIAMOND: Rect = Rect {
@@ -115,7 +121,7 @@ pub const SPRITE_BLOCK_AMETHYST: Rect = Rect {
     x: 72.0,
     y: 0.0,
     w: 32.0,
-    h: 80.0,
+    h: 48.0,
 };
 
 // Animation
