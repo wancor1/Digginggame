@@ -243,7 +243,7 @@ impl GameRenderer {
                 &game.lang_manager,
                 self.font.as_ref(),
             ) {
-                events.push(GameEvent::ReturnToTitle);
+                events.push(GameEvent::StartNewGameSetup);
             }
             if ButtonBox::draw_button(
                 2.0,

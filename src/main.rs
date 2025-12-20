@@ -2,6 +2,7 @@ use crate::components::Particle;
 use crate::managers::persistence::BlockSaveData;
 use ::rand::Rng;
 use macroquad::prelude::*;
+use macroquad::miniquad::{conf::Icon};
 
 mod components;
 mod constants;
@@ -19,11 +20,31 @@ use managers::*;
 use render::game_renderer::GameRenderer;
 use ui::*;
 
+
 fn window_conf() -> Conf {
+    let img = image::open("icon.png").expect("icon load failed");
+    let img = img.to_rgba8();
+
+    let small = image::imageops::resize(&img, 16, 16, image::imageops::FilterType::Lanczos3)
+        .into_raw()
+        .try_into()
+        .expect("16x16 icon must be 1024 bytes (RGBA)");
+    let medium = image::imageops::resize(&img, 32, 32, image::imageops::FilterType::Lanczos3)
+        .into_raw()
+        .try_into()
+        .expect("32x32 icon must be 4096 bytes (RGBA)");
+    let big = image::imageops::resize(&img, 64, 64, image::imageops::FilterType::Lanczos3)
+        .into_raw()
+        .try_into()
+        .expect("64x64 icon must be 16384 bytes (RGBA)");
+
+    let icon = Icon { small, medium, big };
+
     Conf {
         window_title: "Digging Game".to_owned(),
         window_width: SCREEN_WIDTH as i32 * 4, // Scale up for visibility
         window_height: SCREEN_HEIGHT as i32 * 4,
+        icon: Some(icon),
         ..Default::default()
     }
 }
@@ -223,7 +244,7 @@ impl Game {
                             block.current_hp = 0;
                             block.is_broken = true;
                             block.is_modified = true;
-                            let count = ::rand::thread_rng().random_range(5..15); // Particle count
+                            let count = ::rand::rng().random_range(5..15); // Particle count
                             let particles: Vec<Particle> = (0..count)
                                 .map(|_| {
                                     let particle_color = block.sprite_rect.map_or(WHITE, |rect| {
