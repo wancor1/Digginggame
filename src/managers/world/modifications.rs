@@ -11,7 +11,7 @@ pub fn apply_chunk_save_data(
         if chunk_pair.len() < 2 {
             break;
         }
-        let type_id = chunk_pair[0] as u8;
+        let type_id = chunk_pair[0] as u32;
         let count = chunk_pair[1];
         let block_type = BlockType::from_id(type_id);
 

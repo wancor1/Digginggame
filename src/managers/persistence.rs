@@ -10,7 +10,7 @@ pub const SAVE_DIR: &str = "saves";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockSaveData {
-    pub i: u16, // index in chunk
+    pub i: u32, // index in chunk
     pub t: crate::components::BlockType,
     pub n: Option<String>,
 }
@@ -21,7 +21,7 @@ pub struct ChunkSaveData {
     pub cy: i32,
     /// Flat RLE encoded blocks: [type_id, count, type_id, count, ...]
     /// This represents the entire chunk state efficiently in a single array.
-    pub blocks: Vec<u16>,
+    pub blocks: Vec<u32>,
     /// Special blocks that need additional data (like names)
     pub named_blocks: Vec<BlockSaveData>,
 }

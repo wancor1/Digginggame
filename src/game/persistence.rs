@@ -32,18 +32,18 @@ impl Game {
 
         for (&(cx, cy), chunk) in self.world_manager.chunks.iter() {
             if chunk.is_modified_in_session {
-                let mut rle_blocks: Vec<u16> = Vec::new();
+                let mut rle_blocks: Vec<u32> = Vec::new();
                 let mut named_blocks: Vec<BlockSaveData> = Vec::new();
 
-                let mut last_type_id: Option<u8> = None;
-                let mut current_count: u16 = 0;
+                let mut last_type_id: Option<u32> = None;
+                let mut current_count: u32 = 0;
 
                 // Scan row-major (y then x) for better horizontal RLE runs
                 for by in 0..CHUNK_SIZE_Y_BLOCKS {
                     for bx in 0..CHUNK_SIZE_X_BLOCKS {
                         let block = &chunk.blocks[bx][by];
                         let type_id = block.block_type.to_id();
-                        let index = (bx * CHUNK_SIZE_Y_BLOCKS + by) as u16;
+                        let index = (bx * CHUNK_SIZE_Y_BLOCKS + by) as u32;
 
                         if let Some(name) = &block.name {
                             named_blocks.push(BlockSaveData {
@@ -54,10 +54,10 @@ impl Game {
                         }
 
                         if let Some(last_id) = last_type_id {
-                            if last_id == type_id && current_count < u16::MAX {
+                            if last_id == type_id && current_count < u32::MAX {
                                 current_count += 1;
                             } else {
-                                rle_blocks.push(last_id as u16);
+                                rle_blocks.push(last_id as u32);
                                 rle_blocks.push(current_count);
                                 last_type_id = Some(type_id);
                                 current_count = 1;
@@ -70,7 +70,7 @@ impl Game {
                 }
 
                 if let Some(last_id) = last_type_id {
-                    rle_blocks.push(last_id as u16);
+                    rle_blocks.push(last_id as u32);
                     rle_blocks.push(current_count);
                 }
 

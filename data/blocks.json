@@ -41,16 +41,6 @@
   },
   {
     "id": 4,
-    "name": "Coal",
-    "is_solid": true,
-    "is_placeable": true,
-    "base_hardness": 20,
-    "sprite": { "x": 128.0, "y": 0.0, "w": 8.0, "h": 8.0 },
-    "item_type": "Coal",
-    "weight": 10
-  },
-  {
-    "id": 5,
     "name": "Indestructible",
     "is_solid": true,
     "is_placeable": false,
@@ -60,7 +50,27 @@
     "weight": 0
   },
   {
-    "id": 6,
+    "id": 10,
+    "name": "Coal",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 20,
+    "sprite": { "x": 128.0, "y": 0.0, "w": 8.0, "h": 8.0 },
+    "item_type": "Coal",
+    "weight": 10
+  },
+  {
+    "id": 11,
+    "name": "Oil Shale",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 0,
+    "sprite": { "x": 128.0, "y": 8.0, "w": 8.0, "h": 8.0 },
+    "item_type": "",
+    "weight": 0
+  },
+  {
+    "id": 500,
     "name": "WarpGate",
     "is_solid": false,
     "is_placeable": true,

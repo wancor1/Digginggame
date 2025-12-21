@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct BlockType(pub u8);
+pub struct BlockType(pub u32);
 
 #[allow(non_upper_case_globals)]
 impl BlockType {
@@ -13,9 +13,9 @@ impl BlockType {
     pub const DIRT: BlockType = BlockType(1);
     pub const GRASS: BlockType = BlockType(2);
     pub const STONE: BlockType = BlockType(3);
-    pub const COAL: BlockType = BlockType(4);
-    pub const INDESTRUCTIBLE: BlockType = BlockType(5);
-    pub const WARP_GATE: BlockType = BlockType(6);
+    pub const INDESTRUCTIBLE: BlockType = BlockType(4);
+    pub const COAL: BlockType = BlockType(6);
+    pub const WARP_GATE: BlockType = BlockType(500);
 
     pub const Air: BlockType = Self::AIR;
     pub const Dirt: BlockType = Self::DIRT;
@@ -25,11 +25,11 @@ impl BlockType {
     pub const Indestructible: BlockType = Self::INDESTRUCTIBLE;
     pub const WarpGate: BlockType = Self::WARP_GATE;
 
-    pub fn to_id(&self) -> u8 {
+    pub fn to_id(&self) -> u32 {
         self.0
     }
 
-    pub fn from_id(id: u8) -> Self {
+    pub fn from_id(id: u32) -> Self {
         BlockType(id)
     }
 
@@ -64,7 +64,7 @@ lazy_static! {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockData {
-    pub id: u8,
+    pub id: u32,
     pub name: String,
     pub is_solid: bool,
     pub is_placeable: bool,
@@ -89,8 +89,8 @@ impl From<BlockRect> for Rect {
 }
 
 pub struct BlockManager {
-    blocks: HashMap<u8, BlockData>,
-    item_type_to_id: HashMap<String, u8>,
+    blocks: HashMap<u32, BlockData>,
+    item_type_to_id: HashMap<String, u32>,
 }
 
 impl BlockManager {
