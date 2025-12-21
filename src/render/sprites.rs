@@ -51,20 +51,39 @@ pub const SPRITE_BLOCK_INDESTRUCTIBLE: Rect = Rect {
 
 // utils
 pub const SPRITE_BLOCK_WARPGATE: Rect = Rect {
-    x: 40.0,
-    y: 48.0,
-    w: 8.0,
-    h: 8.0,
-};
-
-/// ---------------------------------------------------
-// sedimentary_solid
-pub const SPRITE_BLOCK_COAL: Rect = Rect {
     x: 56.0,
     y: 0.0,
     w: 8.0,
     h: 8.0,
 };
+
+/// ---------------------------------------------------
+/// natural
+// sedimentary_solid
+pub const SPRITE_BLOCK_COAL: Rect = Rect {
+    x: 128.0,
+    y: 0.0,
+    w: 8.0,
+    h: 8.0,
+};
+// subsurface_fluid
+// surface_liquid
+// metal_ore
+// precious_metal_ore
+// rare_metal_ore
+// radioactive_ore
+// aluminum_ore
+// native_element
+// gemstone
+// crystal_cluster
+// industrial_mineral
+// volcanic
+// hazardous
+/// ---------------------------------------------------
+/// processed
+// refined_metal
+// alloy
+// refined_material
 
 /// ---------------------------------------------------
 // Animation
