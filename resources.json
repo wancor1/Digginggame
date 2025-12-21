@@ -1,0 +1,248 @@
+{
+  "natural": {
+    "ja": "自然資源",
+    "en": "Natural Resources",
+    "forms": {
+      "sedimentary_solid": {
+        "ja": "堆積性固体資源",
+        "en": "Sedimentary Solid Resources",
+        "resources": [
+          {"ja": "石炭", "en": "Coal", "rarity": 8.50},
+          {"ja": "オイルシェール", "en": "Oil Shale", "rarity": 7.80},
+          {"ja": "土瀝青", "en": "Bitumen", "rarity": 7.20},
+          {"ja": "石灰岩", "en": "Limestone", "rarity": 9.80},
+          {"ja": "ドロマイト", "en": "Dolomite", "rarity": 9.20}
+        ]
+      },
+      "subsurface_fluid": {
+        "ja": "地下流体資源",
+        "en": "Subsurface Fluids",
+        "resources": [
+          {"ja": "石油", "en": "Petroleum", "rarity": 6.50},
+          {"ja": "天然ガス", "en": "Natural Gas", "rarity": 6.80}
+        ]
+      },
+      "surface_liquid": {
+        "ja": "地表液体",
+        "en": "Surface Liquids",
+        "resources": [
+          {"ja": "水", "en": "Water", "rarity": 10.00},
+          {"ja": "海水", "en": "Seawater", "rarity": 10.00},
+          {"ja": "塩湖水", "en": "Brine", "rarity": 6.80},
+          {"ja": "リチウム塩湖", "en": "Lithium Brine", "rarity": 3.20}
+        ]
+      },
+      "metal_ore": {
+        "ja": "金属鉱石",
+        "en": "Metal Ores",
+        "resources": [
+          {"ja": "黄銅鉱", "en": "Chalcopyrite", "rarity": 7.50},
+          {"ja": "斑銅鉱", "en": "Bornite", "rarity": 6.80},
+          {"ja": "輝銅鉱", "en": "Chalcocite", "rarity": 6.50},
+          {"ja": "赤銅鉱", "en": "Cuprite", "rarity": 6.00},
+          {"ja": "孔雀石", "en": "Malachite", "rarity": 7.00},
+          {"ja": "藍銅鉱", "en": "Azurite", "rarity": 5.50},
+
+          {"ja": "赤鉄鉱", "en": "Hematite", "rarity": 9.00},
+          {"ja": "磁鉄鉱", "en": "Magnetite", "rarity": 9.20},
+          {"ja": "褐鉄鉱", "en": "Limonite", "rarity": 8.80},
+          {"ja": "菱鉄鉱", "en": "Siderite", "rarity": 7.50},
+          {"ja": "黄鉄鉱", "en": "Pyrite", "rarity": 8.20},
+          {"ja": "白鉄鉱", "en": "Marcasite", "rarity": 6.00},
+
+          {"ja": "閃亜鉛鉱", "en": "Sphalerite", "rarity": 7.80},
+          {"ja": "方鉛鉱", "en": "Galena", "rarity": 7.60},
+          {"ja": "錫石", "en": "Cassiterite", "rarity": 6.20},
+
+          {"ja": "軟マンガン鉱", "en": "Pyrolusite", "rarity": 7.00},
+          {"ja": "菱マンガン鉱", "en": "Rhodochrosite", "rarity": 5.20},
+
+          {"ja": "金紅石", "en": "Rutile", "rarity": 6.50},
+          {"ja": "チタン鉄鉱", "en": "Ilmenite", "rarity": 6.80},
+          {"ja": "クロム鉄鉱", "en": "Chromite", "rarity": 6.20},
+
+          {"ja": "硫鉄ニッケル鉱", "en": "Pentlandite", "rarity": 5.00},
+          {"ja": "コバルト鉱", "en": "Cobalt Ore", "rarity": 4.80}
+        ]
+      },
+      "precious_metal_ore": {
+        "ja": "貴金属鉱石",
+        "en": "Precious Metal Ores",
+        "resources": [
+          {"ja": "自然金", "en": "Native Gold", "rarity": 3.00},
+          {"ja": "自然銀", "en": "Native Silver", "rarity": 3.50},
+          {"ja": "粗白金", "en": "Platinum Ore", "rarity": 2.00}
+        ]
+      },
+      "rare_metal_ore": {
+        "ja": "レアメタル鉱石",
+        "en": "Rare Metal Ores",
+        "resources": [
+          {"ja": "コルタン", "en": "Coltan", "rarity": 2.50},
+          {"ja": "ニオブ鉱", "en": "Niobium Ore", "rarity": 3.00},
+          {"ja": "タンタル鉱", "en": "Tantalum Ore", "rarity": 2.00},
+          {"ja": "モナズ石", "en": "Monazite", "rarity": 2.20},
+          {"ja": "バストネス石", "en": "Bastnasite", "rarity": 2.40},
+          {"ja": "ガドリン石", "en": "Gadolinite", "rarity": 1.80},
+          {"ja": "リシア輝石", "en": "Spodumene", "rarity": 4.00},
+          {"ja": "リチア雲母", "en": "Lepidolite", "rarity": 4.20}
+        ]
+      },
+      "radioactive_ore": {
+        "ja": "放射性鉱石",
+        "en": "Radioactive Ores",
+        "resources": [
+          {"ja": "閃ウラン鉱", "en": "Uraninite", "rarity": 1.50},
+          {"ja": "トール石", "en": "Thorite", "rarity": 1.20}
+        ]
+      },
+      "aluminum_ore": {
+        "ja": "アルミニウム鉱石",
+        "en": "Aluminum Ores",
+        "resources": [
+          {"ja": "ボーキサイト", "en": "Bauxite", "rarity": 7.80},
+          {"ja": "氷晶石", "en": "Cryolite", "rarity": 2.50}
+        ]
+      },
+      "native_element": {
+        "ja": "自然元素",
+        "en": "Native Elements",
+        "resources": [
+          {"ja": "自然硫黄", "en": "Native Sulfur", "rarity": 7.00},
+          {"ja": "黒鉛", "en": "Graphite", "rarity": 8.00},
+          {"ja": "隕石鉄", "en": "Meteoric Iron", "rarity": 0.50}
+        ]
+      },
+      "gemstone": {
+        "ja": "宝石",
+        "en": "Gemstones",
+        "resources": [
+          {"ja": "ダイヤモンド", "en": "Diamond", "rarity": 1.80},
+          {"ja": "エメラルド", "en": "Emerald", "rarity": 2.20},
+          {"ja": "サファイア", "en": "Sapphire", "rarity": 2.50},
+          {"ja": "ルビー", "en": "Ruby", "rarity": 2.50},
+          {"ja": "アメジスト", "en": "Amethyst", "rarity": 5.50},
+          {"ja": "ガーネット", "en": "Garnet", "rarity": 5.20},
+          {"ja": "オパール", "en": "Opal", "rarity": 3.50},
+          {"ja": "スピネル", "en": "Spinel", "rarity": 3.20},
+          {"ja": "緑柱石", "en": "Beryl", "rarity": 4.80},
+          {"ja": "ベニト石", "en": "Benitoite", "rarity": 0.80},
+          {"ja": "トルマリン", "en": "Tourmaline", "rarity": 4.50},
+          {"ja": "ジルコン", "en": "Zircon", "rarity": 4.50},
+          {"ja": "トパーズ", "en": "Topaz", "rarity": 4.20}
+        ]
+      },
+      "crystal_cluster": {
+        "ja": "結晶・結晶群",
+        "en": "Crystal Clusters",
+        "resources": [
+          {"ja": "石英", "en": "Quartz", "rarity": 9.50},
+          {"ja": "水晶群", "en": "Quartz Crystal Cluster", "rarity": 8.80},
+          {"ja": "蛍石結晶", "en": "Fluorite Crystal", "rarity": 7.20},
+          {"ja": "方解石結晶", "en": "Calcite Crystal", "rarity": 8.50}
+        ]
+      },
+      "industrial_mineral": {
+        "ja": "工業用鉱物",
+        "en": "Industrial Minerals",
+        "resources": [
+          {"ja": "石膏", "en": "Gypsum", "rarity": 8.50},
+          {"ja": "蛍石", "en": "Fluorite", "rarity": 7.80},
+          {"ja": "岩塩", "en": "Rock Salt", "rarity": 9.50},
+          {"ja": "カリ岩塩", "en": "Sylvite", "rarity": 8.00},
+          {"ja": "硝石", "en": "Saltpeter", "rarity": 6.00},
+          {"ja": "チリ硝石", "en": "Chile Saltpeter", "rarity": 5.50},
+          {"ja": "燐灰石", "en": "Apatite", "rarity": 7.00},
+          {"ja": "硼砂", "en": "Borax", "rarity": 6.80},
+          {"ja": "長石", "en": "Feldspar", "rarity": 9.00},
+          {"ja": "粘土", "en": "Clay", "rarity": 9.80},
+          {"ja": "珪砂", "en": "Silica Sand", "rarity": 9.60}
+        ]
+      },
+      "volcanic": {
+        "ja": "火山性鉱物",
+        "en": "Volcanic Materials",
+        "resources": [
+          {"ja": "黒曜石", "en": "Obsidian", "rarity": 7.00},
+          {"ja": "軽石", "en": "Pumice", "rarity": 8.20}
+        ]
+      },
+      "hazardous": {
+        "ja": "危険鉱物",
+        "en": "Hazardous Minerals",
+        "resources": [
+          {"ja": "辰砂", "en": "Cinnabar", "rarity": 3.50},
+          {"ja": "毒砂", "en": "Arsenopyrite", "rarity": 3.20},
+          {"ja": "石綿", "en": "Asbestos", "rarity": 6.00}
+        ]
+      }
+    }
+  },
+  "processed": {
+    "ja": "加工資源",
+    "en": "Processed Resources",
+    "forms": {
+      "refined_metal": {
+        "ja": "精錬金属",
+        "en": "Refined Metals",
+        "resources": [
+          {"ja": "鉄", "en": "Iron"},
+          {"ja": "銅", "en": "Copper"},
+          {"ja": "鉛", "en": "Lead"},
+          {"ja": "亜鉛", "en": "Zinc"},
+          {"ja": "錫", "en": "Tin"},
+          {"ja": "銀", "en": "Silver"},
+          {"ja": "金", "en": "Gold"},
+          {"ja": "アルミニウム", "en": "Aluminum"},
+          {"ja": "ニッケル", "en": "Nickel"},
+          {"ja": "コバルト", "en": "Cobalt"},
+          {"ja": "チタン", "en": "Titanium"},
+          {"ja": "クロム", "en": "Chromium"},
+          {"ja": "白金", "en": "Platinum"},
+          {"ja": "ウラン", "en": "Uranium"},
+          {"ja": "トリウム", "en": "Thorium"},
+          {"ja": "リチウム", "en": "Lithium"}
+        ]
+      },
+      "alloy": {
+        "ja": "合金",
+        "en": "Alloys",
+        "resources": [
+          {"ja": "鋼鉄", "en": "Steel"},
+          {"ja": "ステンレス鋼", "en": "Stainless Steel"},
+          {"ja": "黄銅", "en": "Brass"},
+          {"ja": "青銅", "en": "Bronze"},
+          {"ja": "ハステロイ", "en": "Hastelloy"},
+          {"ja": "インコネル", "en": "Inconel"},
+          {"ja": "チタン合金", "en": "Titanium Alloy"},
+          {"ja": "ニッケル合金", "en": "Nickel Alloy"},
+          {"ja": "白金合金", "en": "Platinum Alloy"},
+          {"ja": "銅銀合金", "en": "Cupronickel Silver"},
+          {"ja": "銅ニッケル合金", "en": "Cupronickel"},
+          {"ja": "アルミニウム合金", "en": "Aluminum Alloy"},
+          {"ja": "マグネシウム合金", "en": "Magnesium Alloy"},
+          {"ja": "チタンアルミ合金", "en": "Titanium Aluminide"},
+          {"ja": "銅アルミ合金", "en": "Duralumin"},
+          {"ja": "タンタル合金", "en": "Tantalum Alloy"},
+          {"ja": "コバルトクロム合金", "en": "Cobalt-Chromium Alloy"}
+
+        ]
+      },
+      "refined_material": {
+        "ja": "精製素材",
+        "en": "Refined Materials",
+        "resources": [
+          {"ja": "ガソリン", "en": "Gasoline"},
+          {"ja": "プラスチック", "en": "Plastic"},
+          {"ja": "合成ゴム", "en": "Synthetic Rubber"},
+          {"ja": "アスファルト", "en": "Asphalt"},
+          {"ja": "ガラス", "en": "Glass"},
+          {"ja": "ファイバーグラス", "en": "Fiberglass"},
+          {"ja": "シリコン", "en": "Silicon"},
+          {"ja": "セラミック", "en": "Ceramic"},
+          {"ja": "セメント", "en": "Cement"}
+        ]
+      }
+    }
+  }
+}
