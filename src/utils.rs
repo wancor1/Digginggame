@@ -1,5 +1,26 @@
-use crate::constants::{BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS};
+use crate::constants::{
+    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH,
+};
 use macroquad::prelude::*;
+
+pub fn get_render_dimensions() -> (f32, f32, f32, f32) {
+    let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+    let screen_aspect = screen_width() / screen_height();
+
+    let (render_width, render_height, offset_x, offset_y);
+    if screen_aspect > target_aspect {
+        render_height = screen_height();
+        render_width = SCREEN_WIDTH * (render_height / SCREEN_HEIGHT);
+        offset_x = (screen_width() - render_width) / 2.0;
+        offset_y = 0.0;
+    } else {
+        render_width = screen_width();
+        render_height = SCREEN_HEIGHT * (render_width / SCREEN_WIDTH);
+        offset_x = 0.0;
+        offset_y = (screen_height() - render_height) / 2.0;
+    }
+    (render_width, render_height, offset_x, offset_y)
+}
 
 pub fn world_to_chunk_coords(world_x: f32, world_y: f32) -> (i32, i32) {
     let chunk_x = (world_x / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;

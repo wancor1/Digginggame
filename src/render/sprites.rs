@@ -20,8 +20,8 @@ pub const SPRITE_CURSOR: Rect = Rect {
     h: 8.0,
 };
 
-/// ---------------------------------------------------
-/// BLOCK SPRITES
+// ---------------------------------------------------
+// BLOCK SPRITES
 
 // blocks
 pub const SPRITE_BLOCK_DIRT: Rect = Rect {
@@ -57,8 +57,8 @@ pub const SPRITE_BLOCK_WARPGATE: Rect = Rect {
     h: 8.0,
 };
 
-/// ---------------------------------------------------
-/// natural
+// ---------------------------------------------------
+// natural
 // sedimentary_solid
 pub const SPRITE_BLOCK_COAL: Rect = Rect {
     x: 128.0,
@@ -79,13 +79,13 @@ pub const SPRITE_BLOCK_COAL: Rect = Rect {
 // industrial_mineral
 // volcanic
 // hazardous
-/// ---------------------------------------------------
-/// processed
+// ---------------------------------------------------
+// processed
 // refined_metal
 // alloy
 // refined_material
 
-/// ---------------------------------------------------
+// ---------------------------------------------------
 // Animation
 pub const SPRITE_BREAK_ANIM_U: f32 = 40.0;
 pub const SPRITE_BREAK_ANIM_V_START: f32 = 0.0;

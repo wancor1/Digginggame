@@ -86,18 +86,13 @@ impl PersistenceManager {
                 let path = entry.path();
                 if let Some(ext) = path.extension()
                     && ext == "json"
+                    && let Ok(content) = fs::read_to_string(&path)
+                    && let Ok(data) = serde_json::from_str::<serde_json::Value>(&content)
+                    && (data.get("version").is_some() || data.get("is_save_file").is_some())
+                    && let Some(file_name) = path.file_name()
+                    && let Some(name_str) = file_name.to_str()
                 {
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        if let Ok(data) = serde_json::from_str::<serde_json::Value>(&content) {
-                            if data.get("version").is_some() || data.get("is_save_file").is_some() {
-                                if let Some(file_name) = path.file_name()
-                                    && let Some(name_str) = file_name.to_str()
-                                {
-                                    files.push(name_str.to_string());
-                                }
-                            }
-                        }
-                    }
+                    files.push(name_str.to_string());
                 }
             }
         }

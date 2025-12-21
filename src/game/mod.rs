@@ -9,6 +9,7 @@ use crate::ui::SelectBlock;
 use macroquad::prelude::*;
 
 pub mod event_handler;
+pub mod handlers;
 pub mod persistence;
 pub mod update_logic;
 

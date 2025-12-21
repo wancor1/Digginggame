@@ -3,10 +3,12 @@ use crate::constants::*;
 use crate::events::GameEvent;
 use crate::render::sprites::*;
 use macroquad::prelude::*;
+use macroquad::text::Font;
+use macroquad::texture::Texture2D;
 
 pub mod common;
-pub mod game_hud;
-pub mod menu_screens;
+pub mod hud;
+pub mod screens;
 
 pub struct UIRenderer;
 
@@ -14,114 +16,48 @@ impl UIRenderer {
     pub fn draw(game: &mut Game, font: Option<&Font>, atlas: Option<&Texture2D>) -> Vec<GameEvent> {
         let mut events = Vec::new();
 
-        let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
-        let screen_aspect = screen_width() / screen_height();
-
-        let (render_width, render_height, offset_x, offset_y);
-        if screen_aspect > target_aspect {
-            render_height = screen_height();
-            render_width = SCREEN_WIDTH * (render_height / SCREEN_HEIGHT);
-            offset_x = (screen_width() - render_width) / 2.0;
-            offset_y = 0.0;
-        } else {
-            render_width = screen_width();
-            render_height = SCREEN_HEIGHT * (render_width / SCREEN_WIDTH);
-            offset_x = 0.0;
-            offset_y = (screen_height() - render_height) / 2.0;
-        }
+        let (render_width, _, offset_x, offset_y) = crate::utils::get_render_dimensions();
 
         let scale = render_width / SCREEN_WIDTH;
         let s_font_size = (FONT_SIZE * scale).floor() as u16;
 
         set_default_camera();
 
-        if game.on_title_screen {
-            menu_screens::draw_title_screen(game, font, scale, &mut events);
-        } else if game.on_save_select_screen {
-            menu_screens::draw_save_select_screen(
-                game,
+        {
+            let mut ctx = common::MenuRenderContext {
                 font,
+                atlas,
                 scale,
                 offset_x,
                 offset_y,
-                s_font_size,
-                &mut events,
-            );
-        } else if game.on_new_game_input_screen {
-            menu_screens::draw_new_game_input_screen(
-                game,
-                font,
-                scale,
-                offset_x,
-                offset_y,
-                s_font_size,
-                &mut events,
-            );
-        } else if game.on_warp_place_screen {
-            menu_screens::draw_warp_place_screen(
-                game,
-                font,
-                scale,
-                offset_x,
-                offset_y,
-                s_font_size,
-                &mut events,
-            );
-        } else if game.on_warp_select_screen {
-            menu_screens::draw_warp_select_screen(
-                game,
-                font,
-                scale,
-                offset_x,
-                offset_y,
-                s_font_size,
-                &mut events,
-            );
-        } else {
-            game_hud::draw_hud(game, font, atlas, scale, offset_x, offset_y, &mut events);
-            if game.is_shop_open {
-                game_hud::draw_shop(
-                    game,
-                    font,
-                    scale,
-                    offset_x,
-                    offset_y,
-                    s_font_size,
-                    &mut events,
-                );
-            }
-            if game.is_inventory_open {
-                game_hud::draw_inventory(
-                    game,
-                    font,
-                    scale,
-                    offset_x,
-                    offset_y,
-                    s_font_size,
-                    &mut events,
-                );
-            }
-            if game.is_warehouse_open {
-                game_hud::draw_warehouse(
-                    game,
-                    font,
-                    scale,
-                    offset_x,
-                    offset_y,
-                    s_font_size,
-                    &mut events,
-                );
-            }
-            if game.is_menu_visible {
-                menu_screens::draw_pause_menu(
-                    game,
-                    font,
-                    scale,
-                    offset_x,
-                    offset_y,
-                    s_font_size,
-                    &mut events,
-                );
+                font_size: s_font_size,
+                events: &mut events,
+            };
+
+            if game.on_title_screen {
+                screens::draw_title_screen(game, &mut ctx);
+            } else if game.on_save_select_screen {
+                screens::draw_save_select_screen(game, &mut ctx);
+            } else if game.on_new_game_input_screen {
+                screens::draw_new_game_input_screen(game, &mut ctx);
+            } else if game.on_warp_place_screen {
+                screens::draw_warp_place_screen(game, &mut ctx);
+            } else if game.on_warp_select_screen {
+                screens::draw_warp_select_screen(game, &mut ctx);
+            } else {
+                hud::draw_hud(game, &mut ctx);
+                if game.is_shop_open {
+                    hud::draw_shop(game, &mut ctx);
+                }
+                if game.is_inventory_open {
+                    hud::draw_inventory(game, &mut ctx);
+                }
+                if game.is_warehouse_open {
+                    hud::draw_warehouse(game, &mut ctx);
+                }
+                if game.is_menu_visible {
+                    screens::draw_pause_menu(game, &mut ctx);
+                }
             }
         }
 

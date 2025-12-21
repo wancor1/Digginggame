@@ -115,14 +115,14 @@ impl BlockType {
     }
 
     pub fn is_placeable(&self) -> bool {
-        match self {
+        matches!(
+            self,
             BlockType::Dirt
-            | BlockType::Grass
-            | BlockType::Stone
-            | BlockType::Coal
-            | BlockType::WarpGate => true,
-            _ => false,
-        }
+                | BlockType::Grass
+                | BlockType::Stone
+                | BlockType::Coal
+                | BlockType::WarpGate
+        )
     }
 
     pub fn from_item_type(item_type: &str) -> Option<Self> {
@@ -175,18 +175,14 @@ impl Block {
 }
 
 pub struct Chunk {
-    pub chunk_x: i32,
-    pub chunk_y: i32,
     pub blocks: Vec<Vec<Block>>, // Changed to 2D Vec, easier to instantiate
     pub is_generated: bool,
     pub is_modified_in_session: bool,
 }
 
 impl Chunk {
-    pub fn new(cx: i32, cy: i32) -> Self {
+    pub fn new(_cx: i32, _cy: i32) -> Self {
         Self {
-            chunk_x: cx,
-            chunk_y: cy,
             blocks: Vec::new(),
             is_generated: false,
             is_modified_in_session: false,
