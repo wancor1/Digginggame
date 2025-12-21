@@ -46,14 +46,17 @@ impl PersistenceManager {
                     && let Some(stem) = path.file_stem()
                     && let Some(_str_stem) = stem.to_str()
                 {
-                    // Optional: specific naming convention check?
-                    // For now, accept all .json files as potential saves,
-                    // or maybe filter by prefix if needed.
-                    // User said "show json name".
-                    if let Some(file_name) = path.file_name()
-                        && let Some(name_str) = file_name.to_str()
-                    {
-                        files.push(name_str.to_string());
+                    // Filter: Only include files that have is_save_file: true
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        if let Ok(json) = serde_json::from_str::<Value>(&content) {
+                            if json.get("is_save_file").and_then(|v| v.as_bool()) == Some(true) {
+                                if let Some(file_name) = path.file_name()
+                                    && let Some(name_str) = file_name.to_str()
+                                {
+                                    files.push(name_str.to_string());
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -91,10 +94,16 @@ impl PersistenceManager {
         thread::spawn(move || {
             let res = match fs::read_to_string(&filename) {
                 Ok(content) => match serde_json::from_str::<Value>(&content) {
-                    Ok(v) => (true, v),
-                    Err(e) => (false, Value::String(e.to_string())),
+                    Ok(v) => {
+                        if v.get("is_save_file").and_then(|v| v.as_bool()) == Some(true) {
+                            (true, v)
+                        } else {
+                            (false, Value::String("Invalid save file format".to_string()))
+                        }
+                    }
+                    Err(e) => (false, Value::String(format!("Parse error: {}", e))),
                 },
-                Err(e) => (false, Value::String(e.to_string())),
+                Err(e) => (false, Value::String(format!("Read error: {}", e))),
             };
             let mut lock = result_clone.lock().unwrap();
             *lock = Some(res);

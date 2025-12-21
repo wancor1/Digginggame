@@ -46,6 +46,7 @@ impl Game {
         }
 
         serde_json::json!({
+            "is_save_file": true,
             "camera_x": self.camera.x,
             "camera_y": self.camera.y,
             "player_x": self.player_manager.player.x,
