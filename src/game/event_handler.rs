@@ -39,15 +39,18 @@ impl Game {
                 self.reset_player_state();
                 self.world_manager.seed(::rand::random(), ::rand::random());
                 self.world_manager.generate_visible_chunks(0.0, 0.0);
-                
+
                 // Add Initial Warp Gate Registry
                 let player_start_x_block = (PLAYER_INITIAL_X / BLOCK_SIZE).floor() * BLOCK_SIZE;
                 let player_start_y_block = (PLAYER_INITIAL_Y / BLOCK_SIZE).floor() * BLOCK_SIZE;
-                self.player_manager.player.warp_gates.push(crate::components::WarpGate {
-                    x: player_start_x_block,
-                    y: player_start_y_block,
-                    name: "Home".to_string(),
-                });
+                self.player_manager
+                    .player
+                    .warp_gates
+                    .push(crate::components::WarpGate {
+                        x: player_start_x_block,
+                        y: player_start_y_block,
+                        name: "Home".to_string(),
+                    });
 
                 self.notification_manager.add_notification(
                     "New Game!".to_string(),
@@ -145,20 +148,25 @@ impl Game {
             }
             GameEvent::BuyWarpGate => {
                 if self.player_manager.player.money >= 500 {
-                    if self.player_manager.player.cargo.len() < self.player_manager.player.max_cargo as usize {
+                    if self.player_manager.player.cargo.len()
+                        < self.player_manager.player.max_cargo as usize
+                    {
                         self.player_manager.player.money -= 500;
-                         self.player_manager.player.cargo.push(crate::components::OwnedItem {
-                            item_type: "WarpGate".to_string(),
-                            is_natural: false,
-                            is_auto_stored: false,
-                        });
+                        self.player_manager
+                            .player
+                            .cargo
+                            .push(crate::components::OwnedItem {
+                                item_type: "WarpGate".to_string(),
+                                is_natural: false,
+                                is_auto_stored: false,
+                            });
                         self.notification_manager.add_notification(
                             "Warp Gate Purchased!".to_string(),
                             "success",
                             game_renderer.get_font(),
                         );
                     } else {
-                         self.notification_manager.add_notification(
+                        self.notification_manager.add_notification(
                             "Cargo Full!".to_string(),
                             "error",
                             game_renderer.get_font(),
@@ -180,20 +188,28 @@ impl Game {
             GameEvent::ConfirmWarpGateName(name) => {
                 // Item removal happens in handle_block_placement or we can do it here if we passed the index.
                 // For now, let's assume the item was removed when we started placement or will be removed.
-                // Actually, the previous logic removed from `inventory_warp_gates`. 
+                // Actually, the previous logic removed from `inventory_warp_gates`.
                 // We should remove the "WarpGate" item from cargo here.
-                
-                if let Some(pos) = self.player_manager.player.cargo.iter().position(|it| it.item_type == "WarpGate") {
-                     self.player_manager.player.cargo.remove(pos);
+
+                if let Some(pos) = self
+                    .player_manager
+                    .player
+                    .cargo
+                    .iter()
+                    .position(|it| it.item_type == "WarpGate")
+                {
+                    self.player_manager.player.cargo.remove(pos);
                 }
 
                 // Get placement coordinates
                 let (wx, wy) = if let Some(target) = self.warp_placement_target {
                     target
                 } else {
-                     // Fallback to player pos aligned
-                     ((self.player_manager.player.x / BLOCK_SIZE).round() * BLOCK_SIZE,
-                      (self.player_manager.player.y / BLOCK_SIZE).round() * BLOCK_SIZE)
+                    // Fallback to player pos aligned
+                    (
+                        (self.player_manager.player.x / BLOCK_SIZE).round() * BLOCK_SIZE,
+                        (self.player_manager.player.y / BLOCK_SIZE).round() * BLOCK_SIZE,
+                    )
                 };
 
                 self.player_manager
@@ -204,19 +220,21 @@ impl Game {
                         y: wy,
                         name: name.clone(),
                     });
-                
+
                 // We also need to set the block in the world!
                 // Access world_manager.
-                 if let Some((_, _, _, _, block)) = self.world_manager.get_block_at_world_coords(wx, wy) {
-                     block.block_type = crate::components::BlockType::WarpGate;
-                     block.sprite_rect = Some(crate::render::sprites::SPRITE_BLOCK_WARPGATE);
-                     block.max_hp = 50;
-                     block.current_hp = 50;
-                     block.is_broken = false;
-                     block.is_modified = true;
-                     block.name = Some(name);
-                 }
-                 self.warp_placement_target = None;
+                if let Some((_, _, _, _, block)) =
+                    self.world_manager.get_block_at_world_coords(wx, wy)
+                {
+                    block.block_type = crate::components::BlockType::WarpGate;
+                    block.sprite_rect = Some(crate::render::sprites::SPRITE_BLOCK_WARPGATE);
+                    block.max_hp = 50;
+                    block.current_hp = 50;
+                    block.is_broken = false;
+                    block.is_modified = true;
+                    block.name = Some(name);
+                }
+                self.warp_placement_target = None;
 
                 self.on_warp_place_screen = false;
                 self.input_buffer.clear();

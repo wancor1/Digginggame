@@ -1,7 +1,7 @@
 use super::common::{ButtonParams, draw_button};
 use crate::Game;
-use crate::constants::*;
 use crate::components::BlockType; // Added import
+use crate::constants::*;
 use crate::events::GameEvent;
 use macroquad::prelude::*;
 
@@ -86,7 +86,13 @@ pub fn draw_hud(
     let sel_x = hud_x;
     let sel_y = hud_y + 15.0 * scale;
 
-    draw_rectangle(sel_x, sel_y, slot_size, slot_size, Color::new(0.3, 0.3, 0.3, 0.8));
+    draw_rectangle(
+        sel_x,
+        sel_y,
+        slot_size,
+        slot_size,
+        Color::new(0.3, 0.3, 0.3, 0.8),
+    );
     draw_rectangle_lines(sel_x, sel_y, slot_size, slot_size, 1.0, GRAY);
 
     if let Some(item) = player.cargo.get(game.selected_item_index) {

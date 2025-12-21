@@ -149,7 +149,7 @@ impl WorldManager {
                             max_hp = (base_hardness as f64 * multiplier).floor() as i32;
                         }
                     }
-                    
+
                     if block_type == BlockType::WarpGate {
                         let mut b = Block::new(wx, wy, max_hp, sprite_rect, block_type);
                         b.name = Some("Home".to_string());
@@ -288,9 +288,9 @@ impl WorldManager {
                         };
                         block.sprite_rect = new_sprite;
                         block.block_type = new_type;
-                        
+
                         if let Some(n) = mod_block.get("name").and_then(|v| v.as_str()) {
-                             block.name = Some(n.to_string());
+                            block.name = Some(n.to_string());
                         }
                     }
                 }

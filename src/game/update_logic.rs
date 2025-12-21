@@ -142,7 +142,7 @@ impl Game {
                     if let Some(serde_json::Value::Array(mods)) = map.get("modified_chunks") {
                         self.world_manager.apply_modifications(mods.clone());
                     }
-                    
+
                     // Rebuild warp_gates registry from chunks?
                     // Ideally we should save `warp_gates` in the save file explicitly.
                     // For now, let's just clear it and hope it's consistent or not needed to rebuild here
@@ -228,10 +228,14 @@ impl Game {
 
         let mut preview_sprite = None;
         let mut is_valid = true;
-        
+
         let mut current_item_type = None;
         if self.selected_item_index < self.player_manager.player.cargo.len() {
-             current_item_type = Some(self.player_manager.player.cargo[self.selected_item_index].item_type.clone());
+            current_item_type = Some(
+                self.player_manager.player.cargo[self.selected_item_index]
+                    .item_type
+                    .clone(),
+            );
         }
 
         if let Some(item_type) = &current_item_type {
@@ -251,24 +255,24 @@ impl Game {
                     .get_block_at_world_coords(world_mx, world_my)
                 {
                     if let Some(BlockType::WarpGate) = bt {
-                         // Warp Gates can be placed in Air (non-solid)
-                         // But we also don't want to place it if it's already a Warp Gate or Solid?
-                         // Prompt: "Initial spawn point... Non-solid block concept"
-                         // If I place it, it replaces the block or fills air.
-                         if block.block_type != BlockType::Air {
-                              is_valid = false;
-                              preview_sprite = None;
-                         } else {
-                              preview_sprite = Some(sprite);
-                              // WarpGate is non-solid, so we don't check overlap with player?
-                              // Or maybe we do to prevent getting stuck if it becomes solid later?
-                              // Prompt implies "Non-solid", so overlap is allowed.
-                         }
+                        // Warp Gates can be placed in Air (non-solid)
+                        // But we also don't want to place it if it's already a Warp Gate or Solid?
+                        // Prompt: "Initial spawn point... Non-solid block concept"
+                        // If I place it, it replaces the block or fills air.
+                        if block.block_type != BlockType::Air {
+                            is_valid = false;
+                            preview_sprite = None;
+                        } else {
+                            preview_sprite = Some(sprite);
+                            // WarpGate is non-solid, so we don't check overlap with player?
+                            // Or maybe we do to prevent getting stuck if it becomes solid later?
+                            // Prompt implies "Non-solid", so overlap is allowed.
+                        }
                     } else {
                         // Standard blocks
                         if !block.is_broken {
                             is_valid = false;
-                            preview_sprite = None; 
+                            preview_sprite = None;
                         } else {
                             preview_sprite = Some(sprite);
                             let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
@@ -327,11 +331,16 @@ impl Game {
             block.last_damage_time = Some(get_time());
 
             if block.current_hp <= 0 {
-                
                 // Special handling for WarpGate destruction
                 if block.block_type == BlockType::WarpGate {
                     // Remove from registry
-                    if let Some(pos) = self.player_manager.player.warp_gates.iter().position(|w| w.x == block.x && w.y == block.y) {
+                    if let Some(pos) = self
+                        .player_manager
+                        .player
+                        .warp_gates
+                        .iter()
+                        .position(|w| w.x == block.x && w.y == block.y)
+                    {
                         self.player_manager.player.warp_gates.remove(pos);
                         self.notification_manager.add_notification(
                             "Warp Gate Destroyed!".to_string(),
@@ -389,7 +398,10 @@ impl Game {
         self.world_manager.ensure_chunk_exists_and_generated(cx, cy);
 
         // 1. Check interaction with existing functional blocks
-        if let Some((_, _, _, _, block)) = self.world_manager.get_block_at_world_coords(world_mx, world_my) {
+        if let Some((_, _, _, _, block)) = self
+            .world_manager
+            .get_block_at_world_coords(world_mx, world_my)
+        {
             if !block.is_broken && block.block_type == BlockType::WarpGate {
                 self.handle_event(GameEvent::OpenWarpMenu, game_renderer);
                 return; // Interaction consumes the click
@@ -404,9 +416,11 @@ impl Game {
         let it_type = self.player_manager.player.cargo[self.selected_item_index]
             .item_type
             .clone();
-        
+
         let block_type_to_place = BlockType::from_item_type(&it_type);
-        let is_placeable = block_type_to_place.as_ref().map_or(false, |bt| bt.is_placeable());
+        let is_placeable = block_type_to_place
+            .as_ref()
+            .map_or(false, |bt| bt.is_placeable());
 
         if !is_placeable {
             return;
@@ -419,22 +433,22 @@ impl Game {
             // For standard blocks, target must be broken.
             // For WarpGate, target must be Air (which is broken/empty).
             if block.block_type == BlockType::Air || block.is_broken {
-                
                 // Check collision with player if block is solid
                 // WarpGate is non-solid, others are solid.
-                let will_be_solid = block_type_to_place.as_ref().map_or(false, |bt| bt.is_solid());
+                let will_be_solid = block_type_to_place
+                    .as_ref()
+                    .map_or(false, |bt| bt.is_solid());
 
                 let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
                 let player_rect = self.player_manager.player.rect();
 
                 if !will_be_solid || !block_rect.overlaps(&player_rect) {
-                    
                     if let Some(BlockType::WarpGate) = block_type_to_place {
-                         // Trigger Warp Gate Name Input
-                         self.warp_placement_target = Some((block.x, block.y));
-                         self.handle_event(GameEvent::StartPlaceWarpGate, game_renderer);
-                         // Actual placement happens in ConfirmWarpGateName
-                         return;
+                        // Trigger Warp Gate Name Input
+                        self.warp_placement_target = Some((block.x, block.y));
+                        self.handle_event(GameEvent::StartPlaceWarpGate, game_renderer);
+                        // Actual placement happens in ConfirmWarpGateName
+                        return;
                     }
 
                     // Place standard block
@@ -442,10 +456,18 @@ impl Game {
                     block.is_modified = true;
 
                     let (hp, sprite, b_type) = match block_type_to_place {
-                        Some(BlockType::Dirt) => (HARDNESS_DIRT, SPRITE_BLOCK_DIRT, BlockType::Dirt),
-                        Some(BlockType::Stone) => (HARDNESS_STONE, SPRITE_BLOCK_STONE, BlockType::Stone),
-                        Some(BlockType::Coal) => (HARDNESS_COAL, SPRITE_BLOCK_COAL, BlockType::Coal),
-                        Some(BlockType::Grass) => (HARDNESS_GRASS, SPRITE_BLOCK_GRASS, BlockType::Grass),
+                        Some(BlockType::Dirt) => {
+                            (HARDNESS_DIRT, SPRITE_BLOCK_DIRT, BlockType::Dirt)
+                        }
+                        Some(BlockType::Stone) => {
+                            (HARDNESS_STONE, SPRITE_BLOCK_STONE, BlockType::Stone)
+                        }
+                        Some(BlockType::Coal) => {
+                            (HARDNESS_COAL, SPRITE_BLOCK_COAL, BlockType::Coal)
+                        }
+                        Some(BlockType::Grass) => {
+                            (HARDNESS_GRASS, SPRITE_BLOCK_GRASS, BlockType::Grass)
+                        }
                         _ => (HARDNESS_DIRT, SPRITE_BLOCK_DIRT, BlockType::Dirt),
                     };
 

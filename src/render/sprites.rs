@@ -66,7 +66,6 @@ pub const SPRITE_BLOCK_COAL: Rect = Rect {
     h: 8.0,
 };
 
-
 /// ---------------------------------------------------
 // Animation
 pub const SPRITE_BREAK_ANIM_U: f32 = 40.0;

@@ -275,12 +275,7 @@ impl SelectBlock {
         self.is_valid = is_valid;
     }
 
-    pub fn draw(
-        &mut self,
-        camera_x: f32,
-        camera_y: f32,
-        atlas: &Texture2D,
-    ) {
+    pub fn draw(&mut self, camera_x: f32, camera_y: f32, atlas: &Texture2D) {
         if !self.is_effect_active {
             return;
         }
