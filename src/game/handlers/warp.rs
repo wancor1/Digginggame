@@ -41,10 +41,11 @@ pub fn confirm_warp_gate_name(game: &mut Game, name: String, renderer: &GameRend
 
     // We also need to set the block in the world!
     if let Some((cx, cy, _, _, block)) = game.world_manager.get_block_at_world_coords(wx, wy) {
-        block.block_type = crate::components::BlockType::WarpGate;
-        block.sprite_rect = Some(crate::render::sprites::SPRITE_BLOCK_WARPGATE);
-        block.max_hp = 50;
-        block.current_hp = 50;
+        let bt = crate::components::BlockType::WarpGate;
+        block.block_type = bt;
+        block.sprite_rect = bt.get_sprite();
+        block.max_hp = bt.get_base_hardness();
+        block.current_hp = block.max_hp;
         block.is_broken = false;
         block.is_modified = true;
         block.name = Some(name);

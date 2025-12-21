@@ -7,6 +7,7 @@ pub const FRAME_TIME: f32 = 1.0 / TARGET_FPS;
 
 // Animation
 use macroquad::color::Color;
+use macroquad::prelude::Rect;
 
 pub const COLOR_BUTTON_BG: Color = macroquad::color::GRAY; // 13
 pub const COLOR_BUTTON_BORDER: Color = macroquad::color::WHITE; // 7
@@ -48,12 +49,6 @@ pub const SURFACE_Y_LEVEL: i32 = 7;
 pub const NOISE_SCALE_ORE: f64 = 0.04;
 pub const ORE_THRESHOLD: f64 = 0.4;
 
-pub const HARDNESS_DIRT: i32 = 5;
-pub const HARDNESS_GRASS: i32 = 3;
-pub const HARDNESS_STONE: i32 = 15;
-pub const HARDNESS_COAL: i32 = 20;
-pub const HARDNESS_INDESTRUCTIBLE: i32 = -1;
-
 pub const HARDNESS_DEPTH_MULTIPLIER: f64 = 0.05; // 5% increase per block depth
 
 // Particle Constants
@@ -75,3 +70,27 @@ pub const PLAYER_GRAVITY: f32 = 0.1;
 pub const PLAYER_FRICTION_AIR: f32 = 0.95;
 pub const PLAYER_FRICTION_GROUND: f32 = 0.8;
 pub const PLAYER_TERMINAL_VELOCITY: f32 = 2.5;
+
+// Sprites
+pub const SPRITE_SELECT_NORMAL: Rect = Rect {
+    x: 8.0,
+    y: 8.0,
+    w: 8.0,
+    h: 8.0,
+};
+pub const SPRITE_SELECT_LARGE: Rect = Rect {
+    x: 8.0,
+    y: 16.0,
+    w: 10.0,
+    h: 10.0,
+    
+};
+pub const SPRITE_CURSOR: Rect = Rect {
+    x: 8.0,
+    y: 0.0,
+    w: 8.0,
+    h: 8.0,
+};
+
+pub const SPRITE_BREAK_ANIM_U: f32 = 40.0;
+pub const SPRITE_BREAK_ANIM_V_START: f32 = 0.0;

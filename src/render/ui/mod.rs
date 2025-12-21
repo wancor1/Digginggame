@@ -1,7 +1,6 @@
 use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
-use crate::render::sprites::*;
 use macroquad::prelude::*;
 use macroquad::text::Font;
 use macroquad::texture::Texture2D;

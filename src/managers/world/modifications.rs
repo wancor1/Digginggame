@@ -1,6 +1,5 @@
 use crate::components::{BlockType, Chunk};
 use crate::constants::*;
-use crate::render::sprites::*;
 
 pub fn apply_chunk_save_data(
     chunk: &mut Chunk,
@@ -21,18 +20,10 @@ pub fn apply_chunk_save_data(
             let by = current_idx / CHUNK_SIZE_X_BLOCKS;
 
             if let Some(block) = chunk.get_block(bx, by) {
-                block.block_type = block_type.clone();
+                block.block_type = block_type;
                 block.is_modified = true;
 
-                let new_sprite = match block.block_type {
-                    BlockType::Dirt => Some(SPRITE_BLOCK_DIRT),
-                    BlockType::Grass => Some(SPRITE_BLOCK_GRASS),
-                    BlockType::Stone => Some(SPRITE_BLOCK_STONE),
-                    BlockType::Coal => Some(SPRITE_BLOCK_COAL),
-                    BlockType::WarpGate => Some(SPRITE_BLOCK_WARPGATE),
-                    BlockType::Indestructible => Some(SPRITE_BLOCK_INDESTRUCTIBLE),
-                    BlockType::Air => None,
-                };
+                let new_sprite = block.block_type.get_sprite();
 
                 block.sprite_rect = new_sprite;
                 block.is_broken = block.block_type == BlockType::Air;

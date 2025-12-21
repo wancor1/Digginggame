@@ -3,7 +3,6 @@ use crate::components::BlockType;
 use crate::constants::*;
 use crate::game::UIOverlay;
 use crate::render::game_renderer::GameRenderer;
-use crate::render::sprites::*;
 use macroquad::prelude::*;
 
 pub fn handle_gameplay_update(game: &mut Game, game_renderer: &GameRenderer) {
@@ -80,14 +79,7 @@ fn update_interaction_preview(game: &mut Game, world_mx: f32, world_my: f32) {
 
     if let Some(item_type) = current_item_type {
         let bt = BlockType::from_item_type(&item_type);
-        let potential_sprite = bt.as_ref().and_then(|t| match t {
-            BlockType::Dirt => Some(SPRITE_BLOCK_DIRT),
-            BlockType::Stone => Some(SPRITE_BLOCK_STONE),
-            BlockType::Coal => Some(SPRITE_BLOCK_COAL),
-            BlockType::Grass => Some(SPRITE_BLOCK_GRASS),
-            BlockType::WarpGate => Some(SPRITE_BLOCK_WARPGATE),
-            _ => None,
-        });
+        let potential_sprite = bt.as_ref().and_then(|t| t.get_sprite());
 
         if let Some(sprite) = potential_sprite {
             if let Some((_, _, _, _, block)) = game

@@ -1,6 +1,5 @@
 use crate::components::{Block, BlockType};
 use crate::constants::*;
-use crate::render::sprites::*;
 use macroquad::prelude::*;
 use noise::{NoiseFn, Perlin};
 
@@ -22,23 +21,20 @@ pub fn generate_chunk_blocks(chunk_x: i32, chunk_y: i32, noise_ore: &Perlin) -> 
 
             let (max_hp, sprite_rect, block_type) =
                 if x_block == player_start_x_block && y_block == player_start_y_block {
-                    (50, Some(SPRITE_BLOCK_WARPGATE), BlockType::WarpGate)
+                    let bt = BlockType::WarpGate;
+                    (50, bt.get_sprite(), bt)
                 } else if x_block == (PLAYER_INITIAL_X / BLOCK_SIZE) as i32
                     && y_block == ((PLAYER_INITIAL_Y + BLOCK_SIZE) / BLOCK_SIZE) as i32
                 {
-                    (
-                        HARDNESS_INDESTRUCTIBLE,
-                        Some(SPRITE_BLOCK_INDESTRUCTIBLE),
-                        BlockType::Indestructible,
-                    )
+                    let bt = BlockType::Indestructible;
+                    (bt.get_base_hardness(), bt.get_sprite(), bt)
                 } else if y_block < SURFACE_Y_LEVEL {
                     (0, None, BlockType::Air)
                 } else if y_block == SURFACE_Y_LEVEL {
-                    (HARDNESS_GRASS, Some(SPRITE_BLOCK_GRASS), BlockType::Grass)
+                    let bt = BlockType::Grass;
+                    (bt.get_base_hardness(), bt.get_sprite(), bt)
                 } else {
                     let mut b_type = BlockType::Dirt;
-                    let mut s_rect = Some(SPRITE_BLOCK_DIRT);
-                    let mut base_hardness = HARDNESS_DIRT;
 
                     if y_block > SURFACE_Y_LEVEL + 5 {
                         let ore_val = noise_ore.get([
@@ -47,23 +43,20 @@ pub fn generate_chunk_blocks(chunk_x: i32, chunk_y: i32, noise_ore: &Perlin) -> 
                             256.0,
                         ]);
                         if ore_val >= ORE_THRESHOLD {
-                            s_rect = Some(SPRITE_BLOCK_COAL);
-                            base_hardness = HARDNESS_COAL;
                             b_type = BlockType::Coal;
                         } else if y_block > SURFACE_Y_LEVEL + 10 {
-                            s_rect = Some(SPRITE_BLOCK_STONE);
-                            base_hardness = HARDNESS_STONE;
                             b_type = BlockType::Stone;
                         }
                     }
 
                     if y_block > 1000 {
-                        s_rect = Some(SPRITE_BLOCK_INDESTRUCTIBLE);
-                        base_hardness = HARDNESS_INDESTRUCTIBLE;
                         b_type = BlockType::Indestructible;
                     }
 
-                    let hp = if base_hardness == HARDNESS_INDESTRUCTIBLE {
+                    let base_hardness = b_type.get_base_hardness();
+                    let s_rect = b_type.get_sprite();
+
+                    let hp = if base_hardness == -1 {
                         -1
                     } else {
                         let depth = (y_block - SURFACE_Y_LEVEL) as f64;

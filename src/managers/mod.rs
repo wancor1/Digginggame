@@ -1,3 +1,4 @@
+pub mod block;
 pub mod item;
 pub mod language;
 pub mod notification;

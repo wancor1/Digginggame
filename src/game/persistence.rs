@@ -48,7 +48,7 @@ impl Game {
                         if let Some(name) = &block.name {
                             named_blocks.push(BlockSaveData {
                                 i: index,
-                                t: block.block_type.clone(),
+                                t: block.block_type,
                                 n: Some(name.clone()),
                             });
                         }

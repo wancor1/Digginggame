@@ -1,5 +1,4 @@
 use crate::constants::*;
-use crate::render::sprites::*;
 use macroquad::prelude::*;
 use macroquad::texture::Texture2D;
 

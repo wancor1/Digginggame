@@ -34,7 +34,7 @@ pub fn handle_block_interaction(
 
             // Break block
             let old_sprite_rect = block.sprite_rect;
-            let old_block_type = block.block_type.clone();
+            let old_block_type = block.block_type;
             let block_x = block.x;
             let block_y = block.y;
 
@@ -46,14 +46,14 @@ pub fn handle_block_interaction(
                     .warp_gates
                     .iter()
                     .position(|w| w.x == block_x && w.y == block_y)
-                {
-                    game.player_manager.player.warp_gates.remove(pos);
-                    game.notification_manager.add_notification(
-                        "Warp Gate Destroyed!".to_string(),
-                        "info",
-                        game_renderer.get_font(),
-                    );
-                }
+            {
+                game.player_manager.player.warp_gates.remove(pos);
+                game.notification_manager.add_notification(
+                    "Warp Gate Destroyed!".to_string(),
+                    "info",
+                    game_renderer.get_font(),
+                );
+            }
 
             block.current_hp = 0;
             block.is_broken = true;
@@ -68,11 +68,12 @@ pub fn handle_block_interaction(
                 game_renderer,
             );
 
-            if let Some(it) = get_item_type_for_block(&old_block_type)
-                && let Some(rect) = old_sprite_rect {
-                    game.item_manager
-                        .spawn_item(block_x + 2.0, block_y + 2.0, it, rect, true);
-                }
+            if let Some(it) = old_block_type.get_data().and_then(|d| d.item_type.clone())
+                && let Some(rect) = old_sprite_rect
+            {
+                game.item_manager
+                    .spawn_item(block_x + 2.0, block_y + 2.0, it, rect, true);
+            }
         }
     }
 
@@ -99,15 +100,6 @@ fn spawn_break_particles(
         })
         .collect();
     particle_manager.add_particles(particles);
-}
-
-fn get_item_type_for_block(block_type: &BlockType) -> Option<String> {
-    match block_type {
-        BlockType::Coal => Some("Coal".to_string()),
-        BlockType::Stone => Some("Stone".to_string()),
-        BlockType::Dirt => Some("Dirt".to_string()),
-        _ => None,
-    }
 }
 
 pub fn handle_right_click(
@@ -211,7 +203,7 @@ fn try_place_block(
             // Place standard block
             block.is_broken = false;
             block.is_modified = true;
-            block.block_type = bt.clone();
+            block.block_type = bt;
             block.sprite_rect = bt.get_sprite();
 
             let hp = bt.get_base_hardness();
