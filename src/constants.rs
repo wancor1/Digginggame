@@ -44,13 +44,17 @@ pub const SELECTION_PULSE_DURATION: f64 = 2.0; // Duration of one full pulse cyc
 pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite enlarges
 
 // World Generation Constants
-pub const HARDNESS_MIN: i32 = 3;
 pub const SURFACE_Y_LEVEL: i32 = 7;
-pub const NOISE_SCALE_HARDNESS: f64 = 0.005;
 pub const NOISE_SCALE_ORE: f64 = 0.04;
 pub const ORE_THRESHOLD: f64 = 0.4;
-pub const HARDNESS_INCREASE_PER_BLOCK: f64 = 0.1;
-pub const NOISE_HARDNESS_RANGE: f64 = 20.0;
+
+pub const HARDNESS_DIRT: i32 = 5;
+pub const HARDNESS_GRASS: i32 = 3;
+pub const HARDNESS_STONE: i32 = 15;
+pub const HARDNESS_COAL: i32 = 20;
+pub const HARDNESS_INDESTRUCTIBLE: i32 = -1;
+
+pub const HARDNESS_DEPTH_MULTIPLIER: f64 = 0.05; // 5% increase per block depth
 
 // Particle Constants
 pub const GRAVITY: f32 = 0.19;

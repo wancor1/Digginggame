@@ -10,6 +10,7 @@ pub struct BlockSaveData {
     pub y: f32,
     pub current_hp: i32,
     pub sprite_id: String,
+    pub name: Option<String>,
 }
 
 // We use simplified threading or just sync IO for MVP because Macroquad is single threaded mostly,

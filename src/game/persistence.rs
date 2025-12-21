@@ -20,6 +20,8 @@ impl Game {
                                 "stone"
                             } else if block.sprite_rect == Some(SPRITE_BLOCK_COAL) {
                                 "coal"
+                            } else if block.sprite_rect == Some(SPRITE_BLOCK_WARPGATE) {
+                                "warpgate"
                             } else {
                                 "unknown"
                             };
@@ -28,6 +30,7 @@ impl Game {
                                 y: block.y,
                                 current_hp: block.current_hp,
                                 sprite_id: id.to_string(),
+                                name: block.name.clone(),
                             });
                         }
                     }
@@ -58,6 +61,7 @@ impl Game {
             "player_tank_level": self.player_manager.player.tank_level,
             "player_engine_level": self.player_manager.player.engine_level,
             "player_cargo_level": self.player_manager.player.cargo_level,
+            "player_warp_gates": self.player_manager.player.warp_gates,
             "world_seed_main": self.world_manager.world_seed_main,
             "world_seed_ore": self.world_manager.world_seed_ore,
             "modified_chunks": modified_chunks_data

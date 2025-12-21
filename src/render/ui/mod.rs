@@ -78,7 +78,7 @@ impl UIRenderer {
                 &mut events,
             );
         } else {
-            game_hud::draw_hud(game, font, scale, offset_x, offset_y, &mut events);
+            game_hud::draw_hud(game, font, atlas, scale, offset_x, offset_y, &mut events);
             if game.is_shop_open {
                 game_hud::draw_shop(
                     game,

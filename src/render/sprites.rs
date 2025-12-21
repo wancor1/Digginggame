@@ -37,8 +37,22 @@ pub const SPRITE_BLOCK_GRASS: Rect = Rect {
     h: 8.0,
 };
 pub const SPRITE_BLOCK_STONE: Rect = Rect {
-    x: 56.0,
-    y: 0.0,
+    x: 48.0,
+    y: 16.0,
+    w: 8.0,
+    h: 8.0,
+};
+pub const SPRITE_BLOCK_INDESTRUCTIBLE: Rect = Rect {
+    x: 48.0,
+    y: 24.0,
+    w: 8.0,
+    h: 8.0,
+};
+
+// utils
+pub const SPRITE_BLOCK_WARPGATE: Rect = Rect {
+    x: 40.0,
+    y: 48.0,
     w: 8.0,
     h: 8.0,
 };

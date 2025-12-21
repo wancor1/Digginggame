@@ -144,6 +144,9 @@ async fn main() {
                         .push(GameEvent::ConfirmWarpGateName(game.input_buffer.clone()));
                 }
             }
+        } else {
+            // Drain the character buffer when not in an input screen to prevent accumulation
+            while get_char_pressed().is_some() {}
         }
 
         for event in ui_events

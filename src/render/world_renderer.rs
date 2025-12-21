@@ -13,8 +13,8 @@ impl WorldRenderer {
 
         let blocks = game.world_manager.get_active_blocks_in_view(cx, cy);
         for block in blocks {
-            let draw_x = (block.x - cx).floor();
-            let draw_y = (block.y - cy).floor();
+            let draw_x = (block.x - cx).round();
+            let draw_y = (block.y - cy).round();
 
             if let (Some(rect), Some(atlas_tex)) = (block.sprite_rect, atlas) {
                 draw_texture_ex(
@@ -54,7 +54,7 @@ impl WorldRenderer {
         }
 
         for p in &game.particle_manager.active_particles {
-            draw_rectangle((p.x - cx).floor(), (p.y - cy).floor(), 1.0, 1.0, p.color);
+            draw_rectangle((p.x - cx).round(), (p.y - cy).round(), 1.0, 1.0, p.color);
         }
 
         let player = &game.player_manager.player;
@@ -62,15 +62,15 @@ impl WorldRenderer {
         let py = player.old_y + (player.y - player.old_y) * alpha;
 
         draw_rectangle(
-            (px - cx).floor(),
-            (py - cy).floor(),
+            (px - cx).round(),
+            (py - cy).round(),
             player.width,
             player.height,
             ORANGE,
         );
         draw_rectangle(
-            (px - cx + 1.0).floor(),
-            (py - cy + 1.0).floor(),
+            (px - cx + 1.0).round(),
+            (py - cy + 1.0).round(),
             player.width - 2.0,
             2.0,
             YELLOW,
@@ -80,27 +80,9 @@ impl WorldRenderer {
             game.select_block.draw(cx, cy, atlas_tex);
         }
 
-        for gate in &game.player_manager.player.warp_gates {
-            draw_rectangle(
-                (gate.x - cx).floor(),
-                (gate.y - cy).floor(),
-                8.0,
-                8.0,
-                PURPLE,
-            );
-            draw_rectangle_lines(
-                (gate.x - cx).floor(),
-                (gate.y - cy).floor(),
-                8.0,
-                8.0,
-                1.0,
-                WHITE,
-            );
-        }
-
         for item in &game.item_manager.items {
-            let draw_x = (item.x - cx).floor();
-            let draw_y = (item.y - cy).floor();
+            let draw_x = (item.x - cx).round();
+            let draw_y = (item.y - cy).round();
             if let Some(atlas_tex) = atlas {
                 draw_texture_ex(
                     atlas_tex,

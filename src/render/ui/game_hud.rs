@@ -1,12 +1,14 @@
 use super::common::{ButtonParams, draw_button};
 use crate::Game;
 use crate::constants::*;
+use crate::components::BlockType; // Added import
 use crate::events::GameEvent;
 use macroquad::prelude::*;
 
 pub fn draw_hud(
     game: &Game,
     font: Option<&Font>,
+    atlas: Option<&Texture2D>,
     scale: f32,
     offset_x: f32,
     offset_y: f32,
@@ -79,6 +81,56 @@ pub fn draw_hud(
         },
     );
 
+    // --- SELECTED ITEM ---
+    let slot_size = 12.0 * scale;
+    let sel_x = hud_x;
+    let sel_y = hud_y + 15.0 * scale;
+
+    draw_rectangle(sel_x, sel_y, slot_size, slot_size, Color::new(0.3, 0.3, 0.3, 0.8));
+    draw_rectangle_lines(sel_x, sel_y, slot_size, slot_size, 1.0, GRAY);
+
+    if let Some(item) = player.cargo.get(game.selected_item_index) {
+        if let Some(atlas_tex) = atlas {
+            let sprite_rect = crate::utils::get_item_sprite(&item.item_type);
+            if sprite_rect.w > 0.0 {
+                draw_texture_ex(
+                    atlas_tex,
+                    sel_x + 2.0 * scale,
+                    sel_y + 2.0 * scale,
+                    WHITE,
+                    DrawTextureParams {
+                        source: Some(sprite_rect),
+                        dest_size: Some(vec2(8.0 * scale, 8.0 * scale)),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+        draw_text_ex(
+            "SELECTED",
+            sel_x + slot_size + 2.0 * scale,
+            sel_y + 4.0 * scale,
+            TextParams {
+                font_size: (4.0 * scale) as u16,
+                font,
+                color: LIGHTGRAY,
+                ..Default::default()
+            },
+        );
+        draw_text_ex(
+            &item.item_type,
+            sel_x + slot_size + 2.0 * scale,
+            sel_y + 10.0 * scale,
+            TextParams {
+                font_size: mini_font_size,
+                font,
+                color: WHITE,
+                ..Default::default()
+            },
+        );
+    }
+    // --------------
+
     if game.on_surface {
         if !game.is_menu_visible && !game.is_shop_open && !game.is_warehouse_open {
             if draw_button(
@@ -111,52 +163,6 @@ pub fn draw_hud(
             ) {
                 events.push(GameEvent::OpenWarehouse);
             }
-            if draw_button(
-                ButtonParams {
-                    x: offset_x + 5.0 * scale,
-                    y: offset_y + 25.0 * scale,
-                    w: 35.0 * scale,
-                    h: 10.0 * scale,
-                    text_key: "hud.warp_menu",
-                    press_key: "hud.warp_menu.pressed",
-                    lang: &game.lang_manager,
-                    font_size: s_font_size,
-                },
-                font,
-            ) {
-                events.push(GameEvent::OpenWarpMenu);
-            }
-        }
-    } else if game.player_manager.player.inventory_warp_gates > 0 {
-        let gate_txt = game.lang_manager.get_string("hud.warp_gates").replace(
-            "{count}",
-            &game.player_manager.player.inventory_warp_gates.to_string(),
-        );
-        draw_text_ex(
-            &gate_txt,
-            offset_x + 5.0 * scale,
-            offset_y + 25.0 * scale,
-            TextParams {
-                font_size: mini_font_size,
-                font,
-                color: WHITE,
-                ..Default::default()
-            },
-        );
-        if draw_button(
-            ButtonParams {
-                x: offset_x + 5.0 * scale,
-                y: offset_y + 35.0 * scale,
-                w: 60.0 * scale,
-                h: 10.0 * scale,
-                text_key: "hud.place_gate",
-                press_key: "hud.place_gate.pressed",
-                lang: &game.lang_manager,
-                font_size: s_font_size,
-            },
-            font,
-        ) {
-            events.push(GameEvent::StartPlaceWarpGate);
         }
     }
 }
@@ -329,7 +335,7 @@ pub fn draw_inventory(
     offset_x: f32,
     offset_y: f32,
     s_font_size: u16,
-    _events: &mut Vec<GameEvent>,
+    events: &mut Vec<GameEvent>,
 ) {
     let (mw, mh) = (110.0 * scale, (SCREEN_HEIGHT - 20.0) * scale);
     let (mx, my) = (
@@ -373,11 +379,13 @@ pub fn draw_inventory(
     );
     cur_y += 10.0 * scale;
 
-    // Count items
+    // Count items and track first index
     use std::collections::HashMap;
     let mut counts = HashMap::new();
-    for item in &player.cargo {
+    let mut first_indices = HashMap::new();
+    for (idx, item) in player.cargo.iter().enumerate() {
         *counts.entry(&item.item_type).or_insert(0) += 1;
+        first_indices.entry(&item.item_type).or_insert(idx);
     }
 
     let mut item_types: Vec<_> = counts.keys().collect();
@@ -390,7 +398,7 @@ pub fn draw_inventory(
         draw_text_ex(
             &label,
             mx + 10.0 * scale,
-            cur_y,
+            cur_y + 6.0 * scale,
             TextParams {
                 font_size: mini_font_size,
                 font,
@@ -398,7 +406,28 @@ pub fn draw_inventory(
                 ..Default::default()
             },
         );
-        cur_y += 8.0 * scale;
+
+        let is_placeable = BlockType::from_item_type(it).map_or(false, |bt| bt.is_placeable());
+        if is_placeable {
+            if draw_button(
+                ButtonParams {
+                    x: mx + mw - 35.0 * scale,
+                    y: cur_y,
+                    w: 30.0 * scale,
+                    h: 8.0 * scale,
+                    text_key: "SELECT",
+                    press_key: "SELECT",
+                    lang: &game.lang_manager,
+                    font_size: mini_font_size - 1,
+                },
+                font,
+            ) {
+                if let Some(&idx) = first_indices.get(it) {
+                    events.push(GameEvent::SetSelectedItemIndex(idx));
+                }
+            }
+        }
+        cur_y += 10.0 * scale;
     }
 
     if player.cargo.is_empty() {
@@ -426,10 +455,10 @@ pub fn draw_warehouse(
     events: &mut Vec<GameEvent>,
 ) {
     let (mw, mh) = (
-        (SCREEN_WIDTH - 20.0) * scale,
+        (SCREEN_WIDTH - 10.0) * scale,
         (SCREEN_HEIGHT - 20.0) * scale,
     );
-    let (mx, my) = (offset_x + 10.0 * scale, offset_y + 10.0 * scale);
+    let (mx, my) = (offset_x + 5.0 * scale, offset_y + 10.0 * scale);
     draw_rectangle(mx, my, mw, mh, Color::new(0.1, 0.1, 0.2, 0.95));
     draw_rectangle_lines(mx, my, mw, mh, 1.0, WHITE);
 
@@ -438,9 +467,9 @@ pub fn draw_warehouse(
 
     if draw_button(
         ButtonParams {
-            x: mx + mw - 35.0 * scale,
+            x: mx + mw - 32.0 * scale,
             y: cur_y,
-            w: 30.0 * scale,
+            w: 28.0 * scale,
             h: 8.0 * scale,
             text_key: "shop.back_to_game",
             press_key: "shop.back_to_game",
@@ -453,7 +482,7 @@ pub fn draw_warehouse(
     }
 
     draw_text_ex(
-        "WAREHOUSE",
+        &game.lang_manager.get_string("warehouse.title"),
         mx + 5.0 * scale,
         cur_y + 6.0 * scale,
         TextParams {
@@ -466,21 +495,24 @@ pub fn draw_warehouse(
 
     // Quantity toggle button
     let q_label = match game.warehouse_quantity {
-        1 => "x1",
-        10 => "x10",
-        100 => "x100",
+        1 => "1",
+        10 => "10",
+        100 => "100",
         0 => "ALL",
-        _ => "x1",
+        _ => "1",
     };
+    let qty_btn_text = game
+        .lang_manager
+        ._get_string_fmt("warehouse.qty", &[("qty", q_label)]);
 
     if draw_button(
         ButtonParams {
-            x: mx + mw - 75.0 * scale,
+            x: mx + mw - 70.0 * scale,
             y: cur_y,
             w: 35.0 * scale,
             h: 8.0 * scale,
-            text_key: &format!("Qty: {}", q_label),
-            press_key: &format!("Qty: {}", q_label),
+            text_key: &qty_btn_text,
+            press_key: &qty_btn_text,
             lang: &game.lang_manager,
             font_size: mini_font_size - 1,
         },
@@ -499,14 +531,16 @@ pub fn draw_warehouse(
     let player = &game.player_manager.player;
     let current_q = game.warehouse_quantity;
 
-    // Left: Inventory (Cargo) - Narrower
+    // Left: Inventory (Cargo)
     let inv_x = mx + 5.0 * scale;
+    let cargo_header = format!(
+        "{}: {}/{}",
+        game.lang_manager.get_string("warehouse.cargo"),
+        player.total_cargo_weight(),
+        player.max_cargo
+    );
     draw_text_ex(
-        &format!(
-            "Cargo ({}/{})",
-            player.total_cargo_weight(),
-            player.max_cargo
-        ),
+        &cargo_header,
         inv_x,
         cur_y,
         TextParams {
@@ -543,12 +577,12 @@ pub fn draw_warehouse(
 
         if draw_button(
             ButtonParams {
-                x: inv_x + 35.0 * scale,
+                x: inv_x + 38.0 * scale,
                 y: item_y,
-                w: 22.0 * scale,
+                w: 24.0 * scale,
                 h: 7.0 * scale,
-                text_key: "STORE",
-                press_key: "STORE",
+                text_key: "warehouse.store",
+                press_key: "warehouse.store",
                 lang: &game.lang_manager,
                 font_size: mini_font_size - 1,
             },
@@ -564,10 +598,16 @@ pub fn draw_warehouse(
         item_y += 9.0 * scale;
     }
 
-    // Right: Storage - Expanded
-    let stor_x = mx + 70.0 * scale;
+    // Right: Storage
+    let stor_x = mx + mw / 2.0 + 3.0 * scale;
+    let storage_header = format!(
+        "{}: {}/{}",
+        game.lang_manager.get_string("warehouse.storage"),
+        player.storage.len(),
+        player.max_storage
+    );
     draw_text_ex(
-        &format!("Storage ({}/{})", player.storage.len(), player.max_storage),
+        &storage_header,
         stor_x,
         cur_y,
         TextParams {
@@ -601,15 +641,15 @@ pub fn draw_warehouse(
             },
         );
 
-        let mut bx = stor_x + 35.0 * scale;
+        let mut bx = stor_x + 28.0 * scale;
         if draw_button(
             ButtonParams {
                 x: bx,
                 y: stor_y,
-                w: 22.0 * scale,
+                w: 20.0 * scale,
                 h: 7.0 * scale,
-                text_key: "TAKE",
-                press_key: "TAKE",
+                text_key: "warehouse.take",
+                press_key: "warehouse.take",
                 lang: &game.lang_manager,
                 font_size: mini_font_size - 1,
             },
@@ -622,15 +662,15 @@ pub fn draw_warehouse(
             };
             events.push(GameEvent::WithdrawItem((*it).clone(), actual_q));
         }
-        bx += 25.0 * scale;
+        bx += 22.0 * scale;
         if draw_button(
             ButtonParams {
                 x: bx,
                 y: stor_y,
-                w: 20.0 * scale,
+                w: 18.0 * scale,
                 h: 7.0 * scale,
-                text_key: "SELL",
-                press_key: "SELL",
+                text_key: "warehouse.sell",
+                press_key: "warehouse.sell",
                 lang: &game.lang_manager,
                 font_size: mini_font_size - 1,
             },

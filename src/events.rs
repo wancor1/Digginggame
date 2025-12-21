@@ -22,4 +22,6 @@ pub enum GameEvent {
     SellItem(String, usize),
     DepositItem(String, usize),
     WithdrawItem(String, usize),
+    Respawn,
+    SetSelectedItemIndex(usize),
 }

@@ -40,12 +40,14 @@ pub struct Game {
     pub current_save_name: String,
     pub input_buffer: String,
     pub warehouse_quantity: usize, // 1, 10, 100, or 0 for ALL
+    pub selected_item_index: usize,
 
     // Input buffering
     pub key_presses: Vec<KeyCode>,
     pub mouse_presses: Vec<MouseButton>,
 
     pub alpha: f32, // Interpolation factor
+    pub warp_placement_target: Option<(f32, f32)>,
 }
 
 impl Game {
@@ -74,9 +76,11 @@ impl Game {
             current_save_name: "savegame.json".to_string(),
             input_buffer: String::new(),
             warehouse_quantity: 1,
+            selected_item_index: 0,
             key_presses: Vec::new(),
             mouse_presses: Vec::new(),
             alpha: 0.0,
+            warp_placement_target: None,
         }
     }
 
@@ -114,7 +118,20 @@ impl Game {
     }
 
     pub fn capture_input(&mut self) {
-        let keys_to_capture = [KeyCode::Escape, KeyCode::I, KeyCode::Tab];
+        let keys_to_capture = [
+            KeyCode::Escape,
+            KeyCode::I,
+            KeyCode::Tab,
+            KeyCode::Key1,
+            KeyCode::Key2,
+            KeyCode::Key3,
+            KeyCode::Key4,
+            KeyCode::Key5,
+            KeyCode::Key6,
+            KeyCode::Key7,
+            KeyCode::Key8,
+            KeyCode::Key9,
+        ];
         for key in keys_to_capture {
             if is_key_pressed(key) {
                 self.key_presses.push(key);
@@ -123,6 +140,9 @@ impl Game {
 
         if is_mouse_button_pressed(MouseButton::Left) {
             self.mouse_presses.push(MouseButton::Left);
+        }
+        if is_mouse_button_pressed(MouseButton::Right) {
+            self.mouse_presses.push(MouseButton::Right);
         }
     }
 
