@@ -1,7 +1,7 @@
 use super::Game;
 use crate::components::{BlockType, Particle};
 use crate::constants::*;
-use crate::events::GameEvent; // Added import
+use crate::events::GameEvent;
 use crate::render::game_renderer::GameRenderer;
 use crate::render::sprites::*;
 use crate::utils::world_to_chunk_coords;
@@ -10,113 +10,48 @@ use macroquad::prelude::*;
 
 impl Game {
     pub fn handle_loading(&mut self, game_renderer: &GameRenderer) {
-        if let Some((success, data)) = self.persistence_manager.check_load_status() {
-            if success {
-                if let serde_json::Value::Object(map) = data {
-                    if let Some(cx) = map.get("camera_x").and_then(|v| v.as_f64()) {
-                        self.camera.x = cx as f32;
-                    }
-                    if let Some(cy) = map.get("camera_y").and_then(|v| v.as_f64()) {
-                        self.camera.y = cy as f32;
-                    }
-                    if let Some(px) = map.get("player_x").and_then(|v| v.as_f64()) {
-                        self.player_manager.player.x = px as f32;
-                    }
-                    if let Some(py) = map.get("player_y").and_then(|v| v.as_f64()) {
-                        self.player_manager.player.y = py as f32;
-                    }
+        if let Some(res) = self.persistence_manager.check_load_status() {
+            match res {
+                Ok(data) => {
+                    self.camera.x = data.camera_x;
+                    self.camera.y = data.camera_y;
+                    self.player_manager.player.x = data.player_x;
+                    self.player_manager.player.y = data.player_y;
+                    self.player_manager.player.money = data.player_money;
+                    self.player_manager.player.fuel = data.player_fuel;
+                    self.player_manager.player.max_fuel = data.player_max_fuel;
+                    self.player_manager.player.max_cargo = data.player_max_cargo;
+                    self.player_manager.player.max_storage = data.player_max_storage;
+                    self.player_manager.player.drill_level = data.player_drill_level;
+                    self.player_manager.player.tank_level = data.player_tank_level;
+                    self.player_manager.player.engine_level = data.player_engine_level;
+                    self.player_manager.player.cargo_level = data.player_cargo_level;
+                    self.player_manager.player.warp_gates = data.player_warp_gates;
 
-                    if let Some(v) = map.get("player_money").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.money = v as i32;
+                    // Expand stacked items
+                    let mut cargo = Vec::new();
+                    for stack in data.player_cargo {
+                        for _ in 0..stack.count {
+                            cargo.push(crate::components::OwnedItem {
+                                item_type: stack.item_type.clone(),
+                                is_natural: stack.is_natural,
+                                is_auto_stored: stack.is_auto_stored,
+                            });
+                        }
                     }
-                    if let Some(v) = map.get("player_fuel").and_then(|v| v.as_f64()) {
-                        self.player_manager.player.fuel = v as f32;
-                    }
-                    if let Some(v) = map.get("player_max_fuel").and_then(|v| v.as_f64()) {
-                        self.player_manager.player.max_fuel = v as f32;
-                    }
-                    if let Some(v) = map.get("player_max_cargo").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.max_cargo = v as i32;
-                    }
-                    if let Some(v) = map.get("player_max_storage").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.max_storage = v as i32;
-                    }
-                    if let Some(v) = map.get("player_drill_level").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.drill_level = v as i32;
-                    }
-                    if let Some(v) = map.get("player_tank_level").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.tank_level = v as i32;
-                    }
-                    if let Some(v) = map.get("player_engine_level").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.engine_level = v as i32;
-                    }
-                    if let Some(v) = map.get("player_cargo_level").and_then(|v| v.as_i64()) {
-                        self.player_manager.player.cargo_level = v as i32;
-                    }
+                    self.player_manager.player.cargo = cargo;
 
-                    if let Some(serde_json::Value::Array(arr)) = map.get("player_warp_gates") {
-                        self.player_manager.player.warp_gates = arr
-                            .iter()
-                            .filter_map(|v| serde_json::from_value(v.clone()).ok())
-                            .collect();
+                    let mut storage = Vec::new();
+                    for stack in data.player_storage {
+                        for _ in 0..stack.count {
+                            storage.push(crate::components::OwnedItem {
+                                item_type: stack.item_type.clone(),
+                                is_natural: stack.is_natural,
+                                is_auto_stored: stack.is_auto_stored,
+                            });
+                        }
                     }
-
-                    if let Some(serde_json::Value::Array(arr)) = map.get("player_cargo") {
-                        self.player_manager.player.cargo = arr
-                            .iter()
-                            .filter_map(|v| {
-                                if let Some(s) = v.as_str() {
-                                    Some(crate::components::OwnedItem {
-                                        item_type: s.to_string(),
-                                        is_natural: true,
-                                        is_auto_stored: true,
-                                    })
-                                } else if let Some(obj) = v.as_object() {
-                                    let it = obj.get("item_type")?.as_str()?.to_string();
-                                    let nat = obj.get("is_natural")?.as_bool()?;
-                                    let auto = obj
-                                        .get("is_auto_stored")
-                                        .and_then(|v| v.as_bool())
-                                        .unwrap_or(nat);
-                                    Some(crate::components::OwnedItem {
-                                        item_type: it,
-                                        is_natural: nat,
-                                        is_auto_stored: auto,
-                                    })
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                    }
-                    if let Some(serde_json::Value::Array(arr)) = map.get("player_storage") {
-                        self.player_manager.player.storage = arr
-                            .iter()
-                            .filter_map(|v| {
-                                if let Some(s) = v.as_str() {
-                                    Some(crate::components::OwnedItem {
-                                        item_type: s.to_string(),
-                                        is_natural: true,
-                                        is_auto_stored: true,
-                                    })
-                                } else if let Some(obj) = v.as_object() {
-                                    let it = obj.get("item_type")?.as_str()?.to_string();
-                                    let nat = obj.get("is_natural")?.as_bool()?;
-                                    let auto = obj
-                                        .get("is_auto_stored")
-                                        .and_then(|v| v.as_bool())
-                                        .unwrap_or(nat);
-                                    Some(crate::components::OwnedItem {
-                                        item_type: it,
-                                        is_natural: nat,
-                                        is_auto_stored: auto,
-                                    })
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                    }
+                    self.player_manager.player.storage = storage;
 
                     // Update camera to match player position immediately
                     self.camera.x = self.player_manager.player.x - SCREEN_WIDTH / 2.0
@@ -124,44 +59,29 @@ impl Game {
                     self.camera.y = self.player_manager.player.y - SCREEN_HEIGHT / 2.0
                         + self.player_manager.player.height / 2.0;
 
-                    let wm_main = map
-                        .get("world_seed_main")
-                        .and_then(|v| v.as_u64())
-                        .map(|v| v as u32);
-                    let wm_ore = map
-                        .get("world_seed_ore")
-                        .and_then(|v| v.as_u64())
-                        .map(|v| v as u32);
-                    if let (Some(m), Some(o)) = (wm_main, wm_ore) {
-                        self.world_manager.seed(m, o);
-                    }
+                    self.world_manager
+                        .seed(data.world_seed_main, data.world_seed_ore);
 
                     self.world_manager
                         .generate_visible_chunks(self.camera.x, self.camera.y);
 
-                    if let Some(serde_json::Value::Array(mods)) = map.get("modified_chunks") {
-                        self.world_manager.apply_modifications(mods.clone());
-                    }
+                    self.world_manager.apply_modifications(data.modified_chunks);
 
-                    // Rebuild warp_gates registry from chunks?
-                    // Ideally we should save `warp_gates` in the save file explicitly.
-                    // For now, let's just clear it and hope it's consistent or not needed to rebuild here
-                    // because we are loading player state? No, warp_gates is in player struct, but if it's not in JSON...
-                    // The original code didn't load warp_gates from JSON. It needs to.
-                    // But I didn't touch save/load logic. Let's assume the user doesn't need persistence for warp gates RIGHT NOW or the existing system handles it if it was using Serde on Player.
-                    // Yes, Player derives Serialize/Deserialize, so `warp_gates` vec should be loaded automatically!
+                    self.notification_manager.add_notification(
+                        "Loaded!".to_string(),
+                        "success",
+                        game_renderer.get_font(),
+                    );
+                    self.on_title_screen = false;
+                    self.is_menu_visible = false;
                 }
-
-                self.notification_manager.add_notification(
-                    "Loaded!".to_string(),
-                    "success",
-                    game_renderer.get_font(),
-                );
-                self.on_title_screen = false;
-                self.is_menu_visible = false;
-            } else if let serde_json::Value::String(msg) = data {
-                self.notification_manager
-                    .add_notification(msg, "error", game_renderer.get_font());
+                Err(msg) => {
+                    self.notification_manager.add_notification(
+                        msg,
+                        "error",
+                        game_renderer.get_font(),
+                    );
+                }
             }
         }
     }
@@ -313,10 +233,12 @@ impl Game {
         world_my: f32,
         game_renderer: &GameRenderer,
     ) {
-        let (cx, cy) = world_to_chunk_coords(world_mx, world_my);
-        self.world_manager.ensure_chunk_exists_and_generated(cx, cy);
+        let (target_cx, target_cy) = world_to_chunk_coords(world_mx, world_my);
+        self.world_manager
+            .ensure_chunk_exists_and_generated(target_cx, target_cy);
 
-        if let Some((cx, cy, _, _, block)) = self
+        let mut should_mark_modified = false;
+        if let Some((_, _, _, _, block)) = self
             .world_manager
             .get_block_at_world_coords(world_mx, world_my)
             .filter(|(_, _, _, _, b)| !b.is_broken)
@@ -324,13 +246,11 @@ impl Game {
             if block.max_hp == -1 {
                 return;
             }
-            if block.current_hp == block.max_hp {
-                block.is_modified = true;
-            }
             block.current_hp -= self.player_manager.player.drill_level;
             block.last_damage_time = Some(get_time());
 
             if block.current_hp <= 0 {
+                should_mark_modified = true;
                 // Special handling for WarpGate destruction
                 if block.block_type == BlockType::WarpGate {
                     // Remove from registry
@@ -382,7 +302,10 @@ impl Game {
                     }
                 }
             }
-            if let Some(chunk) = self.world_manager.get_chunk_mut(cx, cy) {
+        }
+
+        if should_mark_modified {
+            if let Some(chunk) = self.world_manager.get_chunk_mut(target_cx, target_cy) {
                 chunk.is_modified_in_session = true;
             }
         }
@@ -403,6 +326,23 @@ impl Game {
             .get_block_at_world_coords(world_mx, world_my)
         {
             if !block.is_broken && block.block_type == BlockType::WarpGate {
+                // Auto-register if not in registry
+                if !self
+                    .player_manager
+                    .player
+                    .warp_gates
+                    .iter()
+                    .any(|w| w.x == block.x && w.y == block.y)
+                {
+                    self.player_manager
+                        .player
+                        .warp_gates
+                        .push(crate::components::WarpGate {
+                            x: block.x,
+                            y: block.y,
+                            name: block.name.clone().unwrap_or_else(|| "Home".to_string()),
+                        });
+                }
                 self.handle_event(GameEvent::OpenWarpMenu, game_renderer);
                 return; // Interaction consumes the click
             }

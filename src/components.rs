@@ -66,7 +66,7 @@ impl Particle {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum BlockType {
     Dirt,
     Grass,
@@ -78,6 +78,31 @@ pub enum BlockType {
 }
 
 impl BlockType {
+    pub fn to_id(&self) -> u8 {
+        match self {
+            BlockType::Air => 0,
+            BlockType::Dirt => 1,
+            BlockType::Grass => 2,
+            BlockType::Stone => 3,
+            BlockType::Coal => 4,
+            BlockType::Indestructible => 5,
+            BlockType::WarpGate => 6,
+        }
+    }
+
+    pub fn from_id(id: u8) -> Self {
+        match id {
+            0 => BlockType::Air,
+            1 => BlockType::Dirt,
+            2 => BlockType::Grass,
+            3 => BlockType::Stone,
+            4 => BlockType::Coal,
+            5 => BlockType::Indestructible,
+            6 => BlockType::WarpGate,
+            _ => BlockType::Air,
+        }
+    }
+
     pub fn is_solid(&self) -> bool {
         match self {
             BlockType::Dirt

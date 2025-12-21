@@ -255,45 +255,73 @@ impl WorldManager {
         blocks
     }
 
-    pub fn apply_modifications(&mut self, mod_chunks_data: Vec<serde_json::Value>) {
-        // passing intermediate json value or struct
-        // Let's assume passed struct is simple.
+    pub fn apply_modifications(
+        &mut self,
+        mod_chunks_data: Vec<crate::managers::persistence::ChunkSaveData>,
+    ) {
         for chunk_data in mod_chunks_data {
-            let cx = chunk_data["cx"].as_i64().unwrap() as i32;
-            let cy = chunk_data["cy"].as_i64().unwrap() as i32;
-            let mods = chunk_data["modified_blocks"].as_array().unwrap();
+            let cx = chunk_data.cx;
+            let cy = chunk_data.cy;
 
-            self.ensure_chunk_exists_and_generated(cx, cy); // Ensure chunk is generated before applying mods
+            self.ensure_chunk_exists_and_generated(cx, cy);
 
             if let Some(chunk) = self.get_chunk_mut(cx, cy) {
-                for mod_block in mods {
-                    let bx = mod_block["x"].as_f64().unwrap() as f32;
-                    let by = mod_block["y"].as_f64().unwrap() as f32;
-                    let hp = mod_block["current_hp"].as_i64().unwrap() as i32;
-                    let sprite_id = mod_block["sprite_id"].as_str().unwrap();
+                // 1. Decode flat RLE blocks [type_id, count, type_id, count, ...]
+                let mut current_idx = 0;
+                for chunk_pair in chunk_data.blocks.chunks(2) {
+                    if chunk_pair.len() < 2 {
+                        break;
+                    }
+                    let type_id = chunk_pair[0] as u8;
+                    let count = chunk_pair[1];
+                    let block_type = BlockType::from_id(type_id);
 
-                    let (rel_x, rel_y) = world_to_relative_in_chunk_coords(bx, by);
-                    if let Some(block) = chunk.get_block(rel_x, rel_y) {
-                        block.current_hp = hp;
-                        block.is_modified = true;
-                        block.is_broken = block.current_hp <= 0;
+                    for _ in 0..count {
+                        // The index in the original loop was (bx * CHUNK_SIZE_Y_BLOCKS + by)
+                        // but the new save loop uses by then bx?
+                        // Let's ensure the index mapping matches the save logic.
+                        // Save logic: index = (bx * CHUNK_SIZE_Y_BLOCKS + by)
+                        // This index is used for named_blocks.
+                        // However, the RLE sequence itself must match the loop order.
 
-                        let (new_sprite, new_type) = match sprite_id {
-                            "dirt" => (Some(SPRITE_BLOCK_DIRT), BlockType::Dirt),
-                            "grass" => (Some(SPRITE_BLOCK_GRASS), BlockType::Grass),
-                            "stone" => (Some(SPRITE_BLOCK_STONE), BlockType::Stone),
-                            "coal" => (Some(SPRITE_BLOCK_COAL), BlockType::Coal),
-                            "warpgate" => (Some(SPRITE_BLOCK_WARPGATE), BlockType::WarpGate),
-                            _ => (None, BlockType::Air), // "air" or "unknown"
-                        };
-                        block.sprite_rect = new_sprite;
-                        block.block_type = new_type;
+                        // Wait, the RLE loop order in save was:
+                        // for by in 0..CHUNK_SIZE_Y_BLOCKS {
+                        //     for bx in 0..CHUNK_SIZE_X_BLOCKS {
 
-                        if let Some(n) = mod_block.get("name").and_then(|v| v.as_str()) {
-                            block.name = Some(n.to_string());
+                        let bx = current_idx % CHUNK_SIZE_X_BLOCKS;
+                        let by = current_idx / CHUNK_SIZE_X_BLOCKS;
+
+                        if let Some(block) = chunk.get_block(bx, by) {
+                            block.block_type = block_type.clone();
+                            block.is_modified = true;
+
+                            let new_sprite = match block.block_type {
+                                BlockType::Dirt => Some(SPRITE_BLOCK_DIRT),
+                                BlockType::Grass => Some(SPRITE_BLOCK_GRASS),
+                                BlockType::Stone => Some(SPRITE_BLOCK_STONE),
+                                BlockType::Coal => Some(SPRITE_BLOCK_COAL),
+                                BlockType::WarpGate => Some(SPRITE_BLOCK_WARPGATE),
+                                BlockType::Indestructible => Some(SPRITE_BLOCK_INDESTRUCTIBLE),
+                                BlockType::Air => None,
+                            };
+
+                            block.sprite_rect = new_sprite;
+                            block.is_broken = block.block_type == BlockType::Air;
+                            block.current_hp = if block.is_broken { 0 } else { block.max_hp };
                         }
+                        current_idx += 1;
                     }
                 }
+
+                // 2. Apply named blocks (special data)
+                for named_block in chunk_data.named_blocks {
+                    let bx = named_block.i as usize / CHUNK_SIZE_Y_BLOCKS;
+                    let by = named_block.i as usize % CHUNK_SIZE_Y_BLOCKS;
+                    if let Some(block) = chunk.get_block(bx, by) {
+                        block.name = named_block.n;
+                    }
+                }
+
                 chunk.is_modified_in_session = true;
             }
         }
@@ -305,7 +333,6 @@ impl WorldManager {
             if !chunk.is_generated {
                 continue;
             }
-            let mut chunk_modified = false;
             for row in &mut chunk.blocks {
                 for block in row {
                     if !block.is_broken && block.current_hp < block.max_hp {
@@ -313,14 +340,10 @@ impl WorldManager {
                             if current_time - last_time >= 60.0 {
                                 block.current_hp = block.max_hp;
                                 block.last_damage_time = None;
-                                chunk_modified = true;
                             }
                         }
                     }
                 }
-            }
-            if chunk_modified {
-                chunk.is_modified_in_session = true;
             }
         }
     }

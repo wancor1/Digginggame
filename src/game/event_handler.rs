@@ -223,7 +223,7 @@ impl Game {
 
                 // We also need to set the block in the world!
                 // Access world_manager.
-                if let Some((_, _, _, _, block)) =
+                if let Some((cx, cy, _, _, block)) =
                     self.world_manager.get_block_at_world_coords(wx, wy)
                 {
                     block.block_type = crate::components::BlockType::WarpGate;
@@ -233,6 +233,10 @@ impl Game {
                     block.is_broken = false;
                     block.is_modified = true;
                     block.name = Some(name);
+
+                    if let Some(chunk) = self.world_manager.get_chunk_mut(cx, cy) {
+                        chunk.is_modified_in_session = true;
+                    }
                 }
                 self.warp_placement_target = None;
 

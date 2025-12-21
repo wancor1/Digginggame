@@ -110,8 +110,11 @@ impl Game {
 
         self.notification_manager.update();
 
-        if let Some((success, msg)) = self.persistence_manager.check_save_status() {
-            let t = if success { "success" } else { "error" };
+        if let Some(res) = self.persistence_manager.check_save_status() {
+            let (t, msg) = match res {
+                Ok(msg) => ("success", msg),
+                Err(msg) => ("error", msg),
+            };
             self.notification_manager
                 .add_notification(msg, t, game_renderer.get_font());
         }
