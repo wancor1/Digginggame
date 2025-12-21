@@ -127,7 +127,8 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     }
     // --------------
 
-    if game.on_surface && !game.is_menu_visible && !game.is_shop_open && !game.is_warehouse_open {
+    use crate::game::UIOverlay;
+    if game.on_surface && game.ui_overlay == UIOverlay::None {
         if draw_button(
             ButtonParams {
                 x: ctx.offset_x + (SCREEN_WIDTH - 40.0) * ctx.scale,

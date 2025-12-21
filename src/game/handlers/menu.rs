@@ -1,27 +1,25 @@
-use crate::Game;
+use crate::game::{Game, GameState, UIOverlay};
 use crate::managers::PersistenceManager;
 use crate::render::game_renderer::GameRenderer;
 
 pub fn open_save_selection(game: &mut Game) {
     game.save_files = PersistenceManager::list_save_files();
-    game.on_title_screen = false;
     if game.save_files.is_empty() {
-        game.on_new_game_input_screen = true;
+        game.state = GameState::NewGameInput;
         game.input_buffer.clear();
     } else {
-        game.on_save_select_screen = true;
+        game.state = GameState::SaveSelect;
     }
 }
 
 pub fn load_save(game: &mut Game, filename: String) {
     game.current_save_name = filename.clone();
     game.persistence_manager.load_game(filename);
-    game.on_save_select_screen = false;
+    game.state = GameState::Playing;
 }
 
 pub fn start_new_game_setup(game: &mut Game) {
-    game.on_save_select_screen = false;
-    game.on_new_game_input_screen = true;
+    game.state = GameState::NewGameInput;
     game.input_buffer.clear();
 }
 
@@ -31,7 +29,7 @@ pub fn confirm_new_game(game: &mut Game, name: String, renderer: &GameRenderer) 
         filename.push_str(".json");
     }
     game.current_save_name = filename;
-    game.on_new_game_input_screen = false;
+    game.state = GameState::Playing;
     game.input_buffer.clear();
     game.reset_player_state();
     game.world_manager.seed(::rand::random(), ::rand::random());
@@ -79,10 +77,8 @@ pub fn return_to_title_from_save_select(game: &mut Game) {
 }
 
 pub fn close_menu(game: &mut Game) {
-    game.is_menu_visible = false;
-    game.is_shop_open = false;
-    game.is_inventory_open = false;
-    game.is_warehouse_open = false;
-    game.on_warp_select_screen = false;
-    game.on_warp_place_screen = false;
+    game.ui_overlay = UIOverlay::None;
+    if game.state == GameState::WarpPlace || game.state == GameState::WarpSelect {
+        game.state = GameState::Playing;
+    }
 }

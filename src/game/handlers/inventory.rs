@@ -1,8 +1,8 @@
-use crate::Game;
+use crate::game::{Game, UIOverlay};
 use crate::render::game_renderer::GameRenderer;
 
 pub fn open_warehouse(game: &mut Game) {
-    game.is_warehouse_open = true;
+    game.ui_overlay = UIOverlay::Warehouse;
 }
 
 pub fn sell_item(game: &mut Game, item_type: String, quantity: usize) {
@@ -109,5 +109,5 @@ pub fn withdraw_item(game: &mut Game, item_type: String, quantity: usize, render
 
 pub fn set_selected_item_index(game: &mut Game, idx: usize) {
     game.selected_item_index = idx;
-    game.is_inventory_open = false;
+    game.ui_overlay = UIOverlay::None;
 }

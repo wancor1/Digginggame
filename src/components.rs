@@ -135,6 +135,28 @@ impl BlockType {
             _ => None,
         }
     }
+
+    pub fn get_sprite(&self) -> Option<Rect> {
+        use crate::render::sprites::*;
+        match self {
+            BlockType::Dirt => Some(SPRITE_BLOCK_DIRT),
+            BlockType::Grass => Some(SPRITE_BLOCK_GRASS),
+            BlockType::Stone => Some(SPRITE_BLOCK_STONE),
+            BlockType::Coal => Some(SPRITE_BLOCK_COAL),
+            BlockType::WarpGate => Some(SPRITE_BLOCK_WARPGATE),
+            _ => None,
+        }
+    }
+
+    pub fn get_base_hardness(&self) -> i32 {
+        match self {
+            BlockType::Dirt => HARDNESS_DIRT,
+            BlockType::Grass => HARDNESS_GRASS,
+            BlockType::Stone => HARDNESS_STONE,
+            BlockType::Coal => HARDNESS_COAL,
+            _ => 0,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

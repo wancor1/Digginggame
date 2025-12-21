@@ -122,11 +122,13 @@ async fn main() {
 }
 
 fn process_text_input(game: &mut Game) -> Vec<GameEvent> {
+    use crate::game::GameState;
     let mut events = Vec::new();
-    if game.on_new_game_input_screen || game.on_warp_place_screen {
+    if game.state == GameState::NewGameInput || game.state == GameState::WarpPlace {
         while let Some(c) = get_char_pressed() {
-            if (game.on_new_game_input_screen && (c.is_alphanumeric() || c == '_' || c == '-'))
-                || (game.on_warp_place_screen && (c as u32 >= 32 && c as u32 <= 126))
+            if (game.state == GameState::NewGameInput
+                && (c.is_alphanumeric() || c == '_' || c == '-'))
+                || (game.state == GameState::WarpPlace && (c as u32 >= 32 && c as u32 <= 126))
             {
                 game.input_buffer.push(c);
             }
@@ -135,7 +137,7 @@ fn process_text_input(game: &mut Game) -> Vec<GameEvent> {
             game.input_buffer.pop();
         }
         if is_key_pressed(KeyCode::Enter) {
-            if game.on_new_game_input_screen {
+            if game.state == GameState::NewGameInput {
                 events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
             } else {
                 events.push(GameEvent::ConfirmWarpGateName(game.input_buffer.clone()));

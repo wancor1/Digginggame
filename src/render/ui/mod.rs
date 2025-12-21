@@ -34,29 +34,22 @@ impl UIRenderer {
                 events: &mut events,
             };
 
-            if game.on_title_screen {
-                screens::draw_title_screen(game, &mut ctx);
-            } else if game.on_save_select_screen {
-                screens::draw_save_select_screen(game, &mut ctx);
-            } else if game.on_new_game_input_screen {
-                screens::draw_new_game_input_screen(game, &mut ctx);
-            } else if game.on_warp_place_screen {
-                screens::draw_warp_place_screen(game, &mut ctx);
-            } else if game.on_warp_select_screen {
-                screens::draw_warp_select_screen(game, &mut ctx);
-            } else {
-                hud::draw_hud(game, &mut ctx);
-                if game.is_shop_open {
-                    hud::draw_shop(game, &mut ctx);
-                }
-                if game.is_inventory_open {
-                    hud::draw_inventory(game, &mut ctx);
-                }
-                if game.is_warehouse_open {
-                    hud::draw_warehouse(game, &mut ctx);
-                }
-                if game.is_menu_visible {
-                    screens::draw_pause_menu(game, &mut ctx);
+            use crate::game::{GameState, UIOverlay};
+            match game.state {
+                GameState::Title => screens::draw_title_screen(game, &mut ctx),
+                GameState::SaveSelect => screens::draw_save_select_screen(game, &mut ctx),
+                GameState::NewGameInput => screens::draw_new_game_input_screen(game, &mut ctx),
+                GameState::WarpPlace => screens::draw_warp_place_screen(game, &mut ctx),
+                GameState::WarpSelect => screens::draw_warp_select_screen(game, &mut ctx),
+                GameState::Playing => {
+                    hud::draw_hud(game, &mut ctx);
+                    match game.ui_overlay {
+                        UIOverlay::Shop => hud::draw_shop(game, &mut ctx),
+                        UIOverlay::Inventory => hud::draw_inventory(game, &mut ctx),
+                        UIOverlay::Warehouse => hud::draw_warehouse(game, &mut ctx),
+                        UIOverlay::PauseMenu => screens::draw_pause_menu(game, &mut ctx),
+                        UIOverlay::None => {}
+                    }
                 }
             }
         }

@@ -113,6 +113,7 @@ pub fn buy_warp_gate(game: &mut Game, renderer: &GameRenderer) {
     }
 }
 
+use crate::game::UIOverlay;
 pub fn open_shop(game: &mut Game) {
-    game.is_shop_open = true;
+    game.ui_overlay = UIOverlay::Shop;
 }

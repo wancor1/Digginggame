@@ -1,5 +1,5 @@
-use crate::Game;
 use crate::constants::*;
+use crate::game::{Game, GameState, UIOverlay};
 use crate::render::game_renderer::GameRenderer;
 
 pub fn handle_loading(game: &mut Game, game_renderer: &GameRenderer) {
@@ -65,8 +65,8 @@ pub fn handle_loading(game: &mut Game, game_renderer: &GameRenderer) {
                     "success",
                     game_renderer.get_font(),
                 );
-                game.on_title_screen = false;
-                game.is_menu_visible = false;
+                game.state = GameState::Playing;
+                game.ui_overlay = UIOverlay::None;
             }
             Err(msg) => {
                 game.notification_manager

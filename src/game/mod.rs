@@ -13,6 +13,25 @@ pub mod handlers;
 pub mod persistence;
 pub mod update_logic;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameState {
+    Title,
+    SaveSelect,
+    NewGameInput,
+    Playing,
+    WarpPlace,
+    WarpSelect,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UIOverlay {
+    None,
+    PauseMenu,
+    Shop,
+    Inventory,
+    Warehouse,
+}
+
 pub struct Game {
     pub world_manager: WorldManager,
     pub particle_manager: ParticleManager,
@@ -24,16 +43,9 @@ pub struct Game {
     pub player_manager: PlayerManager,
     pub item_manager: ItemManager,
 
-    // UI State
-    pub on_title_screen: bool,
-    pub on_save_select_screen: bool,
-    pub on_new_game_input_screen: bool,
-    pub is_menu_visible: bool,
-    pub is_shop_open: bool,
-    pub is_inventory_open: bool,
-    pub is_warehouse_open: bool,
-    pub on_warp_place_screen: bool,
-    pub on_warp_select_screen: bool,
+    // State Management
+    pub state: GameState,
+    pub ui_overlay: UIOverlay,
     pub on_surface: bool,
 
     // Save/Load State
@@ -63,15 +75,8 @@ impl Game {
             camera: Camera::new(),
             player_manager: PlayerManager::new(PLAYER_INITIAL_X, PLAYER_INITIAL_Y),
             item_manager: ItemManager::new(),
-            on_title_screen: true,
-            on_save_select_screen: false,
-            on_new_game_input_screen: false,
-            is_menu_visible: false,
-            is_shop_open: false,
-            is_inventory_open: false,
-            is_warehouse_open: false,
-            on_warp_place_screen: false,
-            on_warp_select_screen: false,
+            state: GameState::Title,
+            ui_overlay: UIOverlay::None,
             on_surface: true,
             save_files: Vec::new(),
             current_save_name: "savegame.json".to_string(),
@@ -97,16 +102,19 @@ impl Game {
             return;
         }
 
-        if self.on_title_screen
-            || self.on_save_select_screen
-            || self.on_new_game_input_screen
-            || self.is_menu_visible
-        {
-            if self.is_menu_visible && self.is_key_pressed_buffered(KeyCode::Escape) {
-                self.is_menu_visible = false;
+        match self.state {
+            GameState::Title | GameState::SaveSelect | GameState::NewGameInput => {
+                // Potential state-specific updates could go here
             }
-        } else {
-            self.handle_gameplay_update(game_renderer);
+            GameState::Playing | GameState::WarpPlace | GameState::WarpSelect => {
+                if self.ui_overlay == UIOverlay::PauseMenu {
+                    if self.is_key_pressed_buffered(KeyCode::Escape) {
+                        self.ui_overlay = UIOverlay::None;
+                    }
+                } else {
+                    self.handle_gameplay_update(game_renderer);
+                }
+            }
         }
 
         self.notification_manager.update();
@@ -173,15 +181,8 @@ impl Game {
         self.particle_manager = ParticleManager::new();
         self.camera = Camera::new();
         self.reset_player_state();
-        self.on_title_screen = true;
-        self.on_save_select_screen = false;
-        self.on_new_game_input_screen = false;
-        self.is_menu_visible = false;
-        self.is_shop_open = false;
-        self.is_inventory_open = false;
-        self.is_warehouse_open = false;
-        self.on_warp_place_screen = false;
-        self.on_warp_select_screen = false;
+        self.state = GameState::Title;
+        self.ui_overlay = UIOverlay::None;
 
         self.world_manager.reset();
         self.current_save_name = "savegame.json".to_string();
@@ -200,9 +201,7 @@ impl Game {
     }
 
     pub fn return_to_title_from_save_select(&mut self) {
-        self.on_title_screen = true;
-        self.on_save_select_screen = false;
-        self.on_new_game_input_screen = false;
-        self.is_menu_visible = false;
+        self.state = GameState::Title;
+        self.ui_overlay = UIOverlay::None;
     }
 }

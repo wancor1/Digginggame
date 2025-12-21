@@ -1,5 +1,5 @@
-use crate::Game;
 use crate::constants::*;
+use crate::game::{Game, UIOverlay};
 use crate::render::game_renderer::GameRenderer;
 use macroquad::prelude::BLUE;
 
@@ -34,7 +34,7 @@ pub fn respawn(game: &mut Game, renderer: &GameRenderer) {
             )]);
     }
 
-    game.is_menu_visible = false;
+    game.ui_overlay = UIOverlay::None;
 
     game.notification_manager.add_notification(
         game.lang_manager.get_string("notification.respawn.success"),
