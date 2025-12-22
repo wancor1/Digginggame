@@ -54,7 +54,7 @@
     "name": "Coal",
     "is_solid": true,
     "is_placeable": true,
-    "base_hardness": 20,
+    "base_hardness": 18,
     "sprite": { "x": 128.0, "y": 0.0, "w": 8.0, "h": 8.0 },
     "item_type": "Coal",
     "weight": 10
@@ -66,7 +66,17 @@
     "is_placeable": true,
     "base_hardness": 0,
     "sprite": { "x": 128.0, "y": 8.0, "w": 8.0, "h": 8.0 },
-    "item_type": "",
+    "item_type": "Oil Shale",
+    "weight": 0
+  },
+  {
+    "id": 12,
+    "name": "Limestone",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 0,
+    "sprite": { "x": 128.0, "y": 16.0, "w": 8.0, "h": 8.0 },
+    "item_type": "Limestone",
     "weight": 0
   },
   {
