@@ -47,8 +47,8 @@ pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite 
 
 // World Generation Constants
 pub const SURFACE_Y_LEVEL: i32 = 7;
-pub const NOISE_SCALE_ORE: f64 = 0.04;
-pub const ORE_THRESHOLD: f64 = 0.4;
+pub const NOISE_SCALE_ORE: f64 = 0.0286;
+pub const ORE_THRESHOLD: f64 = 0.364;
 
 pub const HARDNESS_DEPTH_MULTIPLIER: f64 = 0.05; // 5% increase per block depth
 
@@ -70,7 +70,8 @@ pub const PLAYER_INITIAL_CARGO: i32 = 500;
 pub const PLAYER_GRAVITY: f32 = 0.1;
 pub const PLAYER_FRICTION_AIR: f32 = 0.95;
 pub const PLAYER_FRICTION_GROUND: f32 = 0.8;
-pub const PLAYER_TERMINAL_VELOCITY: f32 = 2.5;
+pub const PLAYER_TERMINAL_XVELOCITY: f32 = 1.25;
+pub const PLAYER_TERMINAL_YVELOCITY: f32 = 2.25;
 
 // Sprites
 pub const SPRITE_SELECT_NORMAL: Rect = Rect {

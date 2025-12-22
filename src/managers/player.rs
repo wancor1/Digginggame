@@ -74,11 +74,14 @@ impl PlayerManager {
         self.player.vy *= PLAYER_FRICTION_AIR;
 
         // Clamp Velocity
-        let max_vel = PLAYER_TERMINAL_VELOCITY
+        let max_xvel = PLAYER_TERMINAL_XVELOCITY
             * (1.0 + (self.player.engine_level as f32 - 1.0) * 0.2)
             * dash_mult;
-        self.player.vx = self.player.vx.clamp(-max_vel, max_vel);
-        self.player.vy = self.player.vy.clamp(-max_vel, max_vel);
+        let max_yvel = PLAYER_TERMINAL_YVELOCITY
+            * (1.0 + (self.player.engine_level as f32 - 1.0) * 0.2)
+            * dash_mult;
+        self.player.vx = self.player.vx.clamp(-max_xvel, max_xvel);
+        self.player.vy = self.player.vy.clamp(-max_yvel, max_yvel);
     }
 
     fn perform_movement_and_collisions(&mut self, world_manager: &mut WorldManager) {
