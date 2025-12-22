@@ -1,6 +1,7 @@
 pub const SCREEN_WIDTH: f32 = 160.0;
 pub const SCREEN_HEIGHT: f32 = 120.0;
 pub const BLOCK_SIZE: f32 = 8.0;
+pub const CAMERA_DEADZONE_RADIUS: f32 = 12.0;
 
 pub const TARGET_FPS: f32 = 60.0;
 pub const FRAME_TIME: f32 = 1.0 / TARGET_FPS;

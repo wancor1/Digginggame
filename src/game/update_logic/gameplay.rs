@@ -43,10 +43,23 @@ fn update_ui_state(game: &mut Game) {
 }
 
 fn update_camera(game: &mut Game) {
-    game.camera.x =
-        game.player_manager.player.x - SCREEN_WIDTH / 2.0 + game.player_manager.player.width / 2.0;
-    game.camera.y = game.player_manager.player.y - SCREEN_HEIGHT / 2.0
-        + game.player_manager.player.height / 2.0;
+    let player_center_x = game.player_manager.player.x + game.player_manager.player.width / 2.0;
+    let player_center_y = game.player_manager.player.y + game.player_manager.player.height / 2.0;
+
+    let camera_center_x = game.camera.x + SCREEN_WIDTH / 2.0;
+    let camera_center_y = game.camera.y + SCREEN_HEIGHT / 2.0;
+
+    let dx = player_center_x - camera_center_x;
+    let dy = player_center_y - camera_center_y;
+    let distance = (dx * dx + dy * dy).sqrt();
+
+    if distance > CAMERA_DEADZONE_RADIUS {
+        let angle = dy.atan2(dx);
+        let move_dist = distance - CAMERA_DEADZONE_RADIUS;
+
+        game.camera.x += angle.cos() * move_dist;
+        game.camera.y += angle.sin() * move_dist;
+    }
 }
 
 fn update_world(game: &mut Game) {
