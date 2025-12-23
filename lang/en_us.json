@@ -50,6 +50,7 @@
   "shop.upgrade.tank": "Fuel Tank",
   "shop.upgrade.engine": "Engine",
   "shop.upgrade.cargo": "Cargo Bay",
+  "shop.upgrade.heat_res": "Heat Suit",
   "shop.buy.warpgate": "Warpgate",
   "shop.purchase": "Purchase",
   "hud.warp_gates": "Warpgate count: {count}",

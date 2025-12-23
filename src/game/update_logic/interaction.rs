@@ -3,7 +3,7 @@ use crate::components::{BlockType, Particle};
 use crate::constants::*;
 use crate::events::GameEvent;
 use crate::render::game_renderer::GameRenderer;
-use crate::utils::world_to_chunk_coords;
+use crate::utils::{world_to_chunk_coords, get_temperature};
 use ::rand::Rng;
 use macroquad::prelude::*;
 
@@ -26,7 +26,21 @@ pub fn handle_block_interaction(
         if block.max_hp == -1 {
             return;
         }
-        block.current_hp -= game.player_manager.player.drill_level;
+
+        let temp = get_temperature(game.player_manager.player.y);
+        let resistance =
+            (game.player_manager.player.heat_resistance_level - 1) as f32 * HEAT_RESISTANCE_STEP;
+        let effective_temp = temp - resistance;
+
+        let mut drill_power = game.player_manager.player.drill_level as f32;
+
+        if effective_temp >= TEMPERATURE_DEBUFF_THRESHOLD {
+            drill_power /= 2.0;
+            let excess = effective_temp - TEMPERATURE_DEBUFF_THRESHOLD;
+            drill_power -= excess;
+        }
+
+        block.current_hp -= drill_power.max(1.0) as i32;
         block.last_damage_time = Some(get_time());
 
         if block.current_hp <= 0 {

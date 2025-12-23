@@ -50,6 +50,7 @@
   "shop.upgrade.tank": "燃料タンク",
   "shop.upgrade.engine": "エンジン",
   "shop.upgrade.cargo": "貨物ベイ",
+  "shop.upgrade.heat_res": "耐熱スーツ",
   "shop.buy.warpgate": "ワープゲート",
   "shop.purchase": "購入",
   "hud.warp_gates": "ゲート所持数: {count}",

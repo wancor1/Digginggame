@@ -1,7 +1,12 @@
 use crate::constants::{
-    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH,
+    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH, SURFACE_TEMPERATURE, TEMPERATURE_GRADIENT, SURFACE_Y_LEVEL
 };
 use macroquad::prelude::*;
+
+pub fn get_temperature(y: f32) -> f32 {
+    let depth = (y / BLOCK_SIZE).floor() as f32 - SURFACE_Y_LEVEL as f32;
+    SURFACE_TEMPERATURE + (depth.max(0.0) * TEMPERATURE_GRADIENT)
+}
 
 pub fn get_render_dimensions() -> (f32, f32, f32, f32) {
     let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;

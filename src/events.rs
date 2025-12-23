@@ -11,6 +11,7 @@ pub enum GameEvent {
     UpgradeTank,
     UpgradeEngine,
     UpgradeCargo,
+    UpgradeHeatResistance,
     BuyWarpGate,
     StartPlaceWarpGate,
     ConfirmWarpGateName(String),

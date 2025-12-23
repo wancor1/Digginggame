@@ -159,6 +159,7 @@ pub struct Player {
     pub tank_level: i32,
     pub engine_level: i32,
     pub cargo_level: i32,
+    pub heat_resistance_level: i32,
     pub warp_gates: Vec<WarpGate>,
 }
 
@@ -184,6 +185,7 @@ impl Player {
             tank_level: 1,
             engine_level: 1,
             cargo_level: 1,
+            heat_resistance_level: 1,
             warp_gates: Vec::new(),
         }
     }

@@ -80,6 +80,25 @@ pub fn upgrade_cargo(game: &mut Game, renderer: &GameRenderer) {
     }
 }
 
+pub fn upgrade_heat_resistance(game: &mut Game, renderer: &GameRenderer) {
+    let cost = game.player_manager.player.heat_resistance_level * 200;
+    if game.player_manager.player.money >= cost {
+        game.player_manager.player.money -= cost;
+        game.player_manager.player.heat_resistance_level += 1;
+        game.notification_manager.add_notification(
+            "Heat Res. Upgraded!".to_string(),
+            "success",
+            renderer.get_font(),
+        );
+    } else {
+        game.notification_manager.add_notification(
+            "Not enough money!".to_string(),
+            "error",
+            renderer.get_font(),
+        );
+    }
+}
+
 pub fn buy_warp_gate(game: &mut Game, renderer: &GameRenderer) {
     if game.player_manager.player.money >= 500 {
         if game.player_manager.player.cargo.len() < game.player_manager.player.max_cargo as usize {

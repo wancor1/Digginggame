@@ -138,6 +138,29 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     }
     cur_y += 12.0 * ctx.scale;
 
+    let hrc = game.player_manager.player.heat_resistance_level * 200;
+    let heat_name = game.lang_manager.get_string("shop.upgrade.heat_res");
+    let heat_label = format!(
+        "{} Lv{} (${})",
+        heat_name, game.player_manager.player.heat_resistance_level, hrc
+    );
+    if draw_button(
+        ButtonParams {
+            x: mx + 5.0 * ctx.scale,
+            y: cur_y,
+            w: mw - 10.0 * ctx.scale,
+            h: 10.0 * ctx.scale,
+            text_key: &heat_label,
+            press_key: &purchase_label,
+            lang: &game.lang_manager,
+            font_size: ctx.font_size,
+        },
+        ctx.font,
+    ) {
+        ctx.events.push(GameEvent::UpgradeHeatResistance);
+    }
+    cur_y += 12.0 * ctx.scale;
+
     let wg_name = game.lang_manager.get_string("shop.buy.warpgate");
     let wg_label = format!("{} ($500)", wg_name);
     if draw_button(

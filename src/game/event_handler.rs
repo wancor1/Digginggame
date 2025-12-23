@@ -22,6 +22,9 @@ impl Game {
             GameEvent::UpgradeTank => handlers::shop::upgrade_tank(self, game_renderer),
             GameEvent::UpgradeEngine => handlers::shop::upgrade_engine(self, game_renderer),
             GameEvent::UpgradeCargo => handlers::shop::upgrade_cargo(self, game_renderer),
+            GameEvent::UpgradeHeatResistance => {
+                handlers::shop::upgrade_heat_resistance(self, game_renderer)
+            }
             GameEvent::BuyWarpGate => handlers::shop::buy_warp_gate(self, game_renderer),
             GameEvent::StartPlaceWarpGate => handlers::warp::start_place_warp_gate(self),
             GameEvent::ConfirmWarpGateName(name) => {

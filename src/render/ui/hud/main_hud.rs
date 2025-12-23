@@ -2,7 +2,7 @@ use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
-use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
+use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords, get_temperature};
 use macroquad::prelude::*;
 
 pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
@@ -68,6 +68,24 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
             font_size: mini_font_size,
             font: ctx.font,
             color: WHITE,
+            ..Default::default()
+        },
+    );
+
+    let temp = get_temperature(player.y);
+    let temp_color = if temp >= TEMPERATURE_DEBUFF_THRESHOLD {
+        RED
+    } else {
+        WHITE
+    };
+    draw_text_ex(
+        &format!("TEMP: {:.1}C", temp),
+        ctx.offset_x + (SCREEN_WIDTH - 45.0) * ctx.scale,
+        hud_y + 20.0 * ctx.scale,
+        TextParams {
+            font_size: mini_font_size,
+            font: ctx.font,
+            color: temp_color,
             ..Default::default()
         },
     );
