@@ -24,6 +24,8 @@ impl BlockType {
     pub const Grass: BlockType = Self::GRASS;
     pub const Stone: BlockType = Self::STONE;
     pub const Coal: BlockType = Self::COAL;
+    pub const OilShale: BlockType = Self::OIL_SHALE;
+    pub const Limestone: BlockType = Self::LIMESTONE;
     pub const Indestructible: BlockType = Self::INDESTRUCTIBLE;
     pub const WarpGate: BlockType = Self::WARP_GATE;
 
