@@ -2,6 +2,7 @@ use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
+use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
 use macroquad::prelude::*;
 
 pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
@@ -70,6 +71,53 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
             ..Default::default()
         },
     );
+
+    // --- HOVERED BLOCK INFO ---
+    if let Some((bx, by)) = game.select_block.get_block_coords() {
+        let (cx, cy) = world_to_chunk_coords(bx, by);
+        if let Some(chunk) = game.world_manager.chunks.get(&(cx, cy)) {
+            if chunk.is_generated {
+                let (rx, ry) = world_to_relative_in_chunk_coords(bx, by);
+                if rx < chunk.blocks.len() && ry < chunk.blocks[0].len() {
+                    let block = &chunk.blocks[rx][ry];
+                    let block_name = block
+                        .block_type
+                        .get_data()
+                        .map(|d| d.name.as_str())
+                        .unwrap_or("???");
+
+                    let gx = (bx / BLOCK_SIZE).round() as i32;
+                    let gy = (by / BLOCK_SIZE).round() as i32;
+                    let info_text = format!("{} ({}, {})", block_name, gx, gy);
+
+                    let text_dims = measure_text(&info_text, ctx.font, mini_font_size, 1.0);
+                    let info_x = ctx.offset_x + (SCREEN_WIDTH * ctx.scale - text_dims.width) / 2.0;
+                    let info_y = ctx.offset_y + (SCREEN_HEIGHT - 8.0) * ctx.scale;
+
+                    draw_rectangle(
+                        info_x - 2.0 * ctx.scale,
+                        info_y - text_dims.offset_y - 1.0 * ctx.scale,
+                        text_dims.width + 4.0 * ctx.scale,
+                        text_dims.height + 2.0 * ctx.scale,
+                        Color::new(0.0, 0.0, 0.0, 0.5),
+                    );
+
+                    draw_text_ex(
+                        &info_text,
+                        info_x,
+                        info_y,
+                        TextParams {
+                            font_size: mini_font_size,
+                            font: ctx.font,
+                            color: WHITE,
+                            ..Default::default()
+                        },
+                    );
+                }
+            }
+        }
+    }
+    // --------------------------
 
     // --- SELECTED ITEM ---
     let slot_size = 12.0 * ctx.scale;

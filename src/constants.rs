@@ -85,7 +85,6 @@ pub const SPRITE_SELECT_LARGE: Rect = Rect {
     y: 16.0,
     w: 10.0,
     h: 10.0,
-    
 };
 pub const SPRITE_CURSOR: Rect = Rect {
     x: 8.0,

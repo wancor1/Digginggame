@@ -41,6 +41,10 @@ impl SelectBlock {
         self.is_valid = is_valid;
     }
 
+    pub fn get_block_coords(&self) -> Option<(f32, f32)> {
+        self.block_coords
+    }
+
     pub fn draw(&mut self, camera_x: f32, camera_y: f32, atlas: &Texture2D) {
         if !self.is_effect_active {
             return;

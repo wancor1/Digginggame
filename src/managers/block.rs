@@ -108,14 +108,15 @@ impl BlockManager {
     fn load_blocks(&mut self) {
         let path = "data/blocks.json";
         if let Ok(content) = fs::read_to_string(path)
-            && let Ok(blocks_vec) = serde_json::from_str::<Vec<BlockData>>(&content) {
-                for block in blocks_vec {
-                    if let Some(ref it) = block.item_type {
-                        self.item_type_to_id.insert(it.clone(), block.id);
-                    }
-                    self.blocks.insert(block.id, block);
+            && let Ok(blocks_vec) = serde_json::from_str::<Vec<BlockData>>(&content)
+        {
+            for block in blocks_vec {
+                if let Some(ref it) = block.item_type {
+                    self.item_type_to_id.insert(it.clone(), block.id);
                 }
+                self.blocks.insert(block.id, block);
             }
+        }
     }
 
     pub fn get_data(&self, block_type: &BlockType) -> Option<&BlockData> {
