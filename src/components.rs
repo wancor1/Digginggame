@@ -66,51 +66,7 @@ impl Particle {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum BlockType {
-    Dirt,
-    Grass,
-    Stone,
-    Coal,
-    Indestructible,
-    WarpGate,
-    Air,
-}
-
-impl BlockType {
-    pub fn is_solid(&self) -> bool {
-        match self {
-            BlockType::Dirt
-            | BlockType::Grass
-            | BlockType::Stone
-            | BlockType::Coal
-            | BlockType::Indestructible => true,
-            BlockType::WarpGate | BlockType::Air => false,
-        }
-    }
-
-    pub fn is_placeable(&self) -> bool {
-        match self {
-            BlockType::Dirt
-            | BlockType::Grass
-            | BlockType::Stone
-            | BlockType::Coal
-            | BlockType::WarpGate => true,
-            _ => false,
-        }
-    }
-
-    pub fn from_item_type(item_type: &str) -> Option<Self> {
-        match item_type {
-            "Dirt" => Some(BlockType::Dirt),
-            "Grass" => Some(BlockType::Grass),
-            "Stone" => Some(BlockType::Stone),
-            "Coal" => Some(BlockType::Coal),
-            "WarpGate" => Some(BlockType::WarpGate),
-            _ => None,
-        }
-    }
-}
+pub use crate::managers::block::BlockType;
 
 #[derive(Clone, Debug)]
 pub struct Block {
@@ -150,18 +106,14 @@ impl Block {
 }
 
 pub struct Chunk {
-    pub chunk_x: i32,
-    pub chunk_y: i32,
     pub blocks: Vec<Vec<Block>>, // Changed to 2D Vec, easier to instantiate
     pub is_generated: bool,
     pub is_modified_in_session: bool,
 }
 
 impl Chunk {
-    pub fn new(cx: i32, cy: i32) -> Self {
+    pub fn new(_cx: i32, _cy: i32) -> Self {
         Self {
-            chunk_x: cx,
-            chunk_y: cy,
             blocks: Vec::new(),
             is_generated: false,
             is_modified_in_session: false,
@@ -176,6 +128,18 @@ impl Chunk {
             Some(&mut self.blocks[rel_x][rel_y])
         } else {
             None
+        }
+    }
+}
+
+pub struct MacroGrid {
+    pub chunks: std::collections::HashMap<(i32, i32), Chunk>,
+}
+
+impl MacroGrid {
+    pub fn new() -> Self {
+        Self {
+            chunks: std::collections::HashMap::new(),
         }
     }
 }
@@ -207,6 +171,7 @@ pub struct Player {
     pub tank_level: i32,
     pub engine_level: i32,
     pub cargo_level: i32,
+    pub heat_resistance_level: i32,
     pub warp_gates: Vec<WarpGate>,
 }
 
@@ -232,6 +197,7 @@ impl Player {
             tank_level: 1,
             engine_level: 1,
             cargo_level: 1,
+            heat_resistance_level: 1,
             warp_gates: Vec::new(),
         }
     }

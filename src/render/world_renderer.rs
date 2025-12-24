@@ -1,6 +1,5 @@
 use crate::Game;
 use crate::constants::*;
-use crate::render::sprites::*;
 use macroquad::prelude::*;
 
 pub struct WorldRenderer;

@@ -1,33 +1,132 @@
+use crate::components::WarpGate;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::fs;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+pub const SAVE_VERSION: u32 = 2;
+pub const SAVE_DIR: &str = "saves";
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlockSaveData {
-    pub x: f32,
-    pub y: f32,
-    pub current_hp: i32,
-    pub sprite_id: String,
-    pub name: Option<String>,
+    pub i: u32, // index in chunk
+    pub t: crate::components::BlockType,
+    pub n: Option<String>,
 }
 
-// We use simplified threading or just sync IO for MVP because Macroquad is single threaded mostly,
-// but we can spawn threads for IO.
-// The Python version used threads. We can too, but need Arc<Mutex<...>> for shared state.
-// To keep things simple and avoid complex RefCell/Arc spaghetti in the port,
-// we'll do synchronous IO first, or basic threaded IO that returns a result to a channel/shared var.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ChunkSaveData {
+    pub cx: i32,
+    pub cy: i32,
+    /// Flat RLE encoded blocks: [type_id, count, type_id, count, ...]
+    /// This represents the entire chunk state efficiently in a single array.
+    pub blocks: Vec<u32>,
+    /// Special blocks that need additional data (like names)
+    pub named_blocks: Vec<BlockSaveData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MacroGridSaveData {
+    pub mgx: i32,
+    pub mgy: i32,
+    pub chunks: Vec<ChunkSaveData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ItemStack {
+    pub item_type: String,
+    pub count: u32,
+    pub is_natural: bool,
+    pub is_auto_stored: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SaveData {
+    pub version: u32,
+    pub camera_x: f32,
+    pub camera_y: f32,
+    pub player_x: f32,
+    pub player_y: f32,
+    pub player_money: i32,
+    pub player_fuel: f32,
+    pub player_max_fuel: f32,
+    pub player_max_cargo: i32,
+    pub player_max_storage: i32,
+    pub player_drill_level: i32,
+    pub player_tank_level: i32,
+    pub player_engine_level: i32,
+    pub player_cargo_level: i32,
+    pub player_warp_gates: Vec<WarpGate>,
+    pub player_cargo: Vec<ItemStack>,
+    pub player_storage: Vec<ItemStack>,
+    pub world_seed_main: u32,
+    pub world_seed_ore: u32,
+    #[serde(default, with = "visited_chunks_format")]
+    pub visited_chunks: std::collections::HashSet<(i32, i32)>,
+    pub modified_macrogrids: Vec<MacroGridSaveData>,
+}
+
+mod visited_chunks_format {
+    use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
+    use std::collections::HashSet;
+
+    pub fn serialize<S>(
+        visited_chunks: &HashSet<(i32, i32)>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut flat = Vec::with_capacity(visited_chunks.len() * 2);
+        let mut v: Vec<(i32, i32)> = visited_chunks.iter().cloned().collect();
+        // Sorting improves zstd compression ratio
+        v.sort_unstable_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
+
+        for (x, y) in v {
+            flat.push(x);
+            flat.push(y);
+        }
+        flat.serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashSet<(i32, i32)>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum VisitedChunksData {
+            Flat(Vec<i32>),
+            Pairs(Vec<(i32, i32)>),
+        }
+
+        let data = VisitedChunksData::deserialize(deserializer)?;
+        match data {
+            VisitedChunksData::Flat(flat) => {
+                let mut set = HashSet::with_capacity(flat.len() / 2);
+                for chunk in flat.chunks_exact(2) {
+                    set.insert((chunk[0], chunk[1]));
+                }
+                Ok(set)
+            }
+            VisitedChunksData::Pairs(pairs) => Ok(pairs.into_iter().collect()),
+        }
+    }
+}
 
 pub struct PersistenceManager {
     pub is_saving: bool,
     pub is_loading: bool,
-    save_result: Arc<Mutex<Option<(bool, String)>>>,
-    load_result: Arc<Mutex<Option<(bool, Value)>>>,
+    save_result: Arc<Mutex<Option<Result<String, String>>>>,
+    load_result: Arc<Mutex<Option<Result<SaveData, String>>>>,
 }
 
 impl PersistenceManager {
     pub fn new() -> Self {
+        if !Path::new(SAVE_DIR).exists() {
+            let _ = fs::create_dir_all(SAVE_DIR);
+        }
         Self {
             is_saving: false,
             is_loading: false,
@@ -38,30 +137,27 @@ impl PersistenceManager {
 
     pub fn list_save_files() -> Vec<String> {
         let mut files = Vec::new();
-        if let Ok(entries) = fs::read_dir(".") {
+        let path = Path::new(SAVE_DIR);
+        if let Ok(entries) = fs::read_dir(path) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(ext) = path.extension()
-                    && ext == "json"
-                    && let Some(stem) = path.file_stem()
-                    && let Some(_str_stem) = stem.to_str()
+                    && ext == "dat"
+                    && let Ok(compressed_content) = fs::read(&path)
+                    && let Ok(decompressed) = zstd::decode_all(&compressed_content[..])
+                    && let Ok(data) = serde_json::from_slice::<serde_json::Value>(&decompressed)
+                    && (data.get("version").is_some() || data.get("is_save_file").is_some())
+                    && let Some(file_name) = path.file_name()
+                    && let Some(name_str) = file_name.to_str()
                 {
-                    // Optional: specific naming convention check?
-                    // For now, accept all .json files as potential saves,
-                    // or maybe filter by prefix if needed.
-                    // User said "show json name".
-                    if let Some(file_name) = path.file_name()
-                        && let Some(name_str) = file_name.to_str()
-                    {
-                        files.push(name_str.to_string());
-                    }
+                    files.push(name_str.to_string());
                 }
             }
         }
         files
     }
 
-    pub fn save_game(&mut self, filename: String, data: Value) {
+    pub fn save_game(&mut self, filename: String, data: SaveData) {
         if self.is_saving {
             return;
         }
@@ -70,13 +166,24 @@ impl PersistenceManager {
         let result_clone = self.save_result.clone();
 
         thread::spawn(move || {
-            let json_str = serde_json::to_string_pretty(&data).unwrap_or_default();
-            let res = match fs::write(&filename, json_str) {
-                Ok(_) => (true, "Save Successful".to_string()),
-                Err(e) => (false, e.to_string()),
+            let path = Path::new(SAVE_DIR).join(&filename);
+            let temp_path = path.with_extension("tmp");
+
+            let res = (|| {
+                let json_vec = serde_json::to_vec(&data)?;
+                let compressed = zstd::encode_all(&json_vec[..], 0)?; // 0 is default compression level
+                fs::write(&temp_path, compressed)?;
+                fs::rename(&temp_path, &path)?;
+                Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+            })();
+
+            let res_final = match res {
+                Ok(_) => Ok("Save Successful".to_string()),
+                Err(e) => Err(e.to_string()),
             };
+
             let mut lock = result_clone.lock().unwrap();
-            *lock = Some(res);
+            *lock = Some(res_final);
         });
     }
 
@@ -89,19 +196,25 @@ impl PersistenceManager {
         let result_clone = self.load_result.clone();
 
         thread::spawn(move || {
-            let res = match fs::read_to_string(&filename) {
-                Ok(content) => match serde_json::from_str::<Value>(&content) {
-                    Ok(v) => (true, v),
-                    Err(e) => (false, Value::String(e.to_string())),
-                },
-                Err(e) => (false, Value::String(e.to_string())),
+            let path = Path::new(SAVE_DIR).join(&filename);
+            let res = (|| {
+                let compressed_content = fs::read(path)?;
+                let decompressed = zstd::decode_all(&compressed_content[..])?;
+                let data: SaveData = serde_json::from_slice(&decompressed)?;
+                Ok::<SaveData, Box<dyn std::error::Error + Send + Sync>>(data)
+            })();
+
+            let res_final = match res {
+                Ok(data) => Ok(data),
+                Err(e) => Err(e.to_string()),
             };
+
             let mut lock = result_clone.lock().unwrap();
-            *lock = Some(res);
+            *lock = Some(res_final);
         });
     }
 
-    pub fn check_save_status(&mut self) -> Option<(bool, String)> {
+    pub fn check_save_status(&mut self) -> Option<Result<String, String>> {
         let mut lock = self.save_result.lock().unwrap();
         if lock.is_some() {
             self.is_saving = false;
@@ -110,7 +223,7 @@ impl PersistenceManager {
         None
     }
 
-    pub fn check_load_status(&mut self) -> Option<(bool, Value)> {
+    pub fn check_load_status(&mut self) -> Option<Result<SaveData, String>> {
         let mut lock = self.load_result.lock().unwrap();
         if lock.is_some() {
             self.is_loading = false;

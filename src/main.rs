@@ -78,7 +78,6 @@ async fn main() {
         game.capture_input();
         accumulator += get_frame_time();
 
-        // Update logic at a fixed rate of 60 FPS
         while accumulator >= FRAME_TIME {
             game.update(&game_renderer);
             accumulator -= FRAME_TIME;
@@ -94,21 +93,7 @@ async fn main() {
         game_renderer.draw_world(&mut game);
         set_default_camera();
 
-        let target_aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
-        let screen_aspect = screen_width() / screen_height();
-
-        let (render_width, render_height, offset_x, offset_y);
-        if screen_aspect > target_aspect {
-            render_height = screen_height();
-            render_width = SCREEN_WIDTH * (render_height / SCREEN_HEIGHT);
-            offset_x = (screen_width() - render_width) / 2.0;
-            offset_y = 0.0;
-        } else {
-            render_width = screen_width();
-            render_height = SCREEN_HEIGHT * (render_width / SCREEN_WIDTH);
-            offset_x = 0.0;
-            offset_y = (screen_height() - render_height) / 2.0;
-        }
+        let (render_width, render_height, offset_x, offset_y) = utils::get_render_dimensions();
 
         clear_background(BLACK);
         draw_texture_ex(
@@ -123,31 +108,7 @@ async fn main() {
         );
 
         let ui_events = game_renderer.draw_ui(&mut game);
-        let mut additional_ui_events = Vec::new();
-
-        if game.on_new_game_input_screen || game.on_warp_place_screen {
-            while let Some(c) = get_char_pressed() {
-                if (game.on_new_game_input_screen && (c.is_alphanumeric() || c == '_' || c == '-'))
-                    || (game.on_warp_place_screen && (c as u32 >= 32 && c as u32 <= 126))
-                {
-                    game.input_buffer.push(c);
-                }
-            }
-            if is_key_pressed(KeyCode::Backspace) {
-                game.input_buffer.pop();
-            }
-            if is_key_pressed(KeyCode::Enter) {
-                if game.on_new_game_input_screen {
-                    additional_ui_events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
-                } else {
-                    additional_ui_events
-                        .push(GameEvent::ConfirmWarpGateName(game.input_buffer.clone()));
-                }
-            }
-        } else {
-            // Drain the character buffer when not in an input screen to prevent accumulation
-            while get_char_pressed().is_some() {}
-        }
+        let additional_ui_events = process_text_input(&mut game);
 
         for event in ui_events
             .into_iter()
@@ -158,4 +119,32 @@ async fn main() {
 
         next_frame().await
     }
+}
+
+fn process_text_input(game: &mut Game) -> Vec<GameEvent> {
+    use crate::game::GameState;
+    let mut events = Vec::new();
+    if game.state == GameState::NewGameInput || game.state == GameState::WarpPlace {
+        while let Some(c) = get_char_pressed() {
+            if (game.state == GameState::NewGameInput
+                && (c.is_alphanumeric() || c == '_' || c == '-'))
+                || (game.state == GameState::WarpPlace && (c as u32 >= 32 && c as u32 <= 126))
+            {
+                game.input_buffer.push(c);
+            }
+        }
+        if is_key_pressed(KeyCode::Backspace) {
+            game.input_buffer.pop();
+        }
+        if is_key_pressed(KeyCode::Enter) {
+            if game.state == GameState::NewGameInput {
+                events.push(GameEvent::ConfirmNewGame(game.input_buffer.clone()));
+            } else {
+                events.push(GameEvent::ConfirmWarpGateName(game.input_buffer.clone()));
+            }
+        }
+    } else {
+        while get_char_pressed().is_some() {}
+    }
+    events
 }

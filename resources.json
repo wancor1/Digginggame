@@ -8,10 +8,9 @@
         "en": "Sedimentary Solid Resources",
         "resources": [
           {"ja": "石炭", "en": "Coal", "rarity": 8.50},
-          {"ja": "オイルシェール", "en": "Oil Shale", "rarity": 7.80},
-          {"ja": "土瀝青", "en": "Bitumen", "rarity": 7.20},
+          {"ja": "油母頁岩", "en": "Oil Shale", "rarity": 7.80},
           {"ja": "石灰岩", "en": "Limestone", "rarity": 9.80},
-          {"ja": "ドロマイト", "en": "Dolomite", "rarity": 9.20}
+          {"ja": "苦灰岩", "en": "Dolostone", "rarity": 9.20}
         ]
       },
       "subsurface_fluid": {
@@ -19,6 +18,7 @@
         "en": "Subsurface Fluids",
         "resources": [
           {"ja": "石油", "en": "Petroleum", "rarity": 6.50},
+          {"ja": "土瀝青", "en": "Bitumen", "rarity": 6.20},
           {"ja": "天然ガス", "en": "Natural Gas", "rarity": 6.80}
         ]
       },
@@ -71,7 +71,10 @@
         "resources": [
           {"ja": "自然金", "en": "Native Gold", "rarity": 3.00},
           {"ja": "自然銀", "en": "Native Silver", "rarity": 3.50},
-          {"ja": "粗白金", "en": "Platinum Ore", "rarity": 2.00}
+          {"ja": "粗白金", "en": "Platinum Ore", "rarity": 2.00},
+          {"ja": "イリジウム鉱", "en": "Iridium Ore", "rarity": 1.80},
+          {"ja": "オスミウム鉱", "en": "Osmium Ore", "rarity": 1.60},
+          {"ja": "パラジウム鉱", "en": "Palladium Ore", "rarity": 1.70}
         ]
       },
       "rare_metal_ore": {
@@ -85,7 +88,8 @@
           {"ja": "バストネス石", "en": "Bastnasite", "rarity": 2.40},
           {"ja": "ガドリン石", "en": "Gadolinite", "rarity": 1.80},
           {"ja": "リシア輝石", "en": "Spodumene", "rarity": 4.00},
-          {"ja": "リチア雲母", "en": "Lepidolite", "rarity": 4.20}
+          {"ja": "リチア雲母", "en": "Lepidolite", "rarity": 4.20},
+          {"ja": "セリウム鉱", "en": "Cerite", "rarity": 3.50}
         ]
       },
       "radioactive_ore": {
@@ -93,7 +97,9 @@
         "en": "Radioactive Ores",
         "resources": [
           {"ja": "閃ウラン鉱", "en": "Uraninite", "rarity": 1.50},
-          {"ja": "トール石", "en": "Thorite", "rarity": 1.20}
+          {"ja": "トール石", "en": "Thorite", "rarity": 1.20},
+          {"ja": "コフィン石", "en": "Coffinite", "rarity": 1.00},
+          {"ja": "ガドリン石", "en": "Gadolinite", "rarity": 1.80}
         ]
       },
       "aluminum_ore": {
@@ -101,7 +107,8 @@
         "en": "Aluminum Ores",
         "resources": [
           {"ja": "ボーキサイト", "en": "Bauxite", "rarity": 7.80},
-          {"ja": "氷晶石", "en": "Cryolite", "rarity": 2.50}
+          {"ja": "氷晶石", "en": "Cryolite", "rarity": 2.50},
+          {"ja": "コランダム", "en": "Corundum", "rarity": 5.60}
         ]
       },
       "native_element": {
@@ -113,33 +120,95 @@
           {"ja": "隕石鉄", "en": "Meteoric Iron", "rarity": 0.50}
         ]
       },
-      "gemstone": {
-        "ja": "宝石",
-        "en": "Gemstones",
+      "gem_precious": {
+        "ja": "貴石",
+        "en": "Precious Gemstones",
         "resources": [
-          {"ja": "ダイヤモンド", "en": "Diamond", "rarity": 1.80},
-          {"ja": "エメラルド", "en": "Emerald", "rarity": 2.20},
-          {"ja": "サファイア", "en": "Sapphire", "rarity": 2.50},
-          {"ja": "ルビー", "en": "Ruby", "rarity": 2.50},
-          {"ja": "アメジスト", "en": "Amethyst", "rarity": 5.50},
-          {"ja": "ガーネット", "en": "Garnet", "rarity": 5.20},
-          {"ja": "オパール", "en": "Opal", "rarity": 3.50},
-          {"ja": "スピネル", "en": "Spinel", "rarity": 3.20},
-          {"ja": "緑柱石", "en": "Beryl", "rarity": 4.80},
-          {"ja": "ベニト石", "en": "Benitoite", "rarity": 0.80},
-          {"ja": "トルマリン", "en": "Tourmaline", "rarity": 4.50},
-          {"ja": "ジルコン", "en": "Zircon", "rarity": 4.50},
-          {"ja": "トパーズ", "en": "Topaz", "rarity": 4.20}
+          {"ja": "ダイヤモンド", "en": "Diamond", "rarity": 2.00},
+          {"ja": "ルビー", "en": "Ruby", "rarity": 2.30},
+          {"ja": "サファイア", "en": "Sapphire", "rarity": 2.20},
+          {"ja": "エメラルド", "en": "Emerald", "rarity": 1.90}
+        ]
+      },
+      "gem_semi_precious": {
+        "ja": "半貴石",
+        "en": "Semi-Precious Gemstones",
+        "resources": [
+          {"ja": "アメジスト", "en": "Amethyst", "rarity": 5.80},
+          {"ja": "ガーネット", "en": "Garnet", "rarity": 5.60},
+          {"ja": "シトリン", "en": "Citrine", "rarity": 6.10},
+          {"ja": "トパーズ", "en": "Topaz", "rarity": 4.90},
+          {"ja": "トルマリン", "en": "Tourmaline", "rarity": 4.70},
+          {"ja": "スピネル", "en": "Spinel", "rarity": 3.60},
+          {"ja": "ジルコン", "en": "Zircon", "rarity": 5.20},
+          {"ja": "オパール", "en": "Opal", "rarity": 3.80},
+          {"ja": "ペリドット", "en": "Peridot", "rarity": 5.40},
+          {"ja": "アクアマリン", "en": "Aquamarine", "rarity": 4.60},
+          {"ja": "タンザナイト", "en": "Tanzanite", "rarity": 1.60}
+        ]
+      },
+      "gem_rare": {
+        "ja": "希少宝石",
+        "en": "Rare Gemstones",
+        "resources": [
+          {"ja": "ベニト石", "en": "Benitoite", "rarity": 0.90},
+          {"ja": "パパラチアサファイア", "en": "Padparadscha Sapphire", "rarity": 1.30},
+          {"ja": "アレキサンドライト", "en": "Alexandrite", "rarity": 1.10},
+          {"ja": "緑柱石", "en": "Beryl", "rarity": 4.80}
+        ]
+      },
+      "ornamental_stone": {
+        "ja": "装飾石・工芸石",
+        "en": "Ornamental Stones",
+        "resources": [
+          {"ja": "ラピスラズリ", "en": "Lapis Lazuli", "rarity": 6.20},
+          {"ja": "アズライト", "en": "Azurite", "rarity": 5.70},
+          {"ja": "孔雀石", "en": "Malachite", "rarity": 7.00},
+          {"ja": "ターコイズ", "en": "Turquoise", "rarity": 5.90},
+          {"ja": "オニキス", "en": "Onyx", "rarity": 7.30},
+          {"ja": "翡翠", "en": "Jade", "rarity": 5.50}
+        ]
+      },
+      "crystal_single": {
+        "ja": "単結晶",
+        "en": "Single Crystals",
+        "resources": [
+          {"ja": "石英結晶", "en": "Quartz Crystal", "rarity": 9.60},
+          {"ja": "紫水晶結晶", "en": "Amethyst Crystal", "rarity": 7.90},
+          {"ja": "蛍石結晶", "en": "Fluorite Crystal", "rarity": 7.80},
+          {"ja": "方解石結晶", "en": "Calcite Crystal", "rarity": 8.90},
+          {"ja": "黄鉄鉱結晶", "en": "Pyrite Crystal", "rarity": 6.60}
         ]
       },
       "crystal_cluster": {
-        "ja": "結晶・結晶群",
+        "ja": "結晶群",
         "en": "Crystal Clusters",
         "resources": [
-          {"ja": "石英", "en": "Quartz", "rarity": 9.50},
-          {"ja": "水晶群", "en": "Quartz Crystal Cluster", "rarity": 8.80},
-          {"ja": "蛍石結晶", "en": "Fluorite Crystal", "rarity": 7.20},
-          {"ja": "方解石結晶", "en": "Calcite Crystal", "rarity": 8.50}
+          {"ja": "水晶群", "en": "Quartz Crystal Cluster", "rarity": 8.70},
+          {"ja": "紫水晶群", "en": "Amethyst Cluster", "rarity": 7.30},
+          {"ja": "蛍石結晶群", "en": "Fluorite Crystal Cluster", "rarity": 7.00},
+          {"ja": "方解石結晶群", "en": "Calcite Crystal Cluster", "rarity": 8.40}
+        ]
+      },
+      "crystal_massive": {
+        "ja": "塊状結晶・原石",
+        "en": "Massive Crystals / Raw Stones",
+        "resources": [
+          {"ja": "石英原石", "en": "Raw Quartz", "rarity": 9.80},
+          {"ja": "紫水晶原石", "en": "Raw Amethyst", "rarity": 8.60},
+          {"ja": "蛍石原石", "en": "Raw Fluorite", "rarity": 8.00},
+          {"ja": "方解石原石", "en": "Raw Calcite", "rarity": 9.10},
+          {"ja": "黒曜石原石", "en": "Raw Obsidian", "rarity": 7.40}
+        ]
+      },
+      "native_elements": {
+        "ja": "自然元素鉱物",
+        "en": "Native Elements",
+        "resources": [
+          {"ja": "自然金", "en": "Native Gold", "rarity": 3.00},
+          {"ja": "自然銀", "en": "Native Silver", "rarity": 3.50},
+          {"ja": "自然銅", "en": "Native Copper", "rarity": 6.50},
+          {"ja": "硫黄鉱石", "en": "Sulfur Ore", "rarity": 7.00}
         ]
       },
       "industrial_mineral": {
@@ -156,7 +225,9 @@
           {"ja": "硼砂", "en": "Borax", "rarity": 6.80},
           {"ja": "長石", "en": "Feldspar", "rarity": 9.00},
           {"ja": "粘土", "en": "Clay", "rarity": 9.80},
-          {"ja": "珪砂", "en": "Silica Sand", "rarity": 9.60}
+          {"ja": "珪砂", "en": "Silica Sand", "rarity": 9.60},
+          {"ja": "リン鉱石", "en": "Phosphate Rock", "rarity": 6.50},
+          {"ja": "カリ鉱石", "en": "Potash Ore", "rarity": 6.80}
         ]
       },
       "volcanic": {
@@ -240,7 +311,9 @@
           {"ja": "ファイバーグラス", "en": "Fiberglass"},
           {"ja": "シリコン", "en": "Silicon"},
           {"ja": "セラミック", "en": "Ceramic"},
-          {"ja": "セメント", "en": "Cement"}
+          {"ja": "セメント", "en": "Cement"},
+          {"ja": "消石灰", "en": "Slaked Lime"},
+          {"ja": "生石灰", "en": "Quicklime"}
         ]
       }
     }

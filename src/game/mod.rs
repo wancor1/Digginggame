@@ -9,8 +9,29 @@ use crate::ui::SelectBlock;
 use macroquad::prelude::*;
 
 pub mod event_handler;
+pub mod handlers;
 pub mod persistence;
 pub mod update_logic;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GameState {
+    Title,
+    SaveSelect,
+    NewGameInput,
+    Playing,
+    WarpPlace,
+    WarpSelect,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UIOverlay {
+    None,
+    PauseMenu,
+    Shop,
+    Inventory,
+    Warehouse,
+    Map,
+}
 
 pub struct Game {
     pub world_manager: WorldManager,
@@ -23,16 +44,9 @@ pub struct Game {
     pub player_manager: PlayerManager,
     pub item_manager: ItemManager,
 
-    // UI State
-    pub on_title_screen: bool,
-    pub on_save_select_screen: bool,
-    pub on_new_game_input_screen: bool,
-    pub is_menu_visible: bool,
-    pub is_shop_open: bool,
-    pub is_inventory_open: bool,
-    pub is_warehouse_open: bool,
-    pub on_warp_place_screen: bool,
-    pub on_warp_select_screen: bool,
+    // State Management
+    pub state: GameState,
+    pub ui_overlay: UIOverlay,
     pub on_surface: bool,
 
     // Save/Load State
@@ -42,12 +56,18 @@ pub struct Game {
     pub warehouse_quantity: usize, // 1, 10, 100, or 0 for ALL
     pub selected_item_index: usize,
 
+    // Map State
+    pub map_zoom: f32,
+    pub map_view_x: f32,
+    pub map_view_y: f32,
+
     // Input buffering
     pub key_presses: Vec<KeyCode>,
     pub mouse_presses: Vec<MouseButton>,
 
     pub alpha: f32, // Interpolation factor
     pub warp_placement_target: Option<(f32, f32)>,
+    pub pending_warp_index: Option<usize>,
 }
 
 impl Game {
@@ -62,25 +82,22 @@ impl Game {
             camera: Camera::new(),
             player_manager: PlayerManager::new(PLAYER_INITIAL_X, PLAYER_INITIAL_Y),
             item_manager: ItemManager::new(),
-            on_title_screen: true,
-            on_save_select_screen: false,
-            on_new_game_input_screen: false,
-            is_menu_visible: false,
-            is_shop_open: false,
-            is_inventory_open: false,
-            is_warehouse_open: false,
-            on_warp_place_screen: false,
-            on_warp_select_screen: false,
+            state: GameState::Title,
+            ui_overlay: UIOverlay::None,
             on_surface: true,
             save_files: Vec::new(),
-            current_save_name: "savegame.json".to_string(),
+            current_save_name: "savegame.dat".to_string(),
             input_buffer: String::new(),
             warehouse_quantity: 1,
             selected_item_index: 0,
+            map_zoom: 1.0,
+            map_view_x: PLAYER_INITIAL_X,
+            map_view_y: PLAYER_INITIAL_Y,
             key_presses: Vec::new(),
             mouse_presses: Vec::new(),
             alpha: 0.0,
             warp_placement_target: None,
+            pending_warp_index: None,
         }
     }
 
@@ -96,22 +113,60 @@ impl Game {
             return;
         }
 
-        if self.on_title_screen
-            || self.on_save_select_screen
-            || self.on_new_game_input_screen
-            || self.is_menu_visible
-        {
-            if self.is_menu_visible && self.is_key_pressed_buffered(KeyCode::Escape) {
-                self.is_menu_visible = false;
+        match self.state {
+            GameState::Title | GameState::SaveSelect | GameState::NewGameInput => {
+                // Potential state-specific updates could go here
             }
-        } else {
-            self.handle_gameplay_update(game_renderer);
+            GameState::Playing | GameState::WarpPlace | GameState::WarpSelect => {
+                if self.ui_overlay == UIOverlay::PauseMenu {
+                    if self.is_key_pressed_buffered(KeyCode::Escape) {
+                        self.ui_overlay = UIOverlay::None;
+                    }
+                } else if self.ui_overlay == UIOverlay::Map {
+                    if self.is_key_pressed_buffered(KeyCode::Escape)
+                        || self.is_key_pressed_buffered(KeyCode::M)
+                    {
+                        self.ui_overlay = UIOverlay::None;
+                        self.clear_inputs();
+                    }
+
+                    if self.is_key_pressed_buffered(KeyCode::Equal)
+                        || self.is_key_pressed_buffered(KeyCode::KpAdd)
+                    {
+                        self.map_zoom = (self.map_zoom * 2.0).min(32.0);
+                    }
+                    if self.is_key_pressed_buffered(KeyCode::Minus)
+                        || self.is_key_pressed_buffered(KeyCode::KpSubtract)
+                    {
+                        self.map_zoom = (self.map_zoom / 2.0).max(1.0 / 32.0);
+                    }
+
+                    let move_speed = 5.0 / self.map_zoom;
+                    if is_key_down(KeyCode::W) || is_key_down(KeyCode::Up) {
+                        self.map_view_y -= move_speed;
+                    }
+                    if is_key_down(KeyCode::S) || is_key_down(KeyCode::Down) {
+                        self.map_view_y += move_speed;
+                    }
+                    if is_key_down(KeyCode::A) || is_key_down(KeyCode::Left) {
+                        self.map_view_x -= move_speed;
+                    }
+                    if is_key_down(KeyCode::D) || is_key_down(KeyCode::Right) {
+                        self.map_view_x += move_speed;
+                    }
+                } else {
+                    self.handle_gameplay_update(game_renderer);
+                }
+            }
         }
 
         self.notification_manager.update();
 
-        if let Some((success, msg)) = self.persistence_manager.check_save_status() {
-            let t = if success { "success" } else { "error" };
+        if let Some(res) = self.persistence_manager.check_save_status() {
+            let (t, msg) = match res {
+                Ok(msg) => ("success", msg),
+                Err(msg) => ("error", msg),
+            };
             self.notification_manager
                 .add_notification(msg, t, game_renderer.get_font());
         }
@@ -121,6 +176,7 @@ impl Game {
         let keys_to_capture = [
             KeyCode::Escape,
             KeyCode::I,
+            KeyCode::M,
             KeyCode::Tab,
             KeyCode::Key1,
             KeyCode::Key2,
@@ -131,6 +187,14 @@ impl Game {
             KeyCode::Key7,
             KeyCode::Key8,
             KeyCode::Key9,
+            KeyCode::Equal,
+            KeyCode::Minus,
+            KeyCode::KpAdd,
+            KeyCode::KpSubtract,
+            KeyCode::Up,
+            KeyCode::Down,
+            KeyCode::Left,
+            KeyCode::Right,
         ];
         for key in keys_to_capture {
             if is_key_pressed(key) {
@@ -164,23 +228,21 @@ impl Game {
         }
     }
 
+    pub fn clear_inputs(&mut self) {
+        self.key_presses.clear();
+        self.mouse_presses.clear();
+    }
+
     pub fn return_to_title_screen(&mut self, game_renderer: &GameRenderer) {
         self.world_manager = WorldManager::new();
         self.particle_manager = ParticleManager::new();
         self.camera = Camera::new();
         self.reset_player_state();
-        self.on_title_screen = true;
-        self.on_save_select_screen = false;
-        self.on_new_game_input_screen = false;
-        self.is_menu_visible = false;
-        self.is_shop_open = false;
-        self.is_inventory_open = false;
-        self.is_warehouse_open = false;
-        self.on_warp_place_screen = false;
-        self.on_warp_select_screen = false;
+        self.state = GameState::Title;
+        self.ui_overlay = UIOverlay::None;
 
         self.world_manager.reset();
-        self.current_save_name = "savegame.json".to_string();
+        self.current_save_name = "savegame.dat".to_string();
         self.input_buffer = String::new();
         self.notification_manager.add_notification(
             "Returned to Title Screen".to_string(),
@@ -196,9 +258,7 @@ impl Game {
     }
 
     pub fn return_to_title_from_save_select(&mut self) {
-        self.on_title_screen = true;
-        self.on_save_select_screen = false;
-        self.on_new_game_input_screen = false;
-        self.is_menu_visible = false;
+        self.state = GameState::Title;
+        self.ui_overlay = UIOverlay::None;
     }
 }

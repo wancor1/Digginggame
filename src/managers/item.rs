@@ -91,15 +91,15 @@ impl ItemManager {
             item.y = y;
 
             // Collection by player
-            if player_rect.overlaps(&item.rect()) {
-                if player.total_cargo_weight() + item.weight <= player.max_cargo {
-                    player.cargo.push(crate::components::OwnedItem {
-                        item_type: item.item_type.clone(),
-                        is_natural: item.is_natural,
-                        is_auto_stored: item.is_natural,
-                    });
-                    item.alive = false;
-                }
+            if player_rect.overlaps(&item.rect())
+                && player.total_cargo_weight() + item.weight <= player.max_cargo
+            {
+                player.cargo.push(crate::components::OwnedItem {
+                    item_type: item.item_type.clone(),
+                    is_natural: item.is_natural,
+                    is_auto_stored: item.is_natural,
+                });
+                item.alive = false;
             }
         }
 

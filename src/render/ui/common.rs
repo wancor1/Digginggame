@@ -1,5 +1,7 @@
 use crate::constants::*;
 use macroquad::prelude::*;
+use macroquad::text::Font;
+use macroquad::texture::Texture2D;
 
 pub struct ButtonParams<'a> {
     pub x: f32,
@@ -66,4 +68,14 @@ pub fn draw_button(params: ButtonParams, font: Option<&Font>) -> bool {
     );
 
     is_released
+}
+
+pub struct MenuRenderContext<'a> {
+    pub font: Option<&'a Font>,
+    pub atlas: Option<&'a Texture2D>,
+    pub scale: f32,
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub font_size: u16,
+    pub events: &'a mut Vec<crate::events::GameEvent>,
 }
