@@ -82,8 +82,7 @@ fn update_world(game: &mut Game) {
 }
 
 fn get_world_mouse_coords(camera: &crate::components::Camera) -> (f32, f32) {
-    let mx = (mouse_position().0 / screen_width()) * SCREEN_WIDTH;
-    let my = (mouse_position().1 / screen_height()) * SCREEN_HEIGHT;
+    let (mx, my) = crate::utils::get_game_mouse_position();
     ((mx + camera.x).round(), (my + camera.y).round())
 }
 

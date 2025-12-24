@@ -28,6 +28,16 @@ pub fn get_render_dimensions() -> (f32, f32, f32, f32) {
     (render_width, render_height, offset_x, offset_y)
 }
 
+pub fn get_game_mouse_position() -> (f32, f32) {
+    let (render_width, _, offset_x, offset_y) = get_render_dimensions();
+    let (mx, my) = mouse_position();
+    let rw = render_width.floor();
+    let ox = offset_x.floor();
+    let oy = offset_y.floor();
+    let scale = rw / SCREEN_WIDTH;
+    ((mx - ox) / scale, (my - oy) / scale)
+}
+
 pub fn world_to_chunk_coords(world_x: f32, world_y: f32) -> (i32, i32) {
     let chunk_x = (world_x / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
     let chunk_y = (world_y / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;

@@ -78,6 +78,7 @@ pub struct Block {
     pub is_modified: bool,
     pub sprite_rect: Option<Rect>,
     pub block_type: BlockType,
+    pub back_type: BlockType,
     pub name: Option<String>,
     pub last_damage_time: Option<f64>,
 }
@@ -99,6 +100,7 @@ impl Block {
             is_modified: false,
             sprite_rect,
             block_type,
+            back_type: block_type,
             name: None,
             last_damage_time: None,
         }

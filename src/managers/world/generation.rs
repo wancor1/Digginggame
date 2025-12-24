@@ -70,6 +70,7 @@ pub fn generate_chunk_blocks(chunk_x: i32, chunk_y: i32, noise_ore: &Perlin) -> 
             if block_type == BlockType::WarpGate {
                 let mut b = Block::new(wx, wy, max_hp, sprite_rect, block_type);
                 b.name = Some("Home".to_string());
+                b.back_type = BlockType::Air; // Don't show a wall behind the home gate
                 row.push(b);
             } else {
                 row.push(Block::new(wx, wy, max_hp, sprite_rect, block_type));

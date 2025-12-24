@@ -134,10 +134,12 @@ pub fn draw_map_screen(game: &mut Game, ctx: &mut MenuRenderContext) {
             let pulse = (time * 5.0).sin() as f32 * 0.5 + 0.5; // Faster pulse
 
             // Interaction Check
-            let (mx, my) = mouse_position();
-            let dist_sq = (mx - gx).powi(2) + (my - gy).powi(2);
+            let (rel_mx, rel_my) = crate::utils::get_game_mouse_position();
+            let gate_gx = SCREEN_WIDTH / 2.0 + gate_rel_x;
+            let gate_gy = SCREEN_HEIGHT / 2.0 + gate_rel_y;
+            let dist_sq = (rel_mx - gate_gx).powi(2) + (rel_my - gate_gy).powi(2);
             let is_hovered =
-                dist_sq < (8.0 * ctx.scale).powi(2) && game.pending_warp_index.is_none();
+                dist_sq < 8.0f32.powi(2) && game.pending_warp_index.is_none();
 
             // Scale marker size slightly with zoom
             let mut zoom_factor = (game.map_zoom.sqrt()).clamp(0.5, 2.0);
@@ -338,9 +340,7 @@ pub fn draw_map_screen(game: &mut Game, ctx: &mut MenuRenderContext) {
         );
 
         // Mouse World Coordinates
-        let (mx, my) = mouse_position();
-        let rel_mx = (mx - ctx.offset_x) / ctx.scale;
-        let rel_my = (my - ctx.offset_y) / ctx.scale;
+        let (rel_mx, rel_my) = crate::utils::get_game_mouse_position();
 
         if (0.0..=SCREEN_WIDTH).contains(&rel_mx) && (0.0..=SCREEN_HEIGHT).contains(&rel_my) {
             let m_off_x = rel_mx - SCREEN_WIDTH / 2.0;

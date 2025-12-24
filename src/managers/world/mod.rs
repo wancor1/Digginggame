@@ -1,4 +1,4 @@
-use crate::components::{Block, Chunk, MacroGrid};
+use crate::components::{Block, BlockType, Chunk, MacroGrid};
 use crate::constants::*;
 use crate::utils::{
     chunk_to_macrogrid_coords, world_to_chunk_coords, world_to_relative_in_chunk_coords,
@@ -173,7 +173,10 @@ impl WorldManager {
                 {
                     for row in &chunk.blocks {
                         for block in row {
-                            if !block.is_broken
+                            // Include block if it's not broken OR if it has a background to show
+                            let should_render = (!block.is_broken) || (block.back_type != BlockType::Air);
+                            
+                            if should_render
                                 && block.x + BLOCK_SIZE > view_rect.x
                                 && block.x < view_rect.x + view_rect.w
                                 && block.y + BLOCK_SIZE > view_rect.y

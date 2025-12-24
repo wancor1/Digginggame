@@ -2,19 +2,13 @@ use image::{ImageFormat, load_from_memory_with_format};
 use macroquad::prelude::*;
 use miniquad::conf::Icon;
 
-mod components;
-mod constants;
-mod events;
-mod game;
-mod managers;
-mod render;
-mod ui;
-mod utils;
+use digginggame::game;
+use digginggame::utils;
 
-use constants::*;
-use events::GameEvent;
-use game::Game;
-use render::game_renderer::GameRenderer;
+use digginggame::constants::*;
+use digginggame::events::GameEvent;
+use digginggame::game::Game;
+use digginggame::render::game_renderer::GameRenderer;
 
 fn window_conf() -> Conf {
     let icon_bytes = include_bytes!("../src/icon.png");

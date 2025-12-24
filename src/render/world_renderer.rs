@@ -1,5 +1,6 @@
 use crate::Game;
 use crate::constants::*;
+use crate::managers::block::BlockType;
 use macroquad::prelude::*;
 
 pub struct WorldRenderer;
@@ -15,40 +16,58 @@ impl WorldRenderer {
             let draw_x = (block.x - cx).round();
             let draw_y = (block.y - cy).round();
 
-            if let (Some(rect), Some(atlas_tex)) = (block.sprite_rect, atlas) {
-                draw_texture_ex(
-                    atlas_tex,
-                    draw_x,
-                    draw_y,
-                    WHITE,
-                    DrawTextureParams {
-                        source: Some(rect),
-                        ..Default::default()
-                    },
-                );
+            if !block.is_broken {
+                if let (Some(rect), Some(atlas_tex)) = (block.sprite_rect, atlas) {
+                    draw_texture_ex(
+                        atlas_tex,
+                        draw_x,
+                        draw_y,
+                        WHITE,
+                        DrawTextureParams {
+                            source: Some(rect),
+                            ..Default::default()
+                        },
+                    );
 
-                if block.current_hp < block.max_hp && block.max_hp > 0 {
-                    let damage = (block.max_hp - block.current_hp) as f32 / block.max_hp as f32;
-                    let frame = (damage * 5.0).ceil() as i32;
-                    if frame > 0 {
-                        let anim_v =
-                            SPRITE_BREAK_ANIM_V_START + ((frame - 1).max(0) as f32) * BLOCK_SIZE;
-                        let crack_rect =
-                            Rect::new(SPRITE_BREAK_ANIM_U, anim_v, BLOCK_SIZE, BLOCK_SIZE);
+                    if block.current_hp < block.max_hp && block.max_hp > 0 {
+                        let damage = (block.max_hp - block.current_hp) as f32 / block.max_hp as f32;
+                        let frame = (damage * 5.0).ceil() as i32;
+                        if frame > 0 {
+                            let anim_v =
+                                SPRITE_BREAK_ANIM_V_START + ((frame - 1).max(0) as f32) * BLOCK_SIZE;
+                            let crack_rect =
+                                Rect::new(SPRITE_BREAK_ANIM_U, anim_v, BLOCK_SIZE, BLOCK_SIZE);
+                            draw_texture_ex(
+                                atlas_tex,
+                                draw_x,
+                                draw_y,
+                                WHITE,
+                                DrawTextureParams {
+                                    source: Some(crack_rect),
+                                    ..Default::default()
+                                },
+                            );
+                        }
+                    }
+                } else {
+                    draw_rectangle(draw_x, draw_y, BLOCK_SIZE, BLOCK_SIZE, BROWN);
+                }
+            } else {
+                // Render back wall if broken
+                if block.back_type != BlockType::Air {
+                    if let (Some(rect), Some(atlas_tex)) = (block.back_type.get_sprite(), atlas) {
                         draw_texture_ex(
                             atlas_tex,
                             draw_x,
                             draw_y,
-                            WHITE,
+                            Color::new(0.5, 0.5, 0.5, 1.0),
                             DrawTextureParams {
-                                source: Some(crack_rect),
+                                source: Some(rect),
                                 ..Default::default()
                             },
                         );
                     }
                 }
-            } else {
-                draw_rectangle(draw_x, draw_y, BLOCK_SIZE, BLOCK_SIZE, BROWN);
             }
         }
 

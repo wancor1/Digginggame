@@ -14,8 +14,7 @@ use ratatui::{
 use std::{fs, io, path::Path, time::Duration};
 use tui_textarea::TextArea;
 
-mod models;
-use models::SaveData;
+use digginggame::managers::persistence::SaveData;
 
 const SAVE_DIR: &str = "saves";
 
