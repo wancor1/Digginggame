@@ -1,6 +1,5 @@
 use crate::constants::*;
-use crate::managers::LanguageManager;
-use crate::utils::{calculate_text_center_position, estimate_text_width};
+
 use macroquad::prelude::*;
 
 #[derive(PartialEq)]
@@ -31,7 +30,13 @@ pub struct Notification {
 }
 
 impl Notification {
-    pub fn new(message: String, duration: f64, msg_type: &str, max_width: f32) -> Self {
+    pub fn new(
+        message: String,
+        duration: f64,
+        msg_type: &str,
+        max_width: f32,
+        font: Option<&Font>,
+    ) -> Self {
         let mut n = Self {
             message: message.clone(),
             duration,
@@ -48,32 +53,70 @@ impl Notification {
             box_height: 0.0,
             wrapped_lines: Vec::new(),
         };
-        n.calculate_dimensions(max_width);
+        n.calculate_dimensions(max_width, font);
         n
     }
 
-    fn calculate_dimensions(&mut self, max_width: f32) {
-        // Simple word wrap
+    fn calculate_dimensions(&mut self, max_width: f32, font: Option<&Font>) {
+        let font = match font {
+            Some(f) => f,
+            None => return, // Cannot calculate without a font
+        };
+
+        let measure = |s: &str| -> f32 { measure_text(s, Some(font), FONT_SIZE as u16, 1.0).width };
+
+        let space_width = measure(" ");
         let words: Vec<&str> = self.message.split(' ').collect();
         let mut lines = Vec::new();
         let mut current_line = String::new();
+        let mut current_line_width = 0.0;
 
         for word in words {
-            let test_line = if current_line.is_empty() {
-                word.to_string()
-            } else {
-                format!("{} {}", current_line, word)
-            };
-            if estimate_text_width(&test_line) > max_width {
+            let word_width = measure(word);
+
+            if word_width > max_width {
                 if !current_line.is_empty() {
                     lines.push(current_line);
-                    current_line = word.to_string();
-                } else {
-                    // Word itself is too long, force break logic omitted for brevity
-                    lines.push(word.to_string());
+                    current_line = String::new();
+                    current_line_width = 0.0;
+                }
+
+                let mut temp_word_line = String::new();
+                let mut temp_word_width = 0.0;
+                for char in word.chars() {
+                    let char_str = char.to_string();
+                    let char_width = measure(&char_str);
+                    if temp_word_width + char_width > max_width {
+                        lines.push(temp_word_line);
+                        temp_word_line = char_str;
+                        temp_word_width = char_width;
+                    } else {
+                        temp_word_line.push(char);
+                        temp_word_width += char_width;
+                    }
+                }
+                if !temp_word_line.is_empty() {
+                    current_line = temp_word_line;
+                    current_line_width = temp_word_width;
                 }
             } else {
-                current_line = test_line;
+                let width_if_added = if current_line.is_empty() {
+                    word_width
+                } else {
+                    current_line_width + space_width + word_width
+                };
+
+                if width_if_added > max_width && !current_line.is_empty() {
+                    lines.push(current_line);
+                    current_line = word.to_string();
+                    current_line_width = word_width;
+                } else {
+                    if !current_line.is_empty() {
+                        current_line.push(' ');
+                    }
+                    current_line.push_str(word);
+                    current_line_width = measure(&current_line);
+                }
             }
         }
         if !current_line.is_empty() {
@@ -90,8 +133,9 @@ impl Notification {
         let max_line_w = self
             .wrapped_lines
             .iter()
-            .map(|l| estimate_text_width(l))
+            .map(|l| measure(l))
             .fold(0.0f32, f32::max);
+
         self.box_width = (max_line_w + NOTIFICATION_PADDING_X * 2.0).min(NOTIFICATION_MAX_WIDTH);
     }
 
@@ -142,18 +186,17 @@ impl Notification {
         }
     }
 
-    pub fn draw(&self, font: Option<&Font>) {
+    pub fn draw_high_res(&self, font: Option<&Font>, scale: f32, off_x: f32, off_y: f32) {
         if !self.is_alive {
             return;
         }
 
-        draw_rectangle(
-            self.current_x.floor(),
-            self.current_y.floor(),
-            self.box_width,
-            self.box_height,
-            NOTIFICATION_BG_COLOR,
-        );
+        let sx = off_x + self.current_x * scale;
+        let sy = off_y + self.current_y * scale;
+        let sw = self.box_width * scale;
+        let sh = self.box_height * scale;
+
+        draw_rectangle(sx.floor(), sy.floor(), sw, sh, NOTIFICATION_BG_COLOR);
 
         let text_col = if self.msg_type == "error" {
             NOTIFICATION_TEXT_COLOR_ERROR
@@ -163,31 +206,23 @@ impl Notification {
             NOTIFICATION_TEXT_COLOR_INFO
         };
 
-        draw_rectangle_lines(
-            self.current_x.floor(),
-            self.current_y.floor(),
-            self.box_width,
-            self.box_height,
-            1.0,
-            text_col,
-        );
+        draw_rectangle_lines(sx.floor(), sy.floor(), sw, sh, 1.0, text_col);
 
-        let mut y_off = self.current_y + NOTIFICATION_PADDING_Y;
+        let mut y_off = sy + NOTIFICATION_PADDING_Y * scale;
+        let s_font_size = (FONT_SIZE * scale).floor() as u16;
         for line in &self.wrapped_lines {
-            // draw_text uses baseline, so add approx ascent. FONT_SIZE is usually roughly height.
-            // We'll add FONT_SIZE * 0.8 as baseline offset.
             draw_text_ex(
                 line,
-                (self.current_x + NOTIFICATION_PADDING_X).floor(),
-                (y_off + FONT_SIZE * 0.8).floor(),
+                (sx + NOTIFICATION_PADDING_X * scale).floor(),
+                (y_off + FONT_SIZE * scale * 0.8).floor(),
                 TextParams {
-                    font_size: FONT_SIZE as u16,
+                    font_size: s_font_size,
                     font: font.or_else(|| TextParams::default().font),
                     color: text_col,
                     ..Default::default()
                 },
             );
-            y_off += FONT_SIZE + NOTIFICATION_LINE_SPACING;
+            y_off += (FONT_SIZE + NOTIFICATION_LINE_SPACING) * scale;
         }
     }
 
@@ -212,10 +247,6 @@ impl SelectBlock {
             is_effect_active: false,
             block_coords: None, // Initialize to None
         }
-    }
-
-    pub fn is_effect_active(&self) -> bool {
-        self.is_effect_active
     }
 
     pub fn update(&mut self, hovered_block_coords: Option<(f32, f32)>) {
@@ -285,90 +316,3 @@ impl SelectBlock {
         }
     }
 } // Added missing closing brace
-
-pub struct ButtonBox;
-
-impl ButtonBox {
-    pub fn draw_button(
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        text_key: &str,
-        press_key: &str,
-        lang: &LanguageManager,
-        font: Option<&Font>,
-    ) -> bool {
-        let mouse_pos = mouse_position();
-        let mx = (mouse_pos.0 / screen_width()) * SCREEN_WIDTH;
-        let my = (mouse_pos.1 / screen_height()) * SCREEN_HEIGHT;
-
-        let is_hover = mx >= x && mx < x + w && my >= y && my < y + h;
-        let is_pressed = is_hover && is_mouse_button_down(MouseButton::Left);
-        let is_released = is_hover && is_mouse_button_released(MouseButton::Left);
-
-        let bg_col = if is_pressed {
-            COLOR_BUTTON_PRESSED_BG
-        } else {
-            COLOR_BUTTON_BG
-        };
-        draw_rectangle(x.floor(), y.floor(), w, h, bg_col);
-        draw_rectangle_lines(x.floor(), y.floor(), w, h, 1.0, COLOR_BUTTON_BORDER);
-
-        if !is_pressed {
-            draw_line(
-                (x + w - 1.0).floor(),
-                (y + 1.0).floor(),
-                (x + w - 1.0).floor(),
-                (y + h - 2.0).floor(),
-                1.0,
-                BLACK,
-            );
-            draw_line(
-                (x + 1.0).floor(),
-                (y + h - 1.0).floor(),
-                (x + w - 2.0).floor(),
-                (y + h - 1.0).floor(),
-                1.0,
-                BLACK,
-            );
-        }
-
-        let key = if is_pressed { press_key } else { text_key };
-        let label = lang.get_string(key);
-
-        let (tx, ty) = calculate_text_center_position(w, h, &label);
-
-        let text_offset_x = if is_pressed { 1.0 } else { 0.0 };
-        let text_offset_y = if is_pressed { 1.0 } else { 0.0 };
-
-        // Ensure color is correct using TextParams
-        draw_text_ex(
-            &label,
-            (x + tx + text_offset_x).floor(),
-            (y + ty + text_offset_y).floor(),
-            TextParams {
-                font_size: FONT_SIZE as u16,
-                font: font.or_else(|| TextParams::default().font),
-                color: COLOR_BUTTON_TEXT,
-                ..Default::default()
-            },
-        );
-        is_released
-    }
-}
-
-pub struct GameMenu {
-    pub is_open: bool, // is_menu_visible
-    pub lang_dropdown_open: bool,
-}
-
-impl GameMenu {
-    pub fn new() -> Self {
-        Self {
-            is_open: false,
-            lang_dropdown_open: false,
-        }
-        // State is mostly managing interactions, which is handled in draw/update for IMGUI style here.
-    }
-}

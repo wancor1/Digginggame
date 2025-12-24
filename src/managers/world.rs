@@ -10,7 +10,6 @@ use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
 use ::rand::Rng;
 use macroquad::prelude::*;
 use noise::{NoiseFn, Perlin, Seedable};
-use serde_json::Value;
 use std::collections::{HashMap, HashSet}; // Needed for apply_modifications
 
 pub struct WorldManager {
@@ -22,6 +21,12 @@ pub struct WorldManager {
     noise_ore: Perlin,
 }
 
+impl Default for WorldManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorldManager {
     fn chunk_coords_to_world_origin(chunk_x: i32, chunk_y: i32) -> (f32, f32) {
         let world_x = chunk_x as f32 * CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE;
@@ -30,7 +35,7 @@ impl WorldManager {
     }
 
     pub fn new() -> Self {
-        let mut rng = ::rand::thread_rng();
+        let mut rng = ::rand::rng();
         let seed_main = rng.random::<u32>();
         let seed_ore = rng.random::<u32>();
 
@@ -52,6 +57,11 @@ impl WorldManager {
         self.world_seed_ore = ore;
         self.noise_main = Perlin::new(main).set_seed(main);
         self.noise_ore = Perlin::new(ore).set_seed(ore);
+        self.chunks.clear();
+        self.generated_chunk_coords.clear();
+    }
+
+    pub fn reset(&mut self) {
         self.chunks.clear();
         self.generated_chunk_coords.clear();
     }
@@ -81,42 +91,39 @@ impl WorldManager {
 
                     if y_block < SURFACE_Y_LEVEL {
                         // Air blocks, max_hp will be 0
+                    } else if y_block == SURFACE_Y_LEVEL {
+                        sprite_rect = Some(SPRITE_BLOCK_GRASS);
+                        max_hp = HARDNESS_MIN;
                     } else {
-                        if y_block == SURFACE_Y_LEVEL {
-                            sprite_rect = Some(SPRITE_BLOCK_GRASS);
-                            max_hp = HARDNESS_MIN;
+                        let depth = (y_block - (SURFACE_Y_LEVEL + 1)) as f64;
+                        let base_hardness =
+                            HARDNESS_MIN as f64 + depth * HARDNESS_INCREASE_PER_BLOCK;
+                        let noise_val = noise_main_ref.get([
+                            wx as f64 * NOISE_SCALE_HARDNESS,
+                            wy as f64 * NOISE_SCALE_HARDNESS,
+                            0.0,
+                        ]);
+
+                        let noise_contribution = noise_val
+                            * NOISE_HARDNESS_RANGE
+                            * (if noise_val >= 0.0 { 1.0 } else { 0.25 });
+                        max_hp = (base_hardness + noise_contribution)
+                            .floor()
+                            .max(HARDNESS_MIN as f64) as i32;
+
+                        if max_hp <= 10 {
+                            sprite_rect = Some(SPRITE_BLOCK_DIRT);
                         } else {
-                            let depth = (y_block - (SURFACE_Y_LEVEL + 1)) as f64;
-                            let base_hardness =
-                                HARDNESS_MIN as f64 + depth * HARDNESS_INCREASE_PER_BLOCK;
-                            let noise_val = noise_main_ref.get([
-                                wx as f64 * NOISE_SCALE_HARDNESS,
-                                wy as f64 * NOISE_SCALE_HARDNESS,
-                                0.0,
+                            let ore_val = noise_ore_ref.get([
+                                wx as f64 * NOISE_SCALE_ORE,
+                                wy as f64 * NOISE_SCALE_ORE,
+                                256.0,
                             ]);
-
-                            let noise_contribution = noise_val
-                                * NOISE_HARDNESS_RANGE
-                                * (if noise_val >= 0.0 { 1.0 } else { 0.25 });
-                            max_hp = (base_hardness + noise_contribution)
-                                .floor()
-                                .max(HARDNESS_MIN as f64)
-                                as i32;
-
-                            if max_hp <= 10 {
-                                sprite_rect = Some(SPRITE_BLOCK_DIRT);
+                            sprite_rect = Some(if ore_val >= ORE_THRESHOLD {
+                                SPRITE_BLOCK_COAL
                             } else {
-                                let ore_val = noise_ore_ref.get([
-                                    wx as f64 * NOISE_SCALE_ORE,
-                                    wy as f64 * NOISE_SCALE_ORE,
-                                    256.0,
-                                ]);
-                                sprite_rect = Some(if ore_val >= ORE_THRESHOLD {
-                                    SPRITE_BLOCK_COAL
-                                } else {
-                                    SPRITE_BLOCK_STONE
-                                });
-                            }
+                                SPRITE_BLOCK_STONE
+                            });
                         }
                     }
                     row.push(Block::new(wx, wy, max_hp, sprite_rect));
@@ -169,11 +176,7 @@ impl WorldManager {
         }
     }
 
-    pub fn get_active_blocks_in_view<'a>(
-        &'a mut self,
-        camera_x: f32,
-        camera_y: f32,
-    ) -> Vec<&'a Block> {
+    pub fn get_active_blocks_in_view(&mut self, camera_x: f32, camera_y: f32) -> Vec<&Block> {
         let mut blocks = Vec::new();
         let view_rect = Rect::new(
             camera_x - BLOCK_SIZE,
@@ -220,23 +223,6 @@ impl WorldManager {
             }
         }
         blocks
-    }
-
-    pub fn regenerate_world_from_save(
-        &mut self,
-        _gen_coords: HashSet<(i32, i32)>,
-        _mod_data: Vec<crate::components::Chunk>,
-    ) {
-        // Since Chunk in save data format is complex to map directly back to struct with current logic,
-        // we assumed PersistentManager passes parsed data.
-
-        // Actually, PersistenceManager logic in Python:
-        // 1. Set seeds.
-        // 2. Add generated coords to set.
-        // 3. Ensure chunks exist.
-        // 4. Apply modifications.
-
-        // We need a method to apply modifications to a chunk.
     }
 
     pub fn apply_modifications(&mut self, mod_chunks_data: Vec<serde_json::Value>) {
