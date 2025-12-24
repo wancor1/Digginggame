@@ -69,7 +69,7 @@ lazy_static! {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockData {
     pub id: u32,
-    pub name: String,
+    pub key: String,
     pub is_solid: bool,
     pub is_placeable: bool,
     pub base_hardness: i32,

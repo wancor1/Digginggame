@@ -22,7 +22,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     );
 
     draw_text_ex(
-        "FUEL",
+        &format!("{}", game.lang_manager.get_string("hud.fuel")),
         hud_x,
         hud_y + 8.0 * ctx.scale,
         TextParams {
@@ -34,7 +34,8 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     );
     draw_text_ex(
         &format!(
-            "CARGO: {}/{}",
+            "{}: {}/{}",
+            game.lang_manager.get_string("hud.cargo"),
             player.total_cargo_weight(),
             player.max_cargo
         ),
@@ -61,7 +62,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
 
     let depth = (player.y / BLOCK_SIZE).floor() as i32 - SURFACE_Y_LEVEL;
     draw_text_ex(
-        &format!("DEPTH: {}m", depth.max(0)),
+        &format!("{}: {}m", game.lang_manager.get_string("hud.depth"), depth.max(0)),
         ctx.offset_x + (SCREEN_WIDTH - 45.0) * ctx.scale,
         hud_y + 12.0 * ctx.scale,
         TextParams {
@@ -101,8 +102,8 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
                     let block_name = block
                         .block_type
                         .get_data()
-                        .map(|d| d.name.as_str())
-                        .unwrap_or("???");
+                        .map(|d| game.lang_manager.get_string(&format!("block.{}.name", d.key)))
+                        .unwrap_or_else(|| "???".to_string());
 
                     let gx = (bx / BLOCK_SIZE).round() as i32;
                     let gy = (by / BLOCK_SIZE).round() as i32;
@@ -112,25 +113,28 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
                     let info_x = ctx.offset_x + (SCREEN_WIDTH * ctx.scale - text_dims.width) / 2.0;
                     let info_y = ctx.offset_y + (SCREEN_HEIGHT - 8.0) * ctx.scale;
 
-                    draw_rectangle(
-                        info_x - 2.0 * ctx.scale,
-                        info_y - text_dims.offset_y - 1.0 * ctx.scale,
-                        text_dims.width + 4.0 * ctx.scale,
-                        text_dims.height + 2.0 * ctx.scale,
-                        Color::new(0.0, 0.0, 0.0, 0.5),
-                    );
+                    if block_name == "block.air.name" {} else { // 死ぬほどゴリ押し!!!!!!!!!!!
 
-                    draw_text_ex(
-                        &info_text,
-                        info_x,
-                        info_y,
-                        TextParams {
-                            font_size: mini_font_size,
-                            font: ctx.font,
-                            color: WHITE,
-                            ..Default::default()
-                        },
-                    );
+                        draw_rectangle(
+                            info_x - 2.0 * ctx.scale,
+                            info_y - text_dims.offset_y - 1.0 * ctx.scale,
+                            text_dims.width + 4.0 * ctx.scale,
+                            text_dims.height + 2.0 * ctx.scale,
+                            Color::new(0.0, 0.0, 0.0, 0.5),
+                        );
+
+                        draw_text_ex(
+                            &info_text,
+                            info_x,
+                            info_y,
+                            TextParams {
+                                font_size: mini_font_size,
+                                font: ctx.font,
+                                color: WHITE,
+                                ..Default::default()
+                            },
+                        );
+                    };
                 }
             }
         }
@@ -180,7 +184,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
             },
         );
         draw_text_ex(
-            &item.item_type,
+            &game.lang_manager.get_string(&format!("block.{}.name", item.item_type)),
             sel_x + slot_size + 2.0 * ctx.scale,
             sel_y + 10.0 * ctx.scale,
             TextParams {

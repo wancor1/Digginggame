@@ -116,7 +116,7 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
 
     for it in cargo_types {
         let count = cargo_counts[it];
-        let label = format!("{}: {}", it, count);
+        let label = format!("{}: {}", game.lang_manager.get_string(&format!("block.{}.name", it)), count);
         draw_text_ex(
             label.as_str(),
             inv_x,
@@ -183,7 +183,7 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
 
     for it in stor_types {
         let count = stor_counts[it];
-        let label = format!("{}: {}", it, count);
+        let label = format!("{}: {}", game.lang_manager.get_string(&format!("block.{}.name", it)), count);
         draw_text_ex(
             label.as_str(),
             stor_x,

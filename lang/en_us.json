@@ -58,6 +58,9 @@
   "hud.place_gate.pressed": "Placing...",
   "hud.warp_menu": "Warp",
   "hud.warp_menu.pressed": "Opening...",
+  "hud.fuel": "FUEL",
+  "hud.cargo": "CARGO",
+  "hud.depth" : "DEPTH",
   "warp.title": "Select Destination",
   "warp.name_prompt": "Enter gate name:",
   "inventory.title": "Inventory",
@@ -72,5 +75,13 @@
   "warehouse.sell": "SELL",
   "warehouse.qty": "Qty: {qty}",
   "WAREHOUSE": "WAREHOUSE",
-  "SHOP": "SHOP"
+  "SHOP": "SHOP",
+  "block.warpgate.name": "WarpGate",
+  "block.dirt.name": "Dirt",
+  "block.grass_block.name": "Grass Block",
+  "block.stone.name": "Stone",
+  "block.indestructible.name": "Indestructible",
+  "block.coal.name": "Coal",
+  "block.oil_shale.name": "Oil Shale",
+  "block.limestone.name": "Limestone"
 }

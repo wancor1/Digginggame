@@ -75,22 +75,22 @@ pub const PLAYER_TERMINAL_YVELOCITY: f32 = 2.25;
 
 // Sprites
 pub const SPRITE_SELECT_NORMAL: Rect = Rect {
-    x: 8.0,
-    y: 8.0,
+    x: 24.0,
+    y: 0.0,
     w: 8.0,
     h: 8.0,
 };
 pub const SPRITE_SELECT_LARGE: Rect = Rect {
-    x: 8.0,
-    y: 16.0,
+    x: 24.0,
+    y: 8.0,
     w: 10.0,
     h: 10.0,
 };
 pub const SPRITE_CURSOR: Rect = Rect {
     x: 8.0,
     y: 0.0,
-    w: 8.0,
-    h: 8.0,
+    w: 16.0,
+    h: 16.0,
 };
 
 pub const SPRITE_BREAK_ANIM_U: f32 = 40.0;
