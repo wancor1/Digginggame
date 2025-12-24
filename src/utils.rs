@@ -1,10 +1,11 @@
 use crate::constants::{
-    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH, SURFACE_TEMPERATURE, TEMPERATURE_GRADIENT, SURFACE_Y_LEVEL
+    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, MACROGRID_SIZE_CHUNKS, SCREEN_HEIGHT,
+    SCREEN_WIDTH, SURFACE_TEMPERATURE, SURFACE_Y_LEVEL, TEMPERATURE_GRADIENT,
 };
 use macroquad::prelude::*;
 
 pub fn get_temperature(y: f32) -> f32 {
-    let depth = (y / BLOCK_SIZE).floor() as f32 - SURFACE_Y_LEVEL as f32;
+    let depth = (y / BLOCK_SIZE).floor() - SURFACE_Y_LEVEL as f32;
     SURFACE_TEMPERATURE + (depth.max(0.0) * TEMPERATURE_GRADIENT)
 }
 
@@ -33,6 +34,16 @@ pub fn world_to_chunk_coords(world_x: f32, world_y: f32) -> (i32, i32) {
     (chunk_x, chunk_y)
 }
 
+pub fn chunk_to_macrogrid_coords(chunk_x: i32, chunk_y: i32) -> ((i32, i32), (i32, i32)) {
+    let mg_x = (chunk_x as f32 / MACROGRID_SIZE_CHUNKS as f32).floor() as i32;
+    let mg_y = (chunk_y as f32 / MACROGRID_SIZE_CHUNKS as f32).floor() as i32;
+    let rel_cx = ((chunk_x % MACROGRID_SIZE_CHUNKS as i32) + MACROGRID_SIZE_CHUNKS as i32)
+        % MACROGRID_SIZE_CHUNKS as i32;
+    let rel_cy = ((chunk_y % MACROGRID_SIZE_CHUNKS as i32) + MACROGRID_SIZE_CHUNKS as i32)
+        % MACROGRID_SIZE_CHUNKS as i32;
+    ((mg_x, mg_y), (rel_cx, rel_cy))
+}
+
 pub fn world_to_relative_in_chunk_coords(world_x: f32, world_y: f32) -> (usize, usize) {
     let (_cx, _cy) = world_to_chunk_coords(world_x, world_y);
     // Python math.floor handles negatives correctly, Rust cast to i32 does trunkation.
@@ -53,14 +64,14 @@ pub fn world_to_relative_in_chunk_coords(world_x: f32, world_y: f32) -> (usize, 
 
 pub fn get_item_weight(item_type: &str) -> i32 {
     crate::managers::block::BLOCK_MANAGER
-        .from_item_type(item_type)
+        .get_by_item_type(item_type)
         .map(|bt| crate::managers::block::BLOCK_MANAGER.get_weight(&bt))
         .unwrap_or(0)
 }
 
 pub fn get_item_sprite(item_type: &str) -> Rect {
     crate::managers::block::BLOCK_MANAGER
-        .from_item_type(item_type)
+        .get_by_item_type(item_type)
         .and_then(|bt| crate::managers::block::BLOCK_MANAGER.get_sprite(&bt))
         .unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0))
 }

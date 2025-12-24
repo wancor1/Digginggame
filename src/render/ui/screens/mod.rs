@@ -1,9 +1,11 @@
+pub mod map;
 pub mod new_game;
 pub mod pause;
 pub mod save_select;
 pub mod title;
 pub mod warp;
 
+pub use map::draw_map_screen;
 pub use new_game::draw_new_game_input_screen;
 pub use pause::draw_pause_menu;
 pub use save_select::draw_save_select_screen;

@@ -2,7 +2,7 @@ use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
-use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords, get_temperature};
+use crate::utils::{get_temperature, world_to_chunk_coords, world_to_relative_in_chunk_coords};
 use macroquad::prelude::*;
 
 pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
@@ -22,7 +22,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     );
 
     draw_text_ex(
-        &format!("{}", game.lang_manager.get_string("hud.fuel")),
+        &game.lang_manager.get_string("hud.fuel"),
         hud_x,
         hud_y + 8.0 * ctx.scale,
         TextParams {
@@ -62,7 +62,11 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
 
     let depth = (player.y / BLOCK_SIZE).floor() as i32 - SURFACE_Y_LEVEL;
     draw_text_ex(
-        &format!("{}: {}m", game.lang_manager.get_string("hud.depth"), depth.max(0)),
+        &format!(
+            "{}: {}m",
+            game.lang_manager.get_string("hud.depth"),
+            depth.max(0)
+        ),
         ctx.offset_x + (SCREEN_WIDTH - 45.0) * ctx.scale,
         hud_y + 12.0 * ctx.scale,
         TextParams {
@@ -94,47 +98,54 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     // --- HOVERED BLOCK INFO ---
     if let Some((bx, by)) = game.select_block.get_block_coords() {
         let (cx, cy) = world_to_chunk_coords(bx, by);
-        if let Some(chunk) = game.world_manager.chunks.get(&(cx, cy)) {
-            if chunk.is_generated {
-                let (rx, ry) = world_to_relative_in_chunk_coords(bx, by);
-                if rx < chunk.blocks.len() && ry < chunk.blocks[0].len() {
-                    let block = &chunk.blocks[rx][ry];
-                    let block_name = block
-                        .block_type
-                        .get_data()
-                        .map(|d| game.lang_manager.get_string(&format!("block.{}.name", d.key)))
-                        .unwrap_or_else(|| "???".to_string());
+        if let Some(chunk) = game
+            .world_manager
+            .get_chunk(cx, cy)
+            .filter(|c| c.is_generated)
+        {
+            let (rx, ry) = world_to_relative_in_chunk_coords(bx, by);
+            if rx < chunk.blocks.len() && ry < chunk.blocks[0].len() {
+                let block = &chunk.blocks[rx][ry];
+                let block_name = block
+                    .block_type
+                    .get_data()
+                    .map(|d| {
+                        game.lang_manager
+                            .get_string(&format!("block.{}.name", d.key))
+                    })
+                    .unwrap_or_else(|| "???".to_string());
 
-                    let gx = (bx / BLOCK_SIZE).round() as i32;
-                    let gy = (by / BLOCK_SIZE).round() as i32;
-                    let info_text = format!("{} ({}, {})", block_name, gx, gy);
+                let gx = (bx / BLOCK_SIZE).round() as i32;
+                let gy = (by / BLOCK_SIZE).round() as i32;
+                let info_text = format!("{} ({}, {})", block_name, gx, gy);
 
-                    let text_dims = measure_text(&info_text, ctx.font, mini_font_size, 1.0);
-                    let info_x = ctx.offset_x + (SCREEN_WIDTH * ctx.scale - text_dims.width) / 2.0;
-                    let info_y = ctx.offset_y + (SCREEN_HEIGHT - 8.0) * ctx.scale;
+                let text_dims = measure_text(&info_text, ctx.font, mini_font_size, 1.0);
+                let info_x = ctx.offset_x + (SCREEN_WIDTH * ctx.scale - text_dims.width) / 2.0;
+                let info_y = ctx.offset_y + (SCREEN_HEIGHT - 8.0) * ctx.scale;
 
-                    if block_name == "block.air.name" {} else { // 死ぬほどゴリ押し!!!!!!!!!!!
+                if block_name == "block.air.name" {
+                } else {
+                    // 死ぬほどゴリ押し!!!!!!!!!!!
 
-                        draw_rectangle(
-                            info_x - 2.0 * ctx.scale,
-                            info_y - text_dims.offset_y - 1.0 * ctx.scale,
-                            text_dims.width + 4.0 * ctx.scale,
-                            text_dims.height + 2.0 * ctx.scale,
-                            Color::new(0.0, 0.0, 0.0, 0.5),
-                        );
+                    draw_rectangle(
+                        info_x - 2.0 * ctx.scale,
+                        info_y - text_dims.offset_y - 1.0 * ctx.scale,
+                        text_dims.width + 4.0 * ctx.scale,
+                        text_dims.height + 2.0 * ctx.scale,
+                        Color::new(0.0, 0.0, 0.0, 0.5),
+                    );
 
-                        draw_text_ex(
-                            &info_text,
-                            info_x,
-                            info_y,
-                            TextParams {
-                                font_size: mini_font_size,
-                                font: ctx.font,
-                                color: WHITE,
-                                ..Default::default()
-                            },
-                        );
-                    };
+                    draw_text_ex(
+                        &info_text,
+                        info_x,
+                        info_y,
+                        TextParams {
+                            font_size: mini_font_size,
+                            font: ctx.font,
+                            color: WHITE,
+                            ..Default::default()
+                        },
+                    );
                 }
             }
         }
@@ -184,7 +195,9 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
             },
         );
         draw_text_ex(
-            &game.lang_manager.get_string(&format!("block.{}.name", item.item_type)),
+            &game
+                .lang_manager
+                .get_string(&format!("block.{}.name", item.item_type)),
             sel_x + slot_size + 2.0 * ctx.scale,
             sel_y + 10.0 * ctx.scale,
             TextParams {

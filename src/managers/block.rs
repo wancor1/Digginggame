@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use macroquad::prelude::Rect;
+use macroquad::prelude::{BLACK, Color, Rect};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -15,7 +15,9 @@ impl BlockType {
     pub const STONE: BlockType = BlockType(3);
     pub const INDESTRUCTIBLE: BlockType = BlockType(4);
     pub const COAL: BlockType = BlockType(10);
+    #[allow(dead_code)]
     pub const OIL_SHALE: BlockType = BlockType(11);
+    #[allow(dead_code)]
     pub const LIMESTONE: BlockType = BlockType(12);
     pub const WARP_GATE: BlockType = BlockType(500);
 
@@ -24,12 +26,14 @@ impl BlockType {
     pub const Grass: BlockType = Self::GRASS;
     pub const Stone: BlockType = Self::STONE;
     pub const Coal: BlockType = Self::COAL;
+    #[allow(dead_code)]
     pub const OilShale: BlockType = Self::OIL_SHALE;
+    #[allow(dead_code)]
     pub const Limestone: BlockType = Self::LIMESTONE;
     pub const Indestructible: BlockType = Self::INDESTRUCTIBLE;
     pub const WarpGate: BlockType = Self::WARP_GATE;
 
-    pub fn to_id(&self) -> u32 {
+    pub fn to_id(self) -> u32 {
         self.0
     }
 
@@ -57,8 +61,12 @@ impl BlockType {
         BLOCK_MANAGER.get_base_hardness(self)
     }
 
+    pub fn get_map_color(&self) -> Color {
+        BLOCK_MANAGER.get_map_color(self)
+    }
+
     pub fn from_item_type(item_type: &str) -> Option<Self> {
-        BLOCK_MANAGER.from_item_type(item_type)
+        BLOCK_MANAGER.get_by_item_type(item_type)
     }
 }
 
@@ -76,6 +84,12 @@ pub struct BlockData {
     pub sprite: Option<BlockRect>,
     pub item_type: Option<String>,
     pub weight: i32,
+    #[serde(default = "default_map_color")]
+    pub map_color: [u8; 3],
+}
+
+fn default_map_color() -> [u8; 3] {
+    [0, 0, 0]
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -125,7 +139,7 @@ impl BlockManager {
         self.blocks.get(&block_type.to_id())
     }
 
-    pub fn from_item_type(&self, item_type: &str) -> Option<BlockType> {
+    pub fn get_by_item_type(&self, item_type: &str) -> Option<BlockType> {
         self.item_type_to_id
             .get(item_type)
             .map(|&id| BlockType::from_id(id))
@@ -152,6 +166,12 @@ impl BlockManager {
         self.get_data(block_type)
             .map(|d| d.base_hardness)
             .unwrap_or(0)
+    }
+
+    pub fn get_map_color(&self, block_type: &BlockType) -> Color {
+        self.get_data(block_type)
+            .map(|d| Color::from_rgba(d.map_color[0], d.map_color[1], d.map_color[2], 255))
+            .unwrap_or(BLACK)
     }
 
     pub fn get_weight(&self, block_type: &BlockType) -> i32 {

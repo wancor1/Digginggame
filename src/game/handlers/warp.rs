@@ -77,10 +77,53 @@ pub fn teleport_to_warp(game: &mut Game, idx: usize, renderer: &GameRenderer) {
         game.player_manager.player.vx = 0.0;
         game.player_manager.player.vy = 0.0;
         game.state = GameState::Playing;
+        game.ui_overlay = UIOverlay::None;
         game.notification_manager.add_notification(
             format!("Warped to {}!", gate.name),
             "success",
             renderer.get_font(),
         );
+    }
+}
+
+pub fn sync_warp_gates(game: &mut Game) {
+    let mut discovered = Vec::new();
+
+    // Scan all visited chunks for WarpGate blocks
+    for &(cx, cy) in &game.world_manager.visited_chunks {
+        if let Some(chunk) = game.world_manager.get_chunk(cx, cy) {
+            if !chunk.is_generated {
+                continue;
+            }
+            for row in &chunk.blocks {
+                for block in row {
+                    if !block.is_broken
+                        && block.block_type == crate::components::BlockType::WarpGate
+                    {
+                        discovered.push((block.x, block.y, block.name.clone()));
+                    }
+                }
+            }
+        }
+    }
+
+    // Add discovered gates to player registry if not already present
+    for (x, y, name) in discovered {
+        if !game
+            .player_manager
+            .player
+            .warp_gates
+            .iter()
+            .any(|w| w.x == x && w.y == y)
+        {
+            game.player_manager
+                .player
+                .warp_gates
+                .push(crate::components::WarpGate {
+                    x,
+                    y,
+                    name: name.unwrap_or_else(|| "Warp Gate".to_string()),
+                });
+        }
     }
 }

@@ -30,6 +30,7 @@ pub enum UIOverlay {
     Shop,
     Inventory,
     Warehouse,
+    Map,
 }
 
 pub struct Game {
@@ -55,12 +56,18 @@ pub struct Game {
     pub warehouse_quantity: usize, // 1, 10, 100, or 0 for ALL
     pub selected_item_index: usize,
 
+    // Map State
+    pub map_zoom: f32,
+    pub map_view_x: f32,
+    pub map_view_y: f32,
+
     // Input buffering
     pub key_presses: Vec<KeyCode>,
     pub mouse_presses: Vec<MouseButton>,
 
     pub alpha: f32, // Interpolation factor
     pub warp_placement_target: Option<(f32, f32)>,
+    pub pending_warp_index: Option<usize>,
 }
 
 impl Game {
@@ -79,14 +86,18 @@ impl Game {
             ui_overlay: UIOverlay::None,
             on_surface: true,
             save_files: Vec::new(),
-            current_save_name: "savegame.json".to_string(),
+            current_save_name: "savegame.dat".to_string(),
             input_buffer: String::new(),
             warehouse_quantity: 1,
             selected_item_index: 0,
+            map_zoom: 1.0,
+            map_view_x: PLAYER_INITIAL_X,
+            map_view_y: PLAYER_INITIAL_Y,
             key_presses: Vec::new(),
             mouse_presses: Vec::new(),
             alpha: 0.0,
             warp_placement_target: None,
+            pending_warp_index: None,
         }
     }
 
@@ -111,6 +122,38 @@ impl Game {
                     if self.is_key_pressed_buffered(KeyCode::Escape) {
                         self.ui_overlay = UIOverlay::None;
                     }
+                } else if self.ui_overlay == UIOverlay::Map {
+                    if self.is_key_pressed_buffered(KeyCode::Escape)
+                        || self.is_key_pressed_buffered(KeyCode::M)
+                    {
+                        self.ui_overlay = UIOverlay::None;
+                        self.clear_inputs();
+                    }
+
+                    if self.is_key_pressed_buffered(KeyCode::Equal)
+                        || self.is_key_pressed_buffered(KeyCode::KpAdd)
+                    {
+                        self.map_zoom = (self.map_zoom * 2.0).min(32.0);
+                    }
+                    if self.is_key_pressed_buffered(KeyCode::Minus)
+                        || self.is_key_pressed_buffered(KeyCode::KpSubtract)
+                    {
+                        self.map_zoom = (self.map_zoom / 2.0).max(1.0 / 32.0);
+                    }
+
+                    let move_speed = 5.0 / self.map_zoom;
+                    if is_key_down(KeyCode::W) || is_key_down(KeyCode::Up) {
+                        self.map_view_y -= move_speed;
+                    }
+                    if is_key_down(KeyCode::S) || is_key_down(KeyCode::Down) {
+                        self.map_view_y += move_speed;
+                    }
+                    if is_key_down(KeyCode::A) || is_key_down(KeyCode::Left) {
+                        self.map_view_x -= move_speed;
+                    }
+                    if is_key_down(KeyCode::D) || is_key_down(KeyCode::Right) {
+                        self.map_view_x += move_speed;
+                    }
                 } else {
                     self.handle_gameplay_update(game_renderer);
                 }
@@ -133,6 +176,7 @@ impl Game {
         let keys_to_capture = [
             KeyCode::Escape,
             KeyCode::I,
+            KeyCode::M,
             KeyCode::Tab,
             KeyCode::Key1,
             KeyCode::Key2,
@@ -143,6 +187,14 @@ impl Game {
             KeyCode::Key7,
             KeyCode::Key8,
             KeyCode::Key9,
+            KeyCode::Equal,
+            KeyCode::Minus,
+            KeyCode::KpAdd,
+            KeyCode::KpSubtract,
+            KeyCode::Up,
+            KeyCode::Down,
+            KeyCode::Left,
+            KeyCode::Right,
         ];
         for key in keys_to_capture {
             if is_key_pressed(key) {
@@ -176,6 +228,11 @@ impl Game {
         }
     }
 
+    pub fn clear_inputs(&mut self) {
+        self.key_presses.clear();
+        self.mouse_presses.clear();
+    }
+
     pub fn return_to_title_screen(&mut self, game_renderer: &GameRenderer) {
         self.world_manager = WorldManager::new();
         self.particle_manager = ParticleManager::new();
@@ -185,7 +242,7 @@ impl Game {
         self.ui_overlay = UIOverlay::None;
 
         self.world_manager.reset();
-        self.current_save_name = "savegame.json".to_string();
+        self.current_save_name = "savegame.dat".to_string();
         self.input_buffer = String::new();
         self.notification_manager.add_notification(
             "Returned to Title Screen".to_string(),

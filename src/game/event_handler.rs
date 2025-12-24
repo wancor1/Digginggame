@@ -5,6 +5,7 @@ use crate::render::game_renderer::GameRenderer;
 
 impl Game {
     pub fn handle_event(&mut self, event: GameEvent, game_renderer: &GameRenderer) {
+        self.clear_inputs();
         match event {
             GameEvent::OpenSaveSelection => handlers::menu::open_save_selection(self),
             GameEvent::LoadSave(filename) => handlers::menu::load_save(self, filename),

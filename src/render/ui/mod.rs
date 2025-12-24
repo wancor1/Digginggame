@@ -46,6 +46,7 @@ impl UIRenderer {
                         UIOverlay::Shop => hud::draw_shop(game, &mut ctx),
                         UIOverlay::Inventory => hud::draw_inventory(game, &mut ctx),
                         UIOverlay::Warehouse => hud::draw_warehouse(game, &mut ctx),
+                        UIOverlay::Map => screens::draw_map_screen(game, &mut ctx),
                         UIOverlay::PauseMenu => screens::draw_pause_menu(game, &mut ctx),
                         UIOverlay::None => {}
                     }

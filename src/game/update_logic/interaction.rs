@@ -3,7 +3,7 @@ use crate::components::{BlockType, Particle};
 use crate::constants::*;
 use crate::events::GameEvent;
 use crate::render::game_renderer::GameRenderer;
-use crate::utils::{world_to_chunk_coords, get_temperature};
+use crate::utils::{get_temperature, world_to_chunk_coords};
 use ::rand::Rng;
 use macroquad::prelude::*;
 

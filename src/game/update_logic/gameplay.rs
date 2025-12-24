@@ -20,9 +20,12 @@ pub fn handle_gameplay_update(game: &mut Game, game_renderer: &GameRenderer) {
 
     let (world_mx, world_my) = get_world_mouse_coords(&game.camera);
 
-    update_interaction_preview(game, world_mx, world_my);
-
-    handle_interactions(game, world_mx, world_my, game_renderer);
+    if game.state == crate::game::GameState::Playing && game.ui_overlay == UIOverlay::None {
+        update_interaction_preview(game, world_mx, world_my);
+        handle_interactions(game, world_mx, world_my, game_renderer);
+    } else {
+        game.select_block.update(None, None, true);
+    }
 
     update_managers(game);
 }
@@ -33,12 +36,22 @@ fn update_ui_state(game: &mut Game) {
             UIOverlay::None => game.ui_overlay = UIOverlay::PauseMenu,
             _ => game.ui_overlay = UIOverlay::None,
         }
+        game.clear_inputs();
     }
 
     if (game.is_key_pressed_buffered(KeyCode::I) || game.is_key_pressed_buffered(KeyCode::Tab))
         && game.ui_overlay == UIOverlay::None
     {
         game.ui_overlay = UIOverlay::Inventory;
+        game.clear_inputs();
+    }
+
+    if game.is_key_pressed_buffered(KeyCode::M) && game.ui_overlay == UIOverlay::None {
+        game.ui_overlay = UIOverlay::Map;
+        game.map_view_x = game.player_manager.player.x;
+        game.map_view_y = game.player_manager.player.y;
+        crate::game::handlers::warp::sync_warp_gates(game);
+        game.clear_inputs();
     }
 }
 

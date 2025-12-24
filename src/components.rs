@@ -132,6 +132,18 @@ impl Chunk {
     }
 }
 
+pub struct MacroGrid {
+    pub chunks: std::collections::HashMap<(i32, i32), Chunk>,
+}
+
+impl MacroGrid {
+    pub fn new() -> Self {
+        Self {
+            chunks: std::collections::HashMap::new(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct OwnedItem {
     pub item_type: String,

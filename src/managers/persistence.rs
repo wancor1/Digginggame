@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-pub const SAVE_VERSION: u32 = 1;
+pub const SAVE_VERSION: u32 = 2;
 pub const SAVE_DIR: &str = "saves";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -24,6 +24,13 @@ pub struct ChunkSaveData {
     pub blocks: Vec<u32>,
     /// Special blocks that need additional data (like names)
     pub named_blocks: Vec<BlockSaveData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MacroGridSaveData {
+    pub mgx: i32,
+    pub mgy: i32,
+    pub chunks: Vec<ChunkSaveData>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -55,7 +62,57 @@ pub struct SaveData {
     pub player_storage: Vec<ItemStack>,
     pub world_seed_main: u32,
     pub world_seed_ore: u32,
-    pub modified_chunks: Vec<ChunkSaveData>,
+    #[serde(default, with = "visited_chunks_format")]
+    pub visited_chunks: std::collections::HashSet<(i32, i32)>,
+    pub modified_macrogrids: Vec<MacroGridSaveData>,
+}
+
+mod visited_chunks_format {
+    use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
+    use std::collections::HashSet;
+
+    pub fn serialize<S>(
+        visited_chunks: &HashSet<(i32, i32)>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut flat = Vec::with_capacity(visited_chunks.len() * 2);
+        let mut v: Vec<(i32, i32)> = visited_chunks.iter().cloned().collect();
+        // Sorting improves zstd compression ratio
+        v.sort_unstable_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
+
+        for (x, y) in v {
+            flat.push(x);
+            flat.push(y);
+        }
+        flat.serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashSet<(i32, i32)>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum VisitedChunksData {
+            Flat(Vec<i32>),
+            Pairs(Vec<(i32, i32)>),
+        }
+
+        let data = VisitedChunksData::deserialize(deserializer)?;
+        match data {
+            VisitedChunksData::Flat(flat) => {
+                let mut set = HashSet::with_capacity(flat.len() / 2);
+                for chunk in flat.chunks_exact(2) {
+                    set.insert((chunk[0], chunk[1]));
+                }
+                Ok(set)
+            }
+            VisitedChunksData::Pairs(pairs) => Ok(pairs.into_iter().collect()),
+        }
+    }
 }
 
 pub struct PersistenceManager {
@@ -85,9 +142,10 @@ impl PersistenceManager {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(ext) = path.extension()
-                    && ext == "json"
-                    && let Ok(content) = fs::read_to_string(&path)
-                    && let Ok(data) = serde_json::from_str::<serde_json::Value>(&content)
+                    && ext == "dat"
+                    && let Ok(compressed_content) = fs::read(&path)
+                    && let Ok(decompressed) = zstd::decode_all(&compressed_content[..])
+                    && let Ok(data) = serde_json::from_slice::<serde_json::Value>(&decompressed)
                     && (data.get("version").is_some() || data.get("is_save_file").is_some())
                     && let Some(file_name) = path.file_name()
                     && let Some(name_str) = file_name.to_str()
@@ -112,8 +170,9 @@ impl PersistenceManager {
             let temp_path = path.with_extension("tmp");
 
             let res = (|| {
-                let json_str = serde_json::to_string_pretty(&data)?;
-                fs::write(&temp_path, json_str)?;
+                let json_vec = serde_json::to_vec(&data)?;
+                let compressed = zstd::encode_all(&json_vec[..], 0)?; // 0 is default compression level
+                fs::write(&temp_path, compressed)?;
                 fs::rename(&temp_path, &path)?;
                 Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
             })();
@@ -139,8 +198,9 @@ impl PersistenceManager {
         thread::spawn(move || {
             let path = Path::new(SAVE_DIR).join(&filename);
             let res = (|| {
-                let content = fs::read_to_string(path)?;
-                let data: SaveData = serde_json::from_str(&content)?;
+                let compressed_content = fs::read(path)?;
+                let decompressed = zstd::decode_all(&compressed_content[..])?;
+                let data: SaveData = serde_json::from_slice(&decompressed)?;
                 Ok::<SaveData, Box<dyn std::error::Error + Send + Sync>>(data)
             })();
 

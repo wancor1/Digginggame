@@ -25,8 +25,8 @@ pub fn start_new_game_setup(game: &mut Game) {
 
 pub fn confirm_new_game(game: &mut Game, name: String, renderer: &GameRenderer) {
     let mut filename = name.clone();
-    if !filename.ends_with(".json") {
-        filename.push_str(".json");
+    if !filename.ends_with(".dat") {
+        filename.push_str(".dat");
     }
     game.current_save_name = filename;
     game.state = GameState::Playing;

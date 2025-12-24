@@ -55,10 +55,14 @@ pub fn handle_loading(game: &mut Game, game_renderer: &GameRenderer) {
                 game.world_manager
                     .seed(data.world_seed_main, data.world_seed_ore);
 
+                game.world_manager.visited_chunks = data.visited_chunks;
+
+                // Apply modifications first (populates pending_modifications for lazy loading)
+                game.world_manager
+                    .apply_modifications(data.modified_macrogrids);
+
                 game.world_manager
                     .generate_visible_chunks(game.camera.x, game.camera.y);
-
-                game.world_manager.apply_modifications(data.modified_chunks);
 
                 game.notification_manager.add_notification(
                     "Loaded!".to_string(),

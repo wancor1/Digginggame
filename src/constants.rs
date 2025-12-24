@@ -40,6 +40,7 @@ pub const NOTIFICATION_TEXT_COLOR_SUCCESS: Color = macroquad::color::GREEN; // 5
 
 pub const CHUNK_SIZE_X_BLOCKS: usize = 16;
 pub const CHUNK_SIZE_Y_BLOCKS: usize = 16;
+pub const MACROGRID_SIZE_CHUNKS: usize = 8;
 
 // Selection Effect Constants
 pub const SELECTION_PULSE_DURATION: f64 = 2.0; // Duration of one full pulse cycle in seconds

@@ -63,7 +63,12 @@ pub fn draw_inventory(game: &Game, ctx: &mut MenuRenderContext) {
     for it in item_types {
         let count = counts[it];
         let weight = crate::utils::get_item_weight(it) * count;
-        let label = format!("{}: {} ({}kg)", game.lang_manager.get_string(&format!("block.{}.name", it)), count, weight);
+        let label = format!(
+            "{}: {} ({}kg)",
+            game.lang_manager.get_string(&format!("block.{}.name", it)),
+            count,
+            weight
+        );
         draw_text_ex(
             &label,
             mx + 10.0 * ctx.scale,
