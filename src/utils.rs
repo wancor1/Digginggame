@@ -24,3 +24,26 @@ pub fn world_to_relative_in_chunk_coords(world_x: f32, world_y: f32) -> (usize, 
 
     (rel_x as usize, rel_y as usize)
 }
+
+pub fn get_item_weight(item_type: &str) -> i32 {
+    match item_type {
+        "Coal" => 10,
+        "Stone" => 20,
+        "Dirt" => 5,
+        "Grass" => 3,
+        "WarpGate" => 50,
+        _ => 0,
+    }
+}
+
+pub fn get_item_sprite(item_type: &str) -> Rect {
+    use crate::render::sprites::*;
+    match item_type {
+        "Coal" => SPRITE_BLOCK_COAL,
+        "Stone" => SPRITE_BLOCK_STONE,
+        "Dirt" => SPRITE_BLOCK_DIRT,
+        "Grass" => SPRITE_BLOCK_GRASS,
+        "WarpGate" => SPRITE_BLOCK_WARPGATE,
+        _ => Rect::new(0.0, 0.0, 0.0, 0.0),
+    }
+}

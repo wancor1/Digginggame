@@ -1,4 +1,5 @@
 use crate::constants::*;
+use crate::utils::get_item_weight;
 
 use ::rand::Rng;
 use macroquad::prelude::*;
@@ -6,6 +7,8 @@ use macroquad::prelude::*;
 pub struct Camera {
     pub x: f32,
     pub y: f32,
+    pub old_x: f32,
+    pub old_y: f32,
 }
 
 impl Default for Camera {
@@ -16,7 +19,12 @@ impl Default for Camera {
 
 impl Camera {
     pub fn new() -> Self {
-        Self { x: 0.0, y: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            old_x: 0.0,
+            old_y: 0.0,
+        }
     }
 }
 
@@ -58,6 +66,52 @@ impl Particle {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum BlockType {
+    Dirt,
+    Grass,
+    Stone,
+    Coal,
+    Indestructible,
+    WarpGate,
+    Air,
+}
+
+impl BlockType {
+    pub fn is_solid(&self) -> bool {
+        match self {
+            BlockType::Dirt
+            | BlockType::Grass
+            | BlockType::Stone
+            | BlockType::Coal
+            | BlockType::Indestructible => true,
+            BlockType::WarpGate | BlockType::Air => false,
+        }
+    }
+
+    pub fn is_placeable(&self) -> bool {
+        match self {
+            BlockType::Dirt
+            | BlockType::Grass
+            | BlockType::Stone
+            | BlockType::Coal
+            | BlockType::WarpGate => true,
+            _ => false,
+        }
+    }
+
+    pub fn from_item_type(item_type: &str) -> Option<Self> {
+        match item_type {
+            "Dirt" => Some(BlockType::Dirt),
+            "Grass" => Some(BlockType::Grass),
+            "Stone" => Some(BlockType::Stone),
+            "Coal" => Some(BlockType::Coal),
+            "WarpGate" => Some(BlockType::WarpGate),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Block {
     pub x: f32,
@@ -67,18 +121,30 @@ pub struct Block {
     pub is_broken: bool,
     pub is_modified: bool,
     pub sprite_rect: Option<Rect>,
+    pub block_type: BlockType,
+    pub name: Option<String>,
+    pub last_damage_time: Option<f64>,
 }
 
 impl Block {
-    pub fn new(x: f32, y: f32, max_hp: i32, sprite_rect: Option<Rect>) -> Self {
+    pub fn new(
+        x: f32,
+        y: f32,
+        max_hp: i32,
+        sprite_rect: Option<Rect>,
+        block_type: BlockType,
+    ) -> Self {
         Self {
             x,
             y,
             max_hp,
             current_hp: max_hp,
-            is_broken: max_hp == 0, // If max_hp is 0, it's considered broken/empty
+            is_broken: max_hp == 0 || block_type == BlockType::Air,
             is_modified: false,
             sprite_rect,
+            block_type,
+            name: None,
+            last_damage_time: None,
         }
     }
 }
@@ -114,16 +180,27 @@ impl Chunk {
     }
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct OwnedItem {
+    pub item_type: String,
+    pub is_natural: bool,
+    pub is_auto_stored: bool,
+}
+
 pub struct Player {
     pub x: f32,
     pub y: f32,
+    pub old_x: f32,
+    pub old_y: f32,
     pub vx: f32,
     pub vy: f32,
     pub fuel: f32,
     pub max_fuel: f32,
     pub money: i32,
-    pub cargo: Vec<String>, // Simplistic for now
-    pub max_cargo: usize,
+    pub cargo: Vec<OwnedItem>, // Changed from Vec<String>
+    pub max_cargo: i32,
+    pub storage: Vec<OwnedItem>, // Changed from Vec<String>
+    pub max_storage: i32,
     pub width: f32,
     pub height: f32,
     pub drill_level: i32,
@@ -131,7 +208,6 @@ pub struct Player {
     pub engine_level: i32,
     pub cargo_level: i32,
     pub warp_gates: Vec<WarpGate>,
-    pub inventory_warp_gates: i32,
 }
 
 impl Player {
@@ -139,6 +215,8 @@ impl Player {
         Self {
             x,
             y,
+            old_x: x,
+            old_y: y,
             vx: 0.0,
             vy: 0.0,
             fuel: PLAYER_INITIAL_FUEL,
@@ -146,6 +224,8 @@ impl Player {
             money: 0,
             cargo: Vec::new(),
             max_cargo: PLAYER_INITIAL_CARGO,
+            storage: Vec::new(),
+            max_storage: 2000,
             width: 6.0,
             height: 6.0,
             drill_level: 1,
@@ -153,12 +233,18 @@ impl Player {
             engine_level: 1,
             cargo_level: 1,
             warp_gates: Vec::new(),
-            inventory_warp_gates: 0,
         }
     }
 
     pub fn rect(&self) -> Rect {
         Rect::new(self.x, self.y, self.width, self.height)
+    }
+
+    pub fn total_cargo_weight(&self) -> i32 {
+        self.cargo
+            .iter()
+            .map(|it| get_item_weight(&it.item_type))
+            .sum()
     }
 }
 
@@ -171,19 +257,30 @@ pub struct Item {
     pub item_type: String,
     pub sprite_rect: Rect,
     pub alive: bool,
+    pub weight: i32,
+    pub is_natural: bool,
 }
 
 impl Item {
-    pub fn new(x: f32, y: f32, item_type: String, sprite_rect: Rect) -> Self {
+    pub fn new(
+        x: f32,
+        y: f32,
+        item_type: String,
+        sprite_rect: Rect,
+        weight: i32,
+        is_natural: bool,
+    ) -> Self {
         let mut rng = ::rand::rng();
         Self {
             x,
             y,
-            vx: rng.random_range(-1.0..1.0),
-            vy: rng.random_range(-2.0..-1.0),
+            vx: rng.random_range(-0.2..0.2),
+            vy: rng.random_range(-0.5..0.0),
             item_type,
             sprite_rect,
             alive: true,
+            weight,
+            is_natural,
         }
     }
 

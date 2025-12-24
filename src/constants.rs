@@ -1,58 +1,11 @@
-use macroquad::prelude::Rect;
-
 pub const SCREEN_WIDTH: f32 = 160.0;
 pub const SCREEN_HEIGHT: f32 = 120.0;
 pub const BLOCK_SIZE: f32 = 8.0;
 
-// Game Bank (Bank 0) Mappings
-pub const SPRITE_SELECT_NORMAL: Rect = Rect {
-    x: 8.0,
-    y: 8.0,
-    w: 8.0,
-    h: 8.0,
-};
-pub const SPRITE_SELECT_LARGE: Rect = Rect {
-    x: 8.0,
-    y: 16.0,
-    w: 10.0,
-    h: 10.0,
-};
-pub const SPRITE_CURSOR: Rect = Rect {
-    x: 8.0,
-    y: 0.0,
-    w: 8.0,
-    h: 8.0,
-};
-
-pub const SPRITE_BLOCK_DIRT: Rect = Rect {
-    x: 48.0,
-    y: 8.0,
-    w: 8.0,
-    h: 8.0,
-};
-pub const SPRITE_BLOCK_GRASS: Rect = Rect {
-    x: 48.0,
-    y: 0.0,
-    w: 8.0,
-    h: 8.0,
-};
-pub const SPRITE_BLOCK_STONE: Rect = Rect {
-    x: 56.0,
-    y: 0.0,
-    w: 8.0,
-    h: 8.0,
-};
-pub const SPRITE_BLOCK_COAL: Rect = Rect {
-    x: 56.0,
-    y: 8.0,
-    w: 8.0,
-    h: 8.0,
-};
+pub const TARGET_FPS: f32 = 60.0;
+pub const FRAME_TIME: f32 = 1.0 / TARGET_FPS;
 
 // Animation
-pub const SPRITE_BREAK_ANIM_U: f32 = 40.0;
-pub const SPRITE_BREAK_ANIM_V_START: f32 = 0.0;
-
 use macroquad::color::Color;
 
 pub const COLOR_BUTTON_BG: Color = macroquad::color::GRAY; // 13
@@ -91,13 +44,17 @@ pub const SELECTION_PULSE_DURATION: f64 = 2.0; // Duration of one full pulse cyc
 pub const SELECTION_ENLARGE_AMOUNT: f32 = 1.0; // How much the selection sprite enlarges
 
 // World Generation Constants
-pub const HARDNESS_MIN: i32 = 3;
 pub const SURFACE_Y_LEVEL: i32 = 7;
-pub const NOISE_SCALE_HARDNESS: f64 = 0.005;
 pub const NOISE_SCALE_ORE: f64 = 0.04;
 pub const ORE_THRESHOLD: f64 = 0.4;
-pub const HARDNESS_INCREASE_PER_BLOCK: f64 = 0.1;
-pub const NOISE_HARDNESS_RANGE: f64 = 20.0;
+
+pub const HARDNESS_DIRT: i32 = 5;
+pub const HARDNESS_GRASS: i32 = 3;
+pub const HARDNESS_STONE: i32 = 15;
+pub const HARDNESS_COAL: i32 = 20;
+pub const HARDNESS_INDESTRUCTIBLE: i32 = -1;
+
+pub const HARDNESS_DEPTH_MULTIPLIER: f64 = 0.05; // 5% increase per block depth
 
 // Particle Constants
 pub const GRAVITY: f32 = 0.19;
@@ -106,15 +63,15 @@ pub const BOUNCE_DAMPENING_X: f32 = -0.4;
 pub const FRICTION_ON_GROUND: f32 = 0.85;
 
 // Component Constants
-pub const PARTICLE_SPEED_MIN: f32 = 20.0 / 60.0;
+pub const PARTICLE_SPEED_MIN: f32 = 20.0 / TARGET_FPS;
 pub const PARTICLE_SPEED_MAX: f32 = 1.0;
 
 // Player Constants
 pub const PLAYER_INITIAL_X: f32 = 80.0;
 pub const PLAYER_INITIAL_Y: f32 = 48.0;
 pub const PLAYER_INITIAL_FUEL: f32 = 100.0;
-pub const PLAYER_INITIAL_CARGO: usize = 30;
+pub const PLAYER_INITIAL_CARGO: i32 = 500;
 pub const PLAYER_GRAVITY: f32 = 0.1;
 pub const PLAYER_FRICTION_AIR: f32 = 0.95;
 pub const PLAYER_FRICTION_GROUND: f32 = 0.8;
-pub const PLAYER_TERMINAL_VELOCITY: f32 = 4.0;
+pub const PLAYER_TERMINAL_VELOCITY: f32 = 2.5;

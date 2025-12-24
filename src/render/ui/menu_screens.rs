@@ -77,7 +77,7 @@ pub fn draw_save_select_screen(
     events: &mut Vec<GameEvent>,
 ) {
     draw_text_ex(
-        "Select Save File",
+        &game.lang_manager.get_string("menu.select_save"),
         offset_x + 10.0 * scale,
         offset_y + 20.0 * scale,
         TextParams {
@@ -149,7 +149,7 @@ pub fn draw_new_game_input_screen(
     events: &mut Vec<GameEvent>,
 ) {
     draw_text_ex(
-        "Enter Filename:",
+        &game.lang_manager.get_string("menu.enter_filename"),
         offset_x + 10.0 * scale,
         offset_y + 30.0 * scale,
         TextParams {
@@ -188,8 +188,8 @@ pub fn draw_new_game_input_screen(
             y: offset_y + 60.0 * scale,
             w: 60.0 * scale,
             h: 10.0 * scale,
-            text_key: "Confirm",
-            press_key: "Confirm",
+            text_key: "button.confirm",
+            press_key: "button.confirm",
             lang: &game.lang_manager,
             font_size: s_font_size,
         },
@@ -248,8 +248,8 @@ pub fn draw_warp_place_screen(
             y: offset_y + 60.0 * scale,
             w: 60.0 * scale,
             h: 10.0 * scale,
-            text_key: "Confirm",
-            press_key: "Confirm",
+            text_key: "button.confirm",
+            press_key: "button.confirm",
             lang: &game.lang_manager,
             font_size: s_font_size,
         },
@@ -327,10 +327,10 @@ pub fn draw_pause_menu(
     s_font_size: u16,
     events: &mut Vec<GameEvent>,
 ) {
-    let (mw, mh) = (80.0 * scale, 60.0 * scale);
+    let (mw, mh) = (80.0 * scale, 75.0 * scale);
     let (mx, my) = (
         offset_x + ((SCREEN_WIDTH - 80.0) / 2.0).floor() * scale,
-        offset_y + ((SCREEN_HEIGHT - 60.0) / 2.0).floor() * scale,
+        offset_y + ((SCREEN_HEIGHT - 75.0) / 2.0).floor() * scale,
     );
     draw_rectangle(mx, my, mw, mh, LIGHTGRAY);
     draw_rectangle_lines(mx, my, mw, mh, 1.0, BLACK);
@@ -366,6 +366,22 @@ pub fn draw_pause_menu(
         font,
     ) {
         events.push(GameEvent::SaveGame);
+    }
+    cur_y += 12.0 * scale;
+    if draw_button(
+        ButtonParams {
+            x: mx + 5.0 * scale,
+            y: cur_y,
+            w: mw - 10.0 * scale,
+            h: 10.0 * scale,
+            text_key: "button.menu.respawn.default",
+            press_key: "button.menu.respawn.pressed",
+            lang: &game.lang_manager,
+            font_size: s_font_size,
+        },
+        font,
+    ) {
+        events.push(GameEvent::Respawn);
     }
     cur_y += 12.0 * scale;
     if draw_button(

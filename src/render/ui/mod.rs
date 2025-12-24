@@ -1,6 +1,7 @@
 use crate::Game;
 use crate::constants::*;
 use crate::events::GameEvent;
+use crate::render::sprites::*;
 use macroquad::prelude::*;
 
 pub mod common;
@@ -77,9 +78,31 @@ impl UIRenderer {
                 &mut events,
             );
         } else {
-            game_hud::draw_hud(game, font, scale, offset_x, offset_y, &mut events);
+            game_hud::draw_hud(game, font, atlas, scale, offset_x, offset_y, &mut events);
             if game.is_shop_open {
                 game_hud::draw_shop(
+                    game,
+                    font,
+                    scale,
+                    offset_x,
+                    offset_y,
+                    s_font_size,
+                    &mut events,
+                );
+            }
+            if game.is_inventory_open {
+                game_hud::draw_inventory(
+                    game,
+                    font,
+                    scale,
+                    offset_x,
+                    offset_y,
+                    s_font_size,
+                    &mut events,
+                );
+            }
+            if game.is_warehouse_open {
+                game_hud::draw_warehouse(
                     game,
                     font,
                     scale,

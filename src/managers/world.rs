@@ -1,10 +1,6 @@
-use crate::components::{Block, Chunk};
-use crate::constants::{
-    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, HARDNESS_INCREASE_PER_BLOCK,
-    HARDNESS_MIN, NOISE_HARDNESS_RANGE, NOISE_SCALE_HARDNESS, NOISE_SCALE_ORE, ORE_THRESHOLD,
-    SCREEN_HEIGHT, SCREEN_WIDTH, SPRITE_BLOCK_COAL, SPRITE_BLOCK_DIRT, SPRITE_BLOCK_GRASS,
-    SPRITE_BLOCK_STONE, SURFACE_Y_LEVEL,
-};
+use crate::components::{Block, BlockType, Chunk};
+use crate::constants::*;
+use crate::render::sprites::*;
 use crate::utils::{world_to_chunk_coords, world_to_relative_in_chunk_coords};
 
 use ::rand::Rng;
@@ -67,7 +63,6 @@ impl WorldManager {
     }
 
     pub fn ensure_chunk_exists_and_generated(&mut self, chunk_x: i32, chunk_y: i32) {
-        let noise_main_ref = &self.noise_main;
         let noise_ore_ref = &self.noise_ore;
 
         let entry = self
@@ -86,47 +81,82 @@ impl WorldManager {
                     let wy = origin_y + by as f32 * BLOCK_SIZE;
                     let mut max_hp = 0;
                     let mut sprite_rect = None;
+                    let mut block_type = BlockType::Air;
 
                     let y_block = (wy / BLOCK_SIZE).floor() as i32;
+                    let x_block = (wx / BLOCK_SIZE).floor() as i32;
 
-                    if y_block < SURFACE_Y_LEVEL {
+                    // Initial Spawn Point - Warp Gate
+                    // Player spawns at PLAYER_INITIAL_X, PLAYER_INITIAL_Y.
+                    // We want the block at that location to be the Warp Gate.
+                    // PLAYER_INITIAL_Y is 48.0. BLOCK_SIZE is 8.0.
+                    let player_start_x_block = (PLAYER_INITIAL_X / BLOCK_SIZE).floor() as i32;
+                    let player_start_y_block = (PLAYER_INITIAL_Y / BLOCK_SIZE).floor() as i32;
+
+                    if x_block == player_start_x_block && y_block == player_start_y_block {
+                        sprite_rect = Some(SPRITE_BLOCK_WARPGATE);
+                        max_hp = 50; // Destructible
+                        block_type = BlockType::WarpGate;
+                    } else if x_block == (PLAYER_INITIAL_X / BLOCK_SIZE) as i32
+                        && y_block == ((PLAYER_INITIAL_Y + BLOCK_SIZE) / BLOCK_SIZE) as i32
+                    {
+                        sprite_rect = Some(SPRITE_BLOCK_INDESTRUCTIBLE);
+                        max_hp = HARDNESS_INDESTRUCTIBLE;
+                        block_type = BlockType::Indestructible;
+                    } else if y_block < SURFACE_Y_LEVEL {
                         // Air blocks, max_hp will be 0
+                        block_type = BlockType::Air;
                     } else if y_block == SURFACE_Y_LEVEL {
                         sprite_rect = Some(SPRITE_BLOCK_GRASS);
-                        max_hp = HARDNESS_MIN;
+                        max_hp = HARDNESS_GRASS;
+                        block_type = BlockType::Grass;
                     } else {
-                        let depth = (y_block - (SURFACE_Y_LEVEL + 1)) as f64;
-                        let base_hardness =
-                            HARDNESS_MIN as f64 + depth * HARDNESS_INCREASE_PER_BLOCK;
-                        let noise_val = noise_main_ref.get([
-                            wx as f64 * NOISE_SCALE_HARDNESS,
-                            wy as f64 * NOISE_SCALE_HARDNESS,
-                            0.0,
-                        ]);
+                        // 1. Determine Block Type
+                        let mut base_hardness = HARDNESS_DIRT;
+                        sprite_rect = Some(SPRITE_BLOCK_DIRT);
+                        block_type = BlockType::Dirt;
 
-                        let noise_contribution = noise_val
-                            * NOISE_HARDNESS_RANGE
-                            * (if noise_val >= 0.0 { 1.0 } else { 0.25 });
-                        max_hp = (base_hardness + noise_contribution)
-                            .floor()
-                            .max(HARDNESS_MIN as f64) as i32;
-
-                        if max_hp <= 10 {
-                            sprite_rect = Some(SPRITE_BLOCK_DIRT);
-                        } else {
+                        if y_block > SURFACE_Y_LEVEL + 5 {
                             let ore_val = noise_ore_ref.get([
                                 wx as f64 * NOISE_SCALE_ORE,
                                 wy as f64 * NOISE_SCALE_ORE,
                                 256.0,
                             ]);
-                            sprite_rect = Some(if ore_val >= ORE_THRESHOLD {
-                                SPRITE_BLOCK_COAL
-                            } else {
-                                SPRITE_BLOCK_STONE
-                            });
+                            if ore_val >= ORE_THRESHOLD {
+                                sprite_rect = Some(SPRITE_BLOCK_COAL);
+                                base_hardness = HARDNESS_COAL;
+                                block_type = BlockType::Coal;
+                            } else if y_block > SURFACE_Y_LEVEL + 10 {
+                                sprite_rect = Some(SPRITE_BLOCK_STONE);
+                                base_hardness = HARDNESS_STONE;
+                                block_type = BlockType::Stone;
+                            }
+                        }
+
+                        // Special case for indestructible blocks (e.g. at very deep levels)
+                        if y_block > 1000 {
+                            sprite_rect = Some(SPRITE_BLOCK_INDESTRUCTIBLE);
+                            base_hardness = HARDNESS_INDESTRUCTIBLE;
+                            block_type = BlockType::Indestructible;
+                        }
+
+                        // 2. Calculate Hardness with Depth Multiplier
+                        if base_hardness == HARDNESS_INDESTRUCTIBLE {
+                            max_hp = -1;
+                        } else {
+                            let depth = (y_block - SURFACE_Y_LEVEL) as f64;
+                            let multiplier = 1.0 + depth * HARDNESS_DEPTH_MULTIPLIER;
+                            max_hp = (base_hardness as f64 * multiplier).floor() as i32;
                         }
                     }
-                    row.push(Block::new(wx, wy, max_hp, sprite_rect));
+                    
+                    if block_type == BlockType::WarpGate {
+                        let mut b = Block::new(wx, wy, max_hp, sprite_rect, block_type);
+                        b.name = Some("Home".to_string());
+                        row.push(b);
+                    } else {
+                        row.push(Block::new(wx, wy, max_hp, sprite_rect, block_type));
+                    }
                 }
                 entry.blocks.push(row);
             }
@@ -248,15 +278,48 @@ impl WorldManager {
                         block.is_modified = true;
                         block.is_broken = block.current_hp <= 0;
 
-                        block.sprite_rect = match sprite_id {
-                            "dirt" => Some(SPRITE_BLOCK_DIRT),
-                            "grass" => Some(SPRITE_BLOCK_GRASS),
-                            "stone" => Some(SPRITE_BLOCK_STONE),
-                            "coal" => Some(SPRITE_BLOCK_COAL),
-                            _ => None, // "air" or "unknown"
+                        let (new_sprite, new_type) = match sprite_id {
+                            "dirt" => (Some(SPRITE_BLOCK_DIRT), BlockType::Dirt),
+                            "grass" => (Some(SPRITE_BLOCK_GRASS), BlockType::Grass),
+                            "stone" => (Some(SPRITE_BLOCK_STONE), BlockType::Stone),
+                            "coal" => (Some(SPRITE_BLOCK_COAL), BlockType::Coal),
+                            "warpgate" => (Some(SPRITE_BLOCK_WARPGATE), BlockType::WarpGate),
+                            _ => (None, BlockType::Air), // "air" or "unknown"
                         };
+                        block.sprite_rect = new_sprite;
+                        block.block_type = new_type;
+                        
+                        if let Some(n) = mod_block.get("name").and_then(|v| v.as_str()) {
+                             block.name = Some(n.to_string());
+                        }
                     }
                 }
+                chunk.is_modified_in_session = true;
+            }
+        }
+    }
+
+    pub fn update(&mut self) {
+        let current_time = get_time();
+        for chunk in self.chunks.values_mut() {
+            if !chunk.is_generated {
+                continue;
+            }
+            let mut chunk_modified = false;
+            for row in &mut chunk.blocks {
+                for block in row {
+                    if !block.is_broken && block.current_hp < block.max_hp {
+                        if let Some(last_time) = block.last_damage_time {
+                            if current_time - last_time >= 60.0 {
+                                block.current_hp = block.max_hp;
+                                block.last_damage_time = None;
+                                chunk_modified = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if chunk_modified {
                 chunk.is_modified_in_session = true;
             }
         }

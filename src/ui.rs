@@ -1,5 +1,5 @@
 use crate::constants::*;
-
+use crate::render::sprites::*;
 use macroquad::prelude::*;
 
 #[derive(PartialEq)]
@@ -237,7 +237,9 @@ impl Notification {
 pub struct SelectBlock {
     selection_effect_start_time: f64,
     is_effect_active: bool,
-    block_coords: Option<(f32, f32)>, // New field to store the hovered block's coordinates
+    block_coords: Option<(f32, f32)>,
+    preview_sprite: Option<Rect>,
+    is_valid: bool,
 }
 
 impl SelectBlock {
@@ -245,17 +247,22 @@ impl SelectBlock {
         Self {
             selection_effect_start_time: 0.0,
             is_effect_active: false,
-            block_coords: None, // Initialize to None
+            block_coords: None,
+            preview_sprite: None,
+            is_valid: true,
         }
     }
 
-    pub fn update(&mut self, hovered_block_coords: Option<(f32, f32)>) {
+    pub fn update(
+        &mut self,
+        hovered_block_coords: Option<(f32, f32)>,
+        preview_sprite: Option<Rect>,
+        is_valid: bool,
+    ) {
         if let Some(coords) = hovered_block_coords {
             if !self.is_effect_active {
-                // Effect just became active
                 self.selection_effect_start_time = get_time();
             } else if self.block_coords != Some(coords) {
-                // Hovered block changed, reset timer for new pulse
                 self.selection_effect_start_time = get_time();
             }
             self.is_effect_active = true;
@@ -264,11 +271,13 @@ impl SelectBlock {
             self.is_effect_active = false;
             self.block_coords = None;
         }
+        self.preview_sprite = preview_sprite;
+        self.is_valid = is_valid;
     }
 
     pub fn draw(
         &mut self,
-        camera_x: f32, // camera_x and camera_y are still needed for world-to-screen conversion
+        camera_x: f32,
         camera_y: f32,
         atlas: &Texture2D,
     ) {
@@ -276,13 +285,30 @@ impl SelectBlock {
             return;
         }
 
-        let (world_block_x, world_block_y) = self.block_coords.unwrap(); // We know it's Some if is_effect_active is true
+        let (world_block_x, world_block_y) = self.block_coords.unwrap();
 
-        let screen_x = (world_block_x - camera_x).floor();
-        let screen_y = (world_block_y - camera_y).floor();
+        let screen_x = (world_block_x - camera_x).round();
+        let screen_y = (world_block_y - camera_y).round();
         let elapsed = get_time() - self.selection_effect_start_time;
 
-        // Reset every 2s
+        if let Some(sprite) = self.preview_sprite {
+            let color = if self.is_valid {
+                Color::new(1.0, 1.0, 1.0, 0.4)
+            } else {
+                Color::new(1.0, 0.3, 0.3, 0.5)
+            };
+            draw_texture_ex(
+                atlas,
+                screen_x,
+                screen_y,
+                color,
+                DrawTextureParams {
+                    source: Some(sprite),
+                    ..Default::default()
+                },
+            );
+        }
+
         if elapsed > SELECTION_PULSE_DURATION {
             self.selection_effect_start_time = get_time();
         }
@@ -315,4 +341,4 @@ impl SelectBlock {
             );
         }
     }
-} // Added missing closing brace
+}

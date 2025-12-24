@@ -25,12 +25,12 @@ impl PlayerManager {
         }
 
         // Tuning constants
-        let base_accel = 0.4 + (self.player.engine_level as f32 - 1.0) * 0.15;
-        let base_thrust = 0.25 + (self.player.engine_level as f32 - 1.0) * 0.1;
+        let base_accel = 0.2 + (self.player.engine_level as f32 - 1.0) * 0.1;
+        let base_thrust = 0.15 + (self.player.engine_level as f32 - 1.0) * 0.08;
         let mut dash_mult = 1.0;
 
         if is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift) {
-            dash_mult = 1.8;
+            dash_mult = 1.4;
             if self.player.fuel > 0.0 {
                 self.player.fuel -= 0.05; // Extra cost for dashing
             } else {
@@ -59,7 +59,7 @@ impl PlayerManager {
         // Friction and Terminal Velocity
         self.player.vx *= PLAYER_FRICTION_AIR;
         // Vertical friction (Damping) for smoother float
-        self.player.vy *= 0.98;
+        self.player.vy *= PLAYER_FRICTION_AIR;
 
         let max_vel = PLAYER_TERMINAL_VELOCITY
             * (1.0 + (self.player.engine_level as f32 - 1.0) * 0.2)
@@ -77,17 +77,19 @@ impl PlayerManager {
 
         // Surface Station Logic
         if self.player.y < (SURFACE_Y_LEVEL as f32 * BLOCK_SIZE) + 4.0 {
-            // Sell items
-            if !self.player.cargo.is_empty() {
-                for item in self.player.cargo.drain(..) {
-                    self.player.money += match item.as_str() {
-                        "Coal" => 10,
-                        "Stone" => 2,
-                        "Dirt" => 1,
-                        _ => 0,
-                    };
+            // Auto-store natural items
+            let mut i = 0;
+            while i < self.player.cargo.len() {
+                if self.player.cargo[i].is_auto_stored
+                    && self.player.storage.len() < self.player.max_storage as usize
+                {
+                    let item = self.player.cargo.remove(i);
+                    self.player.storage.push(item);
+                } else {
+                    i += 1;
                 }
             }
+
             // Refuel (Free on surface for now, maybe cost later)
             if self.player.fuel < self.player.max_fuel {
                 self.player.fuel = (self.player.fuel + 1.0).min(self.player.max_fuel);
@@ -110,37 +112,56 @@ impl PlayerManager {
 
                 if let Some((_, _, _, _, block)) =
                     world_manager.get_block_at_world_coords(world_x, world_y)
-                    && !block.is_broken
                 {
-                    let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
+                    if !block.is_broken && block.block_type.is_solid() {
+                        let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
 
-                    // Use a fresh rect each time because self.player.x/y might have changed
-                    let mut current_player_rect = self.player.rect();
+                        // Use a fresh rect each time because self.player.x/y might have changed
+                        let mut current_player_rect = self.player.rect();
 
-                    // Shrink the perpendicular axis slightly to avoid "catching" on floors while moving horizontally (and vice versa)
-                    if is_x {
-                        current_player_rect.y += 0.2;
-                        current_player_rect.h -= 0.4;
-                    } else {
-                        current_player_rect.x += 0.2;
-                        current_player_rect.w -= 0.4;
-                    }
-
-                    if let Some(intersect) = current_player_rect.intersect(block_rect) {
+                        // Shrink the perpendicular axis slightly to avoid "catching" on floors while moving horizontally (and vice versa)
                         if is_x {
-                            if self.player.vx > 0.0 {
-                                self.player.x -= intersect.w;
-                            } else if self.player.vx < 0.0 {
-                                self.player.x += intersect.w;
-                            }
-                            self.player.vx = 0.0;
+                            current_player_rect.y += 0.2;
+                            current_player_rect.h -= 0.4;
                         } else {
-                            if self.player.vy > 0.0 {
-                                self.player.y -= intersect.h;
-                            } else if self.player.vy < 0.0 {
-                                self.player.y += intersect.h;
+                            current_player_rect.x += 0.2;
+                            current_player_rect.w -= 0.4;
+                        }
+
+                        if let Some(intersect) = current_player_rect.intersect(block_rect) {
+                            if is_x {
+                                if self.player.vx > 0.0 {
+                                    self.player.x -= intersect.w;
+                                } else if self.player.vx < 0.0 {
+                                    self.player.x += intersect.w;
+                                } else {
+                                    // Fallback for zero-velocity overlap
+                                    let player_center_x = self.player.x + self.player.width / 2.0;
+                                    let block_center_x = block.x + BLOCK_SIZE / 2.0;
+                                    if player_center_x < block_center_x {
+                                        self.player.x -= intersect.w;
+                                    } else {
+                                        self.player.x += intersect.w;
+                                    }
+                                }
+                                self.player.vx = 0.0;
+                            } else {
+                                if self.player.vy > 0.0 {
+                                    self.player.y -= intersect.h;
+                                } else if self.player.vy < 0.0 {
+                                    self.player.y += intersect.h;
+                                } else {
+                                    // Fallback for zero-velocity overlap (usually gravity-related)
+                                    let player_center_y = self.player.y + self.player.height / 2.0;
+                                    let block_center_y = block.y + BLOCK_SIZE / 2.0;
+                                    if player_center_y < block_center_y {
+                                        self.player.y -= intersect.h;
+                                    } else {
+                                        self.player.y += intersect.h;
+                                    }
+                                }
+                                self.player.vy = 0.0;
                             }
-                            self.player.vy = 0.0;
                         }
                     }
                 }

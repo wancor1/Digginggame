@@ -72,8 +72,19 @@ async fn main() {
     let render_target = render_target(SCREEN_WIDTH as u32, SCREEN_HEIGHT as u32);
     render_target.texture.set_filter(FilterMode::Nearest);
 
+    let mut accumulator = 0.0;
+
     loop {
-        game.update(&game_renderer);
+        game.capture_input();
+        accumulator += get_frame_time();
+
+        // Update logic at a fixed rate of 60 FPS
+        while accumulator >= FRAME_TIME {
+            game.update(&game_renderer);
+            accumulator -= FRAME_TIME;
+        }
+
+        game.alpha = accumulator / FRAME_TIME;
 
         let mut camera_to_render_target =
             Camera2D::from_display_rect(Rect::new(0.0, 0.0, SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -133,6 +144,9 @@ async fn main() {
                         .push(GameEvent::ConfirmWarpGateName(game.input_buffer.clone()));
                 }
             }
+        } else {
+            // Drain the character buffer when not in an input screen to prevent accumulation
+            while get_char_pressed().is_some() {}
         }
 
         for event in ui_events

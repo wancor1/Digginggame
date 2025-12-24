@@ -29,6 +29,8 @@ pub struct Game {
     pub on_new_game_input_screen: bool,
     pub is_menu_visible: bool,
     pub is_shop_open: bool,
+    pub is_inventory_open: bool,
+    pub is_warehouse_open: bool,
     pub on_warp_place_screen: bool,
     pub on_warp_select_screen: bool,
     pub on_surface: bool,
@@ -37,6 +39,15 @@ pub struct Game {
     pub save_files: Vec<String>,
     pub current_save_name: String,
     pub input_buffer: String,
+    pub warehouse_quantity: usize, // 1, 10, 100, or 0 for ALL
+    pub selected_item_index: usize,
+
+    // Input buffering
+    pub key_presses: Vec<KeyCode>,
+    pub mouse_presses: Vec<MouseButton>,
+
+    pub alpha: f32, // Interpolation factor
+    pub warp_placement_target: Option<(f32, f32)>,
 }
 
 impl Game {
@@ -56,16 +67,30 @@ impl Game {
             on_new_game_input_screen: false,
             is_menu_visible: false,
             is_shop_open: false,
+            is_inventory_open: false,
+            is_warehouse_open: false,
             on_warp_place_screen: false,
             on_warp_select_screen: false,
             on_surface: true,
             save_files: Vec::new(),
             current_save_name: "savegame.json".to_string(),
             input_buffer: String::new(),
+            warehouse_quantity: 1,
+            selected_item_index: 0,
+            key_presses: Vec::new(),
+            mouse_presses: Vec::new(),
+            alpha: 0.0,
+            warp_placement_target: None,
         }
     }
 
     pub fn update(&mut self, game_renderer: &GameRenderer) {
+        // Record previous positions for interpolation
+        self.player_manager.player.old_x = self.player_manager.player.x;
+        self.player_manager.player.old_y = self.player_manager.player.y;
+        self.camera.old_x = self.camera.x;
+        self.camera.old_y = self.camera.y;
+
         if self.persistence_manager.is_loading {
             self.handle_loading(game_renderer);
             return;
@@ -76,7 +101,7 @@ impl Game {
             || self.on_new_game_input_screen
             || self.is_menu_visible
         {
-            if self.is_menu_visible && is_key_pressed(KeyCode::Escape) {
+            if self.is_menu_visible && self.is_key_pressed_buffered(KeyCode::Escape) {
                 self.is_menu_visible = false;
             }
         } else {
@@ -92,6 +117,53 @@ impl Game {
         }
     }
 
+    pub fn capture_input(&mut self) {
+        let keys_to_capture = [
+            KeyCode::Escape,
+            KeyCode::I,
+            KeyCode::Tab,
+            KeyCode::Key1,
+            KeyCode::Key2,
+            KeyCode::Key3,
+            KeyCode::Key4,
+            KeyCode::Key5,
+            KeyCode::Key6,
+            KeyCode::Key7,
+            KeyCode::Key8,
+            KeyCode::Key9,
+        ];
+        for key in keys_to_capture {
+            if is_key_pressed(key) {
+                self.key_presses.push(key);
+            }
+        }
+
+        if is_mouse_button_pressed(MouseButton::Left) {
+            self.mouse_presses.push(MouseButton::Left);
+        }
+        if is_mouse_button_pressed(MouseButton::Right) {
+            self.mouse_presses.push(MouseButton::Right);
+        }
+    }
+
+    pub fn is_key_pressed_buffered(&mut self, key: KeyCode) -> bool {
+        if let Some(pos) = self.key_presses.iter().position(|&k| k == key) {
+            self.key_presses.remove(pos);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_mouse_button_pressed_buffered(&mut self, button: MouseButton) -> bool {
+        if let Some(pos) = self.mouse_presses.iter().position(|&b| b == button) {
+            self.mouse_presses.remove(pos);
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn return_to_title_screen(&mut self, game_renderer: &GameRenderer) {
         self.world_manager = WorldManager::new();
         self.particle_manager = ParticleManager::new();
@@ -102,6 +174,8 @@ impl Game {
         self.on_new_game_input_screen = false;
         self.is_menu_visible = false;
         self.is_shop_open = false;
+        self.is_inventory_open = false;
+        self.is_warehouse_open = false;
         self.on_warp_place_screen = false;
         self.on_warp_select_screen = false;
 
