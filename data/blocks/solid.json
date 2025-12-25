@@ -44,7 +44,7 @@
     "map_color": [50, 50, 50]
   },
   {
-    "id": 10,
+    "id": 100,
     "key": "coal",
     "is_solid": true,
     "is_placeable": true,
@@ -55,7 +55,7 @@
     "map_color": [30, 30, 30]
   },
   {
-    "id": 11,
+    "id": 101,
     "key": "oil_shale",
     "is_solid": true,
     "is_placeable": true,
@@ -66,7 +66,7 @@
     "map_color": [100, 80, 60]
   },
   {
-    "id": 12,
+    "id": 102,
     "key": "limestone",
     "is_solid": true,
     "is_placeable": true,

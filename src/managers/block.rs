@@ -14,12 +14,12 @@ impl BlockType {
     pub const GRASS: BlockType = BlockType(2);
     pub const STONE: BlockType = BlockType(3);
     pub const INDESTRUCTIBLE: BlockType = BlockType(4);
-    pub const COAL: BlockType = BlockType(10);
+    pub const COAL: BlockType = BlockType(100);
     #[allow(dead_code)]
-    pub const OIL_SHALE: BlockType = BlockType(11);
+    pub const OIL_SHALE: BlockType = BlockType(101);
     #[allow(dead_code)]
-    pub const LIMESTONE: BlockType = BlockType(12);
-    pub const WATER: BlockType = BlockType(100);
+    pub const LIMESTONE: BlockType = BlockType(102);
+    pub const WATER: BlockType = BlockType(107);
     pub const WARP_GATE: BlockType = BlockType(500);
 
     pub const Air: BlockType = Self::AIR;
