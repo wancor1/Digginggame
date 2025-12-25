@@ -45,52 +45,48 @@ impl Game {
                     let mut named_blocks: Vec<BlockSaveData> = Vec::new();
 
                     let mut last_type_id: Option<u32> = None;
-
+                    let mut last_level: u8 = 0;
                     let mut current_count: u32 = 0;
 
                     // Scan row-major (y then x) for better horizontal RLE runs
-
                     for by in 0..CHUNK_SIZE_Y_BLOCKS {
                         for bx in 0..CHUNK_SIZE_X_BLOCKS {
                             let block = &chunk.blocks[bx][by];
-
                             let type_id = block.block_type.to_id();
-
+                            let level = block.liquid_level;
                             let index = (bx * CHUNK_SIZE_Y_BLOCKS + by) as u32;
 
                             if let Some(name) = &block.name {
                                 named_blocks.push(BlockSaveData {
                                     i: index,
-
                                     t: block.block_type,
-
                                     n: Some(name.clone()),
                                 });
                             }
 
-                            if let Some(last_id) = last_type_id {
-                                if last_id == type_id && current_count < u32::MAX {
+                            if let (Some(l_id), l_lvl) = (last_type_id, last_level) {
+                                if l_id == type_id && l_lvl == level && current_count < u32::MAX {
                                     current_count += 1;
                                 } else {
-                                    rle_blocks.push(last_id);
-
+                                    rle_blocks.push(l_id);
+                                    rle_blocks.push(l_lvl as u32);
                                     rle_blocks.push(current_count);
 
                                     last_type_id = Some(type_id);
-
+                                    last_level = level;
                                     current_count = 1;
                                 }
                             } else {
                                 last_type_id = Some(type_id);
-
+                                last_level = level;
                                 current_count = 1;
                             }
                         }
                     }
 
-                    if let Some(last_id) = last_type_id {
-                        rle_blocks.push(last_id);
-
+                    if let Some(l_id) = last_type_id {
+                        rle_blocks.push(l_id);
+                        rle_blocks.push(last_level as u32);
                         rle_blocks.push(current_count);
                     }
 

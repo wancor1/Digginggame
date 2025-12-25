@@ -81,6 +81,7 @@ pub struct Block {
     pub back_type: BlockType,
     pub name: Option<String>,
     pub last_damage_time: Option<f64>,
+    pub liquid_level: u8,
 }
 
 impl Block {
@@ -91,6 +92,7 @@ impl Block {
         sprite_rect: Option<Rect>,
         block_type: BlockType,
     ) -> Self {
+        let liquid_level = if block_type.is_liquid() { 8 } else { 0 };
         Self {
             x,
             y,
@@ -103,6 +105,7 @@ impl Block {
             back_type: block_type,
             name: None,
             last_damage_time: None,
+            liquid_level,
         }
     }
 }
@@ -136,6 +139,12 @@ impl Chunk {
 
 pub struct MacroGrid {
     pub chunks: std::collections::HashMap<(i32, i32), Chunk>,
+}
+
+impl Default for MacroGrid {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MacroGrid {

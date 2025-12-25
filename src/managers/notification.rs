@@ -6,6 +6,12 @@ pub struct NotificationManager {
     pub notifications: Vec<Notification>,
 }
 
+impl Default for NotificationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotificationManager {
     pub fn new() -> Self {
         Self {

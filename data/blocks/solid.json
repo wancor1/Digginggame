@@ -1,16 +1,5 @@
 [
   {
-    "id": 0,
-    "key": "air",
-    "is_solid": false,
-    "is_placeable": false,
-    "base_hardness": 0,
-    "sprite": null,
-    "item_type": null,
-    "weight": 0,
-    "map_color": [0, 0, 0]
-  },
-  {
     "id": 1,
     "key": "dirt",
     "is_solid": true,
@@ -86,16 +75,5 @@
     "item_type": "limestone",
     "weight": 0,
     "map_color": [200, 200, 180]
-  },
-  {
-    "id": 500,
-    "key": "warpgate",
-    "is_solid": false,
-    "is_placeable": true,
-    "base_hardness": 50,
-    "sprite": { "x": 56.0, "y": 0.0, "w": 8.0, "h": 8.0 },
-    "item_type": "warpgate",
-    "weight": 50,
-    "map_color": [255, 0, 255]
   }
 ]

@@ -78,6 +78,8 @@ fn update_camera(game: &mut Game) {
 fn update_world(game: &mut Game) {
     game.world_manager
         .generate_visible_chunks(game.camera.x, game.camera.y);
+    game.world_manager
+        .update_liquids(game.camera.x, game.camera.y);
     game.world_manager.update();
 }
 

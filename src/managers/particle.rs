@@ -9,6 +9,12 @@ pub struct ParticleManager {
     pub active_particles: Vec<Particle>,
 }
 
+impl Default for ParticleManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ParticleManager {
     pub fn new() -> Self {
         Self {

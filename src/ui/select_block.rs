@@ -10,6 +10,12 @@ pub struct SelectBlock {
     is_valid: bool,
 }
 
+impl Default for SelectBlock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SelectBlock {
     pub fn new() -> Self {
         Self {

@@ -15,13 +15,28 @@ impl PlayerManager {
     }
 
     pub fn update(&mut self, world_manager: &mut WorldManager) {
+        let liquid_level = self.get_liquid_level(world_manager);
         let (move_vec, dash_mult) = self.process_input();
-        self.apply_movement(move_vec, dash_mult);
-        self.apply_physics(dash_mult);
+        self.apply_movement(move_vec, dash_mult, liquid_level);
+        self.apply_physics(dash_mult, liquid_level);
 
         self.perform_movement_and_collisions(world_manager);
 
         self.handle_surface_logic();
+    }
+
+    fn get_liquid_level(&self, world_manager: &mut WorldManager) -> u8 {
+        let px = self.player.x + self.player.width / 2.0;
+        let py = self.player.y + self.player.height / 2.0;
+        if let Some((_, _, _, _, block)) = world_manager.get_block_at_world_coords(px, py) {
+            if block.block_type.is_liquid() {
+                block.liquid_level
+            } else {
+                0
+            }
+        } else {
+            0
+        }
     }
 
     fn process_input(&mut self) -> (Vec2, f32) {
@@ -45,8 +60,13 @@ impl PlayerManager {
         (move_vec, dash_mult)
     }
 
-    fn apply_movement(&mut self, move_vec: Vec2, dash_mult: f32) {
-        let base_accel = 0.2 + (self.player.engine_level as f32 - 1.0) * 0.1;
+    fn apply_movement(&mut self, move_vec: Vec2, dash_mult: f32, liquid_level: u8) {
+        let mut base_accel = 0.2 + (self.player.engine_level as f32 - 1.0) * 0.1;
+
+        if liquid_level > 0 {
+            let effect_ratio = liquid_level as f32 / 8.0;
+            base_accel *= 1.0 - (0.5 * effect_ratio);
+        }
 
         if move_vec.x != 0.0 {
             self.player.vx += move_vec.x * base_accel * dash_mult;
@@ -55,7 +75,7 @@ impl PlayerManager {
         }
     }
 
-    fn apply_physics(&mut self, dash_mult: f32) {
+    fn apply_physics(&mut self, dash_mult: f32, liquid_level: u8) {
         let base_thrust = 0.15 + (self.player.engine_level as f32 - 1.0) * 0.08;
 
         // Vertical movement (Thrust)
@@ -68,6 +88,19 @@ impl PlayerManager {
 
         // Gravity
         self.player.vy += PLAYER_GRAVITY;
+
+        // Buoyancy and Resistance
+        if liquid_level > 0 {
+            let effect_ratio = liquid_level as f32 / 8.0;
+
+            // Buoyancy
+            self.player.vy -= LIQUID_BUOYANCY * effect_ratio;
+
+            // Friction/Resistance
+            let resistance = 1.0 - (1.0 - LIQUID_RESISTANCE) * effect_ratio;
+            self.player.vx *= resistance;
+            self.player.vy *= resistance;
+        }
 
         // Friction
         self.player.vx *= PLAYER_FRICTION_AIR;

@@ -83,5 +83,6 @@
   "block.indestructible.name": "破壊不能",
   "block.coal.name": "石炭",
   "block.oil_shale.name": "オイルシェール",
-  "block.limestone.name": "石灰岩"
+  "block.limestone.name": "石灰岩",
+  "block.water.name": "水"
 }

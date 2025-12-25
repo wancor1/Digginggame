@@ -19,7 +19,7 @@ pub struct BlockSaveData {
 pub struct ChunkSaveData {
     pub cx: i32,
     pub cy: i32,
-    /// Flat RLE encoded blocks: [type_id, count, type_id, count, ...]
+    /// Flat RLE encoded blocks: [type_id, level, count, type_id, level, count, ...]
     /// This represents the entire chunk state efficiently in a single array.
     pub blocks: Vec<u32>,
     /// Special blocks that need additional data (like names)
@@ -120,6 +120,12 @@ pub struct PersistenceManager {
     pub is_loading: bool,
     save_result: Arc<Mutex<Option<Result<String, String>>>>,
     load_result: Arc<Mutex<Option<Result<SaveData, String>>>>,
+}
+
+impl Default for PersistenceManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PersistenceManager {

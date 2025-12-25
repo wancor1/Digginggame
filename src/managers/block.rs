@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use macroquad::prelude::{BLACK, Color, Rect};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -19,6 +19,7 @@ impl BlockType {
     pub const OIL_SHALE: BlockType = BlockType(11);
     #[allow(dead_code)]
     pub const LIMESTONE: BlockType = BlockType(12);
+    pub const WATER: BlockType = BlockType(100);
     pub const WARP_GATE: BlockType = BlockType(500);
 
     pub const Air: BlockType = Self::AIR;
@@ -30,6 +31,7 @@ impl BlockType {
     pub const OilShale: BlockType = Self::OIL_SHALE;
     #[allow(dead_code)]
     pub const Limestone: BlockType = Self::LIMESTONE;
+    pub const Water: BlockType = Self::WATER;
     pub const Indestructible: BlockType = Self::INDESTRUCTIBLE;
     pub const WarpGate: BlockType = Self::WARP_GATE;
 
@@ -47,6 +49,10 @@ impl BlockType {
 
     pub fn is_solid(&self) -> bool {
         BLOCK_MANAGER.is_solid(self)
+    }
+
+    pub fn is_liquid(&self) -> bool {
+        BLOCK_MANAGER.is_liquid(self)
     }
 
     pub fn is_placeable(&self) -> bool {
@@ -84,8 +90,14 @@ pub struct BlockData {
     pub sprite: Option<BlockRect>,
     pub item_type: Option<String>,
     pub weight: i32,
+    #[serde(default = "default_tick_interval")]
+    pub tick_interval: u32,
     #[serde(default = "default_map_color")]
     pub map_color: [u8; 3],
+}
+
+fn default_tick_interval() -> u32 {
+    1
 }
 
 fn default_map_color() -> [u8; 3] {
@@ -109,6 +121,13 @@ impl From<BlockRect> for Rect {
 pub struct BlockManager {
     blocks: HashMap<u32, BlockData>,
     item_type_to_id: HashMap<String, u32>,
+    liquid_ids: HashSet<u32>,
+}
+
+impl Default for BlockManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BlockManager {
@@ -116,21 +135,28 @@ impl BlockManager {
         let mut manager = Self {
             blocks: HashMap::new(),
             item_type_to_id: HashMap::new(),
+            liquid_ids: HashSet::new(),
         };
         manager.load_blocks();
         manager
     }
 
     fn load_blocks(&mut self) {
-        let path = "data/blocks.json";
-        if let Ok(content) = fs::read_to_string(path)
-            && let Ok(blocks_vec) = serde_json::from_str::<Vec<BlockData>>(&content)
-        {
-            for block in blocks_vec {
-                if let Some(ref it) = block.item_type {
-                    self.item_type_to_id.insert(it.clone(), block.id);
+        let categories = ["solid", "liquid", "gas", "special"];
+        for category in categories {
+            let path = format!("data/blocks/{}.json", category);
+            if let Ok(content) = fs::read_to_string(path)
+                && let Ok(blocks_vec) = serde_json::from_str::<Vec<BlockData>>(&content)
+            {
+                for block in blocks_vec {
+                    if let Some(ref it) = block.item_type {
+                        self.item_type_to_id.insert(it.clone(), block.id);
+                    }
+                    if category == "liquid" {
+                        self.liquid_ids.insert(block.id);
+                    }
+                    self.blocks.insert(block.id, block);
                 }
-                self.blocks.insert(block.id, block);
             }
         }
     }
@@ -149,6 +175,10 @@ impl BlockManager {
         self.get_data(block_type)
             .map(|d| d.is_solid)
             .unwrap_or(false)
+    }
+
+    pub fn is_liquid(&self, block_type: &BlockType) -> bool {
+        self.liquid_ids.contains(&block_type.to_id())
     }
 
     pub fn is_placeable(&self, block_type: &BlockType) -> bool {

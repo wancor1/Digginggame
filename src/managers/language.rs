@@ -10,6 +10,12 @@ pub struct LanguageManager {
     pub translations: HashMap<String, String>,
 }
 
+impl Default for LanguageManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LanguageManager {
     pub fn new() -> Self {
         let mut manager = Self {
