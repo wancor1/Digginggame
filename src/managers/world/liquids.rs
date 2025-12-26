@@ -1,6 +1,7 @@
 use super::WorldManager;
-use crate::components::BlockType;
-use crate::constants::*;
+use crate::components::{BlockPos, BlockType};
+use crate::constants::BLOCK_SIZE;
+use num_traits::ToPrimitive;
 use std::collections::HashSet;
 
 impl WorldManager {
@@ -11,16 +12,17 @@ impl WorldManager {
 
         self.liquid_tick_counter += 1;
 
-        let active: Vec<(i32, i32)> = self.active_liquids.iter().cloned().collect();
+        let active: Vec<BlockPos> = self.active_liquids.iter().copied().collect();
         let mut next_active = HashSet::new();
 
-        let cam_bx = (camera_x / BLOCK_SIZE).floor() as i32;
-        let cam_by = (camera_y / BLOCK_SIZE).floor() as i32;
+        let cam_bx = (camera_x / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
+        let cam_by = (camera_y / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
         let radius = 60;
 
-        for (bx, by) in active {
+        for pos in active {
+            let (bx, by) = (pos.x, pos.y);
             if (bx - cam_bx).abs() > radius || (by - cam_by).abs() > radius {
-                next_active.insert((bx, by));
+                next_active.insert(BlockPos::new(bx, by));
                 continue;
             }
 
@@ -31,16 +33,15 @@ impl WorldManager {
                 let interval = b
                     .block_type
                     .get_data()
-                    .map(|d| d.tick_interval)
-                    .unwrap_or(1)
+                    .map_or(1, |d| d.tick_interval)
                     .max(1);
                 (b.liquid_level, b.block_type, interval)
             } else {
                 continue;
             };
 
-            if !self.liquid_tick_counter.is_multiple_of(interval as u64) {
-                next_active.insert((bx, by));
+            if !self.liquid_tick_counter.is_multiple_of(u64::from(interval)) {
+                next_active.insert(BlockPos::new(bx, by));
                 continue;
             }
 
@@ -56,8 +57,8 @@ impl WorldManager {
                         self.set_liquid_block(bx, by, level - transfer, b_type);
                         self.set_liquid_block(bx, by + 1, d_level + transfer, b_type);
 
-                        self.activate_neighbors(bx, by, &mut next_active);
-                        self.activate_neighbors(bx, by + 1, &mut next_active);
+                        Self::activate_neighbors(bx, by, &mut next_active);
+                        Self::activate_neighbors(bx, by + 1, &mut next_active);
                         moved = true;
                     }
                 }
@@ -68,7 +69,7 @@ impl WorldManager {
 
             // 2. Try Horizontal (Equalize among self and neighbors)
             let mut horizontal_cells = vec![(bx, level)];
-            let mut total_liquid = level as i32;
+            let mut total_liquid = i32::from(level);
 
             for dx in [-1, 1] {
                 let nx = bx + dx;
@@ -77,22 +78,22 @@ impl WorldManager {
                 {
                     // Only spread to air if we have enough pressure (level > 1)
                     if side.liquid_level > 0 || level > 1 {
-                        total_liquid += side.liquid_level as i32;
+                        total_liquid += i32::from(side.liquid_level);
                         horizontal_cells.push((nx, side.liquid_level));
                     }
                 }
             }
 
             if horizontal_cells.len() > 1 {
-                if (bx + by + self.liquid_tick_counter as i32) % 2 == 0 {
+                if (bx + by + i32::try_from(self.liquid_tick_counter).unwrap_or(0)) % 2 == 0 {
                     horizontal_cells.sort_by_key(|c| c.0);
                 } else {
                     horizontal_cells.sort_by_key(|c| -c.0);
                 }
 
-                let count = horizontal_cells.len() as i32;
-                let avg = (total_liquid / count) as u8;
-                let mut rem = (total_liquid % count) as u8;
+                let count = horizontal_cells.len().to_i32().unwrap_or(0);
+                let avg = total_liquid / count.to_i32().unwrap_or(0);
+                let mut rem = total_liquid % count.to_i32().unwrap_or(0);
 
                 for (cx, old_level) in horizontal_cells {
                     let new_level = avg
@@ -102,9 +103,9 @@ impl WorldManager {
                         } else {
                             0
                         });
-                    if new_level != old_level {
-                        self.set_liquid_block(cx, by, new_level, b_type);
-                        self.activate_neighbors(cx, by, &mut next_active);
+                    if new_level.to_u8().unwrap_or(0) != old_level {
+                        self.set_liquid_block(cx, by, new_level.to_u8().unwrap_or(0), b_type);
+                        Self::activate_neighbors(cx, by, &mut next_active);
                         moved = true;
                     }
                 }
@@ -122,9 +123,9 @@ impl WorldManager {
                 // Pressure exists if source is higher, OR same height but more liquid
                 if surface_y < by || (surface_y == by && surface_level > level) {
                     // Under pressure: Keep this block active.
-                    next_active.insert((bx, by));
+                    next_active.insert(BlockPos::new(bx, by));
                     if !moved {
-                        self.activate_neighbors(bx, by, &mut next_active);
+                        Self::activate_neighbors(bx, by, &mut next_active);
                     }
 
                     // Determine Target: Self (if not full) or Up (if full)
@@ -133,11 +134,12 @@ impl WorldManager {
                         (bx, by, level, true)
                     } else if let Some(up) = self.get_block_ref(bx, by - 1) {
                         let is_permeable = !up.block_type.is_solid() && up.liquid_level < 8;
-                        let mut not_trapped = true;
-                        if is_permeable {
+                        let not_trapped = if is_permeable {
                             // Check if air is trapped (sealed U-tube)
-                            not_trapped = !self.check_trapped_air(bx, by - 1);
-                        }
+                            !self.check_trapped_air(bx, by - 1)
+                        } else {
+                            true
+                        };
                         (bx, by - 1, up.liquid_level, is_permeable && not_trapped)
                     } else {
                         (bx, by - 1, 0, false)
@@ -149,20 +151,17 @@ impl WorldManager {
                             // Do nothing
                         } else {
                             // "Teleport" flow:
-                            let (s_level, s_type) =
-                                if let Some(s) = self.get_block_ref(surface_x, surface_y) {
-                                    (s.liquid_level, s.block_type)
-                                } else {
-                                    (0, BlockType::Air)
-                                };
+                            let (s_level, s_type) = self
+                                .get_block_ref(surface_x, surface_y)
+                                .map_or((0, BlockType::Air), |s| (s.liquid_level, s.block_type));
 
                             if s_level > 0 {
                                 // Execute Transfer
                                 self.set_liquid_block(surface_x, surface_y, s_level - 1, s_type);
                                 self.set_liquid_block(target_x, target_y, target_level + 1, b_type);
 
-                                self.activate_neighbors(surface_x, surface_y, &mut next_active);
-                                self.activate_neighbors(target_x, target_y, &mut next_active);
+                                Self::activate_neighbors(surface_x, surface_y, &mut next_active);
+                                Self::activate_neighbors(target_x, target_y, &mut next_active);
 
                                 moved = true;
                             }
@@ -176,45 +175,36 @@ impl WorldManager {
                 let is_settled = {
                     let d = self
                         .get_block_ref(bx, by + 1)
-                        .map(|b| b.block_type.is_solid() || b.liquid_level == 8)
-                        .unwrap_or(true);
+                        .map_or(true, |b| b.block_type.is_solid() || b.liquid_level == 8);
                     let l = self
                         .get_block_ref(bx - 1, by)
-                        .map(|b| b.block_type.is_solid() || b.liquid_level >= level)
-                        .unwrap_or(true);
+                        .map_or(true, |b| b.block_type.is_solid() || b.liquid_level >= level);
                     let r = self
                         .get_block_ref(bx + 1, by)
-                        .map(|b| b.block_type.is_solid() || b.liquid_level >= level)
-                        .unwrap_or(true);
+                        .map_or(true, |b| b.block_type.is_solid() || b.liquid_level >= level);
                     if level == 8 {
                         let u = self
                             .get_block_ref(bx, by - 1)
-                            .map(|b| b.block_type.is_solid() || b.liquid_level == 8)
-                            .unwrap_or(true);
+                            .map_or(true, |b| b.block_type.is_solid() || b.liquid_level == 8);
                         d && l && r && u
                     } else {
                         d && l && r
                     }
                 };
                 if !is_settled {
-                    next_active.insert((bx, by));
+                    next_active.insert(BlockPos::new(bx, by));
                 }
             }
         }
         self.active_liquids = next_active;
     }
 
-    pub(crate) fn activate_neighbors(
-        &self,
-        bx: i32,
-        by: i32,
-        next_active: &mut HashSet<(i32, i32)>,
-    ) {
-        next_active.insert((bx, by));
-        next_active.insert((bx, by - 1));
-        next_active.insert((bx, by + 1));
-        next_active.insert((bx - 1, by));
-        next_active.insert((bx + 1, by));
+    pub(crate) fn activate_neighbors(bx: i32, by: i32, next_active: &mut HashSet<BlockPos>) {
+        next_active.insert(BlockPos::new(bx, by));
+        next_active.insert(BlockPos::new(bx, by - 1));
+        next_active.insert(BlockPos::new(bx, by + 1));
+        next_active.insert(BlockPos::new(bx - 1, by));
+        next_active.insert(BlockPos::new(bx + 1, by));
     }
 
     pub(crate) fn set_liquid_block(&mut self, bx: i32, by: i32, level: u8, b_type: BlockType) {
@@ -237,15 +227,12 @@ impl WorldManager {
         &self,
         bx: i32,
         by: i32,
-        visited: &mut HashSet<(i32, i32)>,
+        visited: &mut HashSet<BlockPos>,
     ) -> (i32, i32, u8) {
         // Initial fallback level. If we can't find current block (shouldn't happen), assume 0.
-        let self_level = self
-            .get_block_ref(bx, by)
-            .map(|b| b.liquid_level)
-            .unwrap_or(0);
+        let self_level = self.get_block_ref(bx, by).map_or(0, |b| b.liquid_level);
 
-        if !visited.insert((bx, by)) || visited.len() > 2048 {
+        if !visited.insert(BlockPos::new(bx, by)) || visited.len() > 2048 {
             return (by, bx, self_level);
         }
 
@@ -254,7 +241,7 @@ impl WorldManager {
         // Check above in the same column
         let mut curr_y = by - 1;
         while let Some(b) = self.get_block_ref(bx, curr_y) {
-            visited.insert((bx, curr_y));
+            visited.insert(BlockPos::new(bx, curr_y));
             if b.liquid_level > 0 && !b.block_type.is_solid() {
                 // Better if Higher (smaller Y) OR Same Y but Higher Level
                 if curr_y < best_pos.0 || (curr_y == best_pos.0 && b.liquid_level > best_pos.2) {
@@ -295,7 +282,7 @@ impl WorldManager {
         let mut visited = HashSet::new();
         let mut queue = std::collections::VecDeque::new();
         queue.push_back((bx, by));
-        visited.insert((bx, by));
+        visited.insert(BlockPos::new(bx, by));
 
         let limit = 64; // Max air volume to consider "trapped"
 
@@ -313,14 +300,14 @@ impl WorldManager {
                 let nx = cx + dx;
                 let ny = cy + dy;
 
-                if visited.contains(&(nx, ny)) {
+                if visited.contains(&BlockPos::new(nx, ny)) {
                     continue;
                 }
 
                 if let Some(nb) = self.get_block_ref(nx, ny) {
                     if !nb.block_type.is_solid() && nb.liquid_level < 8 {
                         // Air or partial liquid passes
-                        visited.insert((nx, ny));
+                        visited.insert(BlockPos::new(nx, ny));
                         queue.push_back((nx, ny));
                     }
                     // Solid or Full Liquid blocks recursion

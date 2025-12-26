@@ -1,4 +1,4 @@
-use crate::components::MacroGrid;
+use crate::components::{BlockPos, MacroGrid};
 use noise::{Perlin, Seedable};
 use std::collections::{HashMap, HashSet};
 
@@ -10,11 +10,11 @@ pub mod update;
 pub mod view;
 
 pub struct WorldManager {
-    pub macrogrids: HashMap<(i32, i32), MacroGrid>,
-    pub generated_chunk_coords: HashSet<(i32, i32)>,
-    pub visited_chunks: HashSet<(i32, i32)>,
-    pub pending_modifications: HashMap<(i32, i32), crate::managers::persistence::ChunkSaveData>,
-    pub active_liquids: HashSet<(i32, i32)>,
+    pub macrogrids: HashMap<BlockPos, MacroGrid>,
+    pub generated_chunk_coords: HashSet<BlockPos>,
+    pub visited_chunks: HashSet<BlockPos>,
+    pub pending_modifications: HashMap<BlockPos, crate::managers::persistence::ChunkSaveData>,
+    pub active_liquids: HashSet<BlockPos>,
     pub liquid_tick_counter: u64,
     pub world_seed_main: u32,
     pub world_seed_ore: u32,

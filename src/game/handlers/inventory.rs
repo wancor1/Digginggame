@@ -5,8 +5,8 @@ pub fn open_warehouse(game: &mut Game) {
     game.ui_overlay = UIOverlay::Warehouse;
 }
 
-pub fn sell_item(game: &mut Game, item_type: String, quantity: usize) {
-    let price = match item_type.as_str() {
+pub fn sell_item(game: &mut Game, item_type: &str, quantity: usize) {
+    let price = match item_type {
         "Coal" => 10,
         "Stone" => 2,
         "Dirt" => 1,
@@ -40,7 +40,7 @@ pub fn sell_item(game: &mut Game, item_type: String, quantity: usize) {
     }
 }
 
-pub fn deposit_item(game: &mut Game, item_type: String, quantity: usize, renderer: &GameRenderer) {
+pub fn deposit_item(game: &mut Game, item_type: &str, quantity: usize, renderer: &GameRenderer) {
     let mut moved = 0;
     while moved < quantity
         && game.player_manager.player.storage.len()
@@ -64,16 +64,13 @@ pub fn deposit_item(game: &mut Game, item_type: String, quantity: usize, rendere
         && game.player_manager.player.storage.len()
             >= game.player_manager.player.max_storage as usize
     {
-        game.notification_manager.add_notification(
-            "Storage Full!".to_string(),
-            "error",
-            renderer.get_font(),
-        );
+        game.notification_manager
+            .add_notification("Storage Full!", "error", renderer.get_font());
     }
 }
 
-pub fn withdraw_item(game: &mut Game, item_type: String, quantity: usize, renderer: &GameRenderer) {
-    let weight = crate::utils::get_item_weight(&item_type);
+pub fn withdraw_item(game: &mut Game, item_type: &str, quantity: usize, renderer: &GameRenderer) {
+    let weight = crate::utils::get_item_weight(item_type);
     let mut moved = 0;
     while moved < quantity
         && game.player_manager.player.total_cargo_weight() + weight
@@ -99,11 +96,8 @@ pub fn withdraw_item(game: &mut Game, item_type: String, quantity: usize, render
         && game.player_manager.player.total_cargo_weight() + weight
             > game.player_manager.player.max_cargo
     {
-        game.notification_manager.add_notification(
-            "Cargo Full!".to_string(),
-            "error",
-            renderer.get_font(),
-        );
+        game.notification_manager
+            .add_notification("Cargo Full!", "error", renderer.get_font());
     }
 }
 

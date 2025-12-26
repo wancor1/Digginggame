@@ -1,6 +1,6 @@
 use super::WorldManager;
-use crate::components::{BlockType, Chunk};
-use crate::constants::*;
+use crate::components::{BlockPos, BlockType, Chunk};
+use crate::constants::{CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS};
 use crate::utils::chunk_to_macrogrid_coords;
 
 impl WorldManager {
@@ -16,7 +16,7 @@ impl WorldManager {
                 let cx = chunk_data.cx;
                 let cy = chunk_data.cy;
 
-                self.visited_chunks.insert((cx, cy));
+                self.visited_chunks.insert(BlockPos::new(cx, cy));
 
                 // If the chunk is ALREADY generated in memory, apply immediately.
                 // Otherwise, store it for later lazy loading.
@@ -27,7 +27,8 @@ impl WorldManager {
                 {
                     apply_chunk_save_data(chunk, &chunk_data);
                 } else {
-                    self.pending_modifications.insert((cx, cy), chunk_data);
+                    self.pending_modifications
+                        .insert(BlockPos::new(cx, cy), chunk_data);
                 }
             }
         }
@@ -73,7 +74,7 @@ pub fn apply_chunk_save_data(
         let bx = named_block.i as usize / CHUNK_SIZE_Y_BLOCKS;
         let by = named_block.i as usize % CHUNK_SIZE_Y_BLOCKS;
         if let Some(block) = chunk.get_block(bx, by) {
-            block.name = named_block.n.clone();
+            block.name.clone_from(&named_block.n);
         }
     }
 

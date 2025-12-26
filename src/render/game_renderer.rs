@@ -5,6 +5,7 @@ use crate::events::GameEvent;
 use ::rand::Rng;
 use macroquad::prelude::*;
 use macroquad::text::load_ttf_font_from_bytes;
+use num_traits::ToPrimitive;
 
 pub struct GameRenderer {
     atlas: Option<Texture2D>,
@@ -13,25 +14,32 @@ pub struct GameRenderer {
 }
 
 impl GameRenderer {
-    pub async fn new() -> Self {
+    /// Creates a new `GameRenderer` and loads the necessary assets.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the atlas image or font cannot be loaded.
+    pub fn new() -> Self {
         // Load Assets
         let atlas_bytes = include_bytes!("../../src/atlas.png");
-        let dynamic_image = image::load_from_memory(atlas_bytes).unwrap();
+        let dynamic_image =
+            image::load_from_memory(atlas_bytes).expect("Failed to load atlas image from memory");
         let rgba_image = dynamic_image.to_rgba8();
 
         let mq_image = macroquad::texture::Image {
-            width: rgba_image.width() as u16,
-            height: rgba_image.height() as u16,
+            width: rgba_image.width().to_u16().unwrap_or(0),
+            height: rgba_image.height().to_u16().unwrap_or(0),
             bytes: rgba_image.into_raw(),
         };
-        let atlas = Some(Texture2D::from_image(&mq_image));
-        atlas.as_ref().unwrap().set_filter(FilterMode::Nearest);
+        let atlas = Texture2D::from_image(&mq_image);
+        atlas.set_filter(FilterMode::Nearest);
 
         let font_bytes = include_bytes!("../../src/misaki_gothic.ttf");
-        let font = Some(load_ttf_font_from_bytes(font_bytes).unwrap());
+        let font =
+            Some(load_ttf_font_from_bytes(font_bytes).expect("Failed to load font from bytes"));
 
         Self {
-            atlas,
+            atlas: Some(atlas),
             atlas_image: Some(mq_image),
             font,
         }
@@ -39,13 +47,13 @@ impl GameRenderer {
 
     pub fn get_random_pixel_color(&self, rect: Rect) -> Color {
         if let Some(atlas_image) = &self.atlas_image {
-            let img_width = atlas_image.width as usize;
-            let img_height = atlas_image.height as usize;
+            let img_width = atlas_image.width.to_usize().unwrap_or(0);
+            let img_height = atlas_image.height.to_usize().unwrap_or(0);
 
-            let rect_x_start = rect.x as usize;
-            let rect_y_start = rect.y as usize;
-            let rect_x_end = (rect.x + rect.w) as usize;
-            let rect_y_end = (rect.y + rect.h) as usize;
+            let rect_x_start = rect.x.to_usize().unwrap_or(0);
+            let rect_y_start = rect.y.to_usize().unwrap_or(0);
+            let rect_x_end = (rect.x + rect.w).to_usize().unwrap_or(0);
+            let rect_y_end = (rect.y + rect.h).to_usize().unwrap_or(0);
 
             let mut rng = ::rand::rng();
 
@@ -69,15 +77,15 @@ impl GameRenderer {
             let index = (rand_y * img_width + rand_x) * 4;
 
             if index + 3 < atlas_image.bytes.len() {
-                let r = atlas_image.bytes[index] as u32;
-                let g = atlas_image.bytes[index + 1] as u32;
-                let b = atlas_image.bytes[index + 2] as u32;
-                let a = atlas_image.bytes[index + 3] as u32;
+                let r = atlas_image.bytes[index].to_u32().unwrap_or(0);
+                let g = atlas_image.bytes[index + 1].to_u32().unwrap_or(0);
+                let b = atlas_image.bytes[index + 2].to_u32().unwrap_or(0);
+                let a = atlas_image.bytes[index + 3].to_u32().unwrap_or(0);
                 Color::new(
-                    r as f32 / 255.0,
-                    g as f32 / 255.0,
-                    b as f32 / 255.0,
-                    a as f32 / 255.0,
+                    r.to_f32().unwrap_or(0.0) / 255.0,
+                    g.to_f32().unwrap_or(0.0) / 255.0,
+                    b.to_f32().unwrap_or(0.0) / 255.0,
+                    a.to_f32().unwrap_or(0.0) / 255.0,
                 )
             } else {
                 WHITE

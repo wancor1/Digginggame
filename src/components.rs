@@ -1,8 +1,37 @@
-use crate::constants::*;
+use crate::constants::{
+    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, PARTICLE_SPEED_MAX, PARTICLE_SPEED_MIN,
+    PLAYER_INITIAL_CARGO, PLAYER_INITIAL_FUEL,
+};
 use crate::utils::get_item_weight;
 
 use ::rand::Rng;
 use macroquad::prelude::*;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct BlockPos {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl BlockPos {
+    #[must_use]
+    pub const fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct ChunkRelPos {
+    pub x: usize,
+    pub y: usize,
+}
+
+impl ChunkRelPos {
+    #[must_use]
+    pub const fn new(x: usize, y: usize) -> Self {
+        Self { x, y }
+    }
+}
 
 pub struct Camera {
     pub x: f32,
@@ -18,7 +47,8 @@ impl Default for Camera {
 }
 
 impl Camera {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             x: 0.0,
             y: 0.0,
@@ -47,6 +77,7 @@ pub struct Particle {
 }
 
 impl Particle {
+    #[must_use]
     pub fn new(x_start: f32, y_start: f32, color: Color) -> Self {
         let mut rng = ::rand::rng();
         let center_x = x_start + BLOCK_SIZE / 2.0;
@@ -58,7 +89,7 @@ impl Particle {
             x: center_x,
             y: center_y,
             vx: angle.cos() * speed,
-            vy: angle.sin() * speed - 1.5,
+            vy: angle.sin().mul_add(speed, -1.5),
             color,
             alive: true,
             time_landed: None,
@@ -85,6 +116,7 @@ pub struct Block {
 }
 
 impl Block {
+    #[must_use]
     pub fn new(
         x: f32,
         y: f32,
@@ -117,7 +149,8 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(_cx: i32, _cy: i32) -> Self {
+    #[must_use]
+    pub const fn new(_cx: i32, _cy: i32) -> Self {
         Self {
             blocks: Vec::new(),
             is_generated: false,
@@ -138,7 +171,7 @@ impl Chunk {
 }
 
 pub struct MacroGrid {
-    pub chunks: std::collections::HashMap<(i32, i32), Chunk>,
+    pub chunks: std::collections::HashMap<BlockPos, Chunk>,
 }
 
 impl Default for MacroGrid {
@@ -148,6 +181,7 @@ impl Default for MacroGrid {
 }
 
 impl MacroGrid {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             chunks: std::collections::HashMap::new(),
@@ -187,7 +221,8 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(x: f32, y: f32) -> Self {
+    #[must_use]
+    pub const fn new(x: f32, y: f32) -> Self {
         Self {
             x,
             y,
@@ -213,10 +248,12 @@ impl Player {
         }
     }
 
-    pub fn rect(&self) -> Rect {
+    #[must_use]
+    pub const fn rect(&self) -> Rect {
         Rect::new(self.x, self.y, self.width, self.height)
     }
 
+    #[must_use]
     pub fn total_cargo_weight(&self) -> i32 {
         self.cargo
             .iter()
@@ -239,6 +276,7 @@ pub struct Item {
 }
 
 impl Item {
+    #[must_use]
     pub fn new(
         x: f32,
         y: f32,
@@ -261,7 +299,8 @@ impl Item {
         }
     }
 
-    pub fn rect(&self) -> Rect {
+    #[must_use]
+    pub const fn rect(&self) -> Rect {
         Rect::new(self.x, self.y, 4.0, 4.0) // Smaller than blocks
     }
 }

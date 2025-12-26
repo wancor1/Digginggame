@@ -1,8 +1,16 @@
-use crate::constants::*;
+use crate::constants::{
+    FONT_SIZE, NOTIFICATION_BG_COLOR, NOTIFICATION_FADE_IN_AMOUNT_Y_PER_FRAME,
+    NOTIFICATION_FADE_IN_OFFSET_Y, NOTIFICATION_FADE_OUT_ACCELERATION_X_PER_FRAME,
+    NOTIFICATION_FADE_OUT_INITIAL_AMOUNT_X_PER_FRAME, NOTIFICATION_LINE_SPACING,
+    NOTIFICATION_MAX_WIDTH, NOTIFICATION_PADDING_X, NOTIFICATION_PADDING_Y,
+    NOTIFICATION_TARGET_Y_TOLERANCE, NOTIFICATION_TEXT_COLOR_ERROR, NOTIFICATION_TEXT_COLOR_INFO,
+    NOTIFICATION_TEXT_COLOR_SUCCESS, SCREEN_WIDTH,
+};
 use macroquad::prelude::*;
 use macroquad::text::Font;
+use num_traits::ToPrimitive;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum NotificationState {
     FadingIn,
     Visible,
@@ -30,15 +38,16 @@ pub struct Notification {
 }
 
 impl Notification {
+    #[must_use]
     pub fn new(
-        message: String,
+        message: &str,
         duration: f64,
         msg_type: &str,
         max_width: f32,
         font: Option<&Font>,
     ) -> Self {
         let mut n = Self {
-            message: message.clone(),
+            message: message.to_string(),
             duration,
             msg_type: msg_type.to_string(),
             is_alive: true,
@@ -58,12 +67,13 @@ impl Notification {
     }
 
     fn calculate_dimensions(&mut self, max_width: f32, font: Option<&Font>) {
-        let font = match font {
-            Some(f) => f,
-            None => return, // Cannot calculate without a font
+        let Some(font) = font else {
+            return; // Cannot calculate without a font
         };
 
-        let measure = |s: &str| -> f32 { measure_text(s, Some(font), FONT_SIZE as u16, 1.0).width };
+        let measure = |s: &str| -> f32 {
+            measure_text(s, Some(font), FONT_SIZE.to_u16().unwrap_or(0), 1.0).width
+        };
 
         let space_width = measure(" ");
         let words: Vec<&str> = self.message.split(' ').collect();
@@ -126,8 +136,8 @@ impl Notification {
         self.wrapped_lines = lines;
 
         let line_count = self.wrapped_lines.len();
-        self.box_height = (line_count as f32 * FONT_SIZE)
-            + (line_count.saturating_sub(1) as f32 * NOTIFICATION_LINE_SPACING)
+        self.box_height = (line_count.to_f32().unwrap_or(0.0) * FONT_SIZE)
+            + (line_count.saturating_sub(1).to_f32().unwrap_or(0.0) * NOTIFICATION_LINE_SPACING)
             + NOTIFICATION_PADDING_Y * 2.0;
 
         let max_line_w = self
@@ -209,7 +219,7 @@ impl Notification {
         draw_rectangle_lines(sx.floor(), sy.floor(), sw, sh, 1.0, text_col);
 
         let mut y_off = sy + NOTIFICATION_PADDING_Y * scale;
-        let s_font_size = (FONT_SIZE * scale).floor() as u16;
+        let s_font_size = (FONT_SIZE * scale).floor().to_u16().unwrap_or(0);
         for line in &self.wrapped_lines {
             draw_text_ex(
                 line,

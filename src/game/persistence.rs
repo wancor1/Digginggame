@@ -1,9 +1,11 @@
 use super::Game;
+use crate::components::BlockPos;
 use crate::components::OwnedItem;
-use crate::constants::*;
+use crate::constants::{CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, MACROGRID_SIZE_CHUNKS};
 use crate::managers::persistence::{
     BlockSaveData, ChunkSaveData, ItemStack, SAVE_VERSION, SaveData,
 };
+use num_traits::ToPrimitive;
 
 impl Game {
     fn stack_items(items: &[OwnedItem]) -> Vec<ItemStack> {
@@ -27,18 +29,26 @@ impl Game {
         stacks
     }
 
+    #[must_use]
     pub fn make_save_data(&self) -> SaveData {
         let mut modified_macrogrids: Vec<crate::managers::persistence::MacroGridSaveData> =
             Vec::new();
 
-        for (&(mgx, mgy), macrogrid) in self.world_manager.macrogrids.iter() {
+        for (BlockPos { x: mgx, y: mgy }, macrogrid) in &self.world_manager.macrogrids {
             let mut chunks_in_mg: Vec<ChunkSaveData> = Vec::new();
 
-            for (&(rel_cx, rel_cy), chunk) in macrogrid.chunks.iter() {
+            for (
+                BlockPos {
+                    x: rel_cx,
+                    y: rel_cy,
+                },
+                chunk,
+            ) in &macrogrid.chunks
+            {
                 if chunk.is_modified_in_session {
-                    let cx = mgx * MACROGRID_SIZE_CHUNKS as i32 + rel_cx;
+                    let cx = mgx * MACROGRID_SIZE_CHUNKS.to_i32().unwrap_or(0) + rel_cx;
 
-                    let cy = mgy * MACROGRID_SIZE_CHUNKS as i32 + rel_cy;
+                    let cy = mgy * MACROGRID_SIZE_CHUNKS.to_i32().unwrap_or(0) + rel_cy;
 
                     let mut rle_blocks: Vec<u32> = Vec::new();
 
@@ -54,7 +64,11 @@ impl Game {
                             let block = &chunk.blocks[bx][by];
                             let type_id = block.block_type.to_id();
                             let level = block.liquid_level;
-                            let index = (bx * CHUNK_SIZE_Y_BLOCKS + by) as u32;
+                            let index: u32 = (bx * CHUNK_SIZE_Y_BLOCKS + by)
+                                .to_u32()
+                                .unwrap_or(0)
+                                .to_u32()
+                                .unwrap_or(0);
 
                             if let Some(name) = &block.name {
                                 named_blocks.push(BlockSaveData {
@@ -69,7 +83,7 @@ impl Game {
                                     current_count += 1;
                                 } else {
                                     rle_blocks.push(l_id);
-                                    rle_blocks.push(l_lvl as u32);
+                                    rle_blocks.push(u32::from(l_lvl));
                                     rle_blocks.push(current_count);
 
                                     last_type_id = Some(type_id);
@@ -86,7 +100,7 @@ impl Game {
 
                     if let Some(l_id) = last_type_id {
                         rle_blocks.push(l_id);
-                        rle_blocks.push(last_level as u32);
+                        rle_blocks.push(u32::from(last_level));
                         rle_blocks.push(current_count);
                     }
 
@@ -104,9 +118,9 @@ impl Game {
 
             if !chunks_in_mg.is_empty() {
                 modified_macrogrids.push(crate::managers::persistence::MacroGridSaveData {
-                    mgx,
+                    mgx: *mgx,
 
-                    mgy,
+                    mgy: *mgy,
 
                     chunks: chunks_in_mg,
                 });
@@ -121,14 +135,14 @@ impl Game {
 
             if let Some(mg_data) = modified_macrogrids
                 .iter_mut()
-                .find(|mg| mg.mgx == mg_coords.0 && mg.mgy == mg_coords.1)
+                .find(|mg| mg.mgx == mg_coords.x && mg.mgy == mg_coords.y)
             {
                 mg_data.chunks.push(chunk_data.clone());
             } else {
                 modified_macrogrids.push(crate::managers::persistence::MacroGridSaveData {
-                    mgx: mg_coords.0,
+                    mgx: mg_coords.x,
 
-                    mgy: mg_coords.1,
+                    mgy: mg_coords.y,
 
                     chunks: vec![chunk_data.clone()],
                 });

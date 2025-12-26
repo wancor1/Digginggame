@@ -1,4 +1,5 @@
-use crate::constants::*;
+use crate::components::BlockPos;
+use crate::constants::BLOCK_SIZE;
 use crate::game::{Game, GameState, UIOverlay};
 use crate::render::game_renderer::GameRenderer;
 
@@ -58,11 +59,8 @@ pub fn confirm_warp_gate_name(game: &mut Game, name: String, renderer: &GameRend
 
     game.state = GameState::Playing;
     game.input_buffer.clear();
-    game.notification_manager.add_notification(
-        "Warp Gate Placed!".to_string(),
-        "success",
-        renderer.get_font(),
-    );
+    game.notification_manager
+        .add_notification("Warp Gate Placed!", "success", renderer.get_font());
 }
 
 pub fn open_warp_menu(game: &mut Game) {
@@ -79,7 +77,7 @@ pub fn teleport_to_warp(game: &mut Game, idx: usize, renderer: &GameRenderer) {
         game.state = GameState::Playing;
         game.ui_overlay = UIOverlay::None;
         game.notification_manager.add_notification(
-            format!("Warped to {}!", gate.name),
+            &format!("Warped to {}!", gate.name),
             "success",
             renderer.get_font(),
         );
@@ -90,7 +88,7 @@ pub fn sync_warp_gates(game: &mut Game) {
     let mut discovered = Vec::new();
 
     // Scan all visited chunks for WarpGate blocks
-    for &(cx, cy) in &game.world_manager.visited_chunks {
+    for &BlockPos { x: cx, y: cy } in &game.world_manager.visited_chunks {
         if let Some(chunk) = game.world_manager.get_chunk(cx, cy) {
             if !chunk.is_generated {
                 continue;
@@ -114,7 +112,7 @@ pub fn sync_warp_gates(game: &mut Game) {
             .player
             .warp_gates
             .iter()
-            .any(|w| w.x == x && w.y == y)
+            .any(|w| (w.x - x).abs() < f32::EPSILON && (w.y - y).abs() < f32::EPSILON)
         {
             game.player_manager
                 .player

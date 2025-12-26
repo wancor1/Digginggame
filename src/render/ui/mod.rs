@@ -1,5 +1,5 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::{FONT_SIZE, SCREEN_WIDTH, SPRITE_CURSOR};
 use crate::events::GameEvent;
 use macroquad::prelude::*;
 use macroquad::text::Font;

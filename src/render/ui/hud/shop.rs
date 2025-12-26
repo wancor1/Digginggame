@@ -1,5 +1,5 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use macroquad::prelude::*;
@@ -48,8 +48,8 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     let dc = game.player_manager.player.drill_level * 100;
     let drill_name = game.lang_manager.get_string("shop.upgrade.drill");
     let drill_label = format!(
-        "{} Lv{} (${})",
-        drill_name, game.player_manager.player.drill_level, dc
+        "{drill_name} Lv{} (${dc})",
+        game.player_manager.player.drill_level
     );
     let purchase_label = game.lang_manager.get_string("shop.purchase");
     if draw_button(
@@ -72,8 +72,8 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     let tc = game.player_manager.player.tank_level * 80;
     let tank_name = game.lang_manager.get_string("shop.upgrade.tank");
     let tank_label = format!(
-        "{} Lv{} (${})",
-        tank_name, game.player_manager.player.tank_level, tc
+        "{tank_name} Lv{} (${tc})",
+        game.player_manager.player.tank_level
     );
     if draw_button(
         ButtonParams {
@@ -95,8 +95,8 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     let ec = game.player_manager.player.engine_level * 120;
     let engine_name = game.lang_manager.get_string("shop.upgrade.engine");
     let engine_label = format!(
-        "{} Lv{} (${})",
-        engine_name, game.player_manager.player.engine_level, ec
+        "{engine_name} Lv{} (${ec})",
+        game.player_manager.player.engine_level
     );
     if draw_button(
         ButtonParams {
@@ -118,8 +118,8 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     let cc = game.player_manager.player.cargo_level * 150;
     let cargo_name = game.lang_manager.get_string("shop.upgrade.cargo");
     let cargo_label = format!(
-        "{} Lv{} (${})",
-        cargo_name, game.player_manager.player.cargo_level, cc
+        "{cargo_name} Lv{} (${cc})",
+        game.player_manager.player.cargo_level
     );
     if draw_button(
         ButtonParams {
@@ -141,8 +141,8 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     let hrc = game.player_manager.player.heat_resistance_level * 200;
     let heat_name = game.lang_manager.get_string("shop.upgrade.heat_res");
     let heat_label = format!(
-        "{} Lv{} (${})",
-        heat_name, game.player_manager.player.heat_resistance_level, hrc
+        "{heat_name} Lv{} (${hrc})",
+        game.player_manager.player.heat_resistance_level
     );
     if draw_button(
         ButtonParams {
@@ -162,7 +162,7 @@ pub fn draw_shop(game: &Game, ctx: &mut MenuRenderContext) {
     cur_y += 12.0 * ctx.scale;
 
     let wg_name = game.lang_manager.get_string("shop.buy.warpgate");
-    let wg_label = format!("{} ($500)", wg_name);
+    let wg_label = format!("{wg_name} ($500)");
     if draw_button(
         ButtonParams {
             x: mx + 5.0 * ctx.scale,

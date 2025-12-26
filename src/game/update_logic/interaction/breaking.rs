@@ -1,10 +1,11 @@
 use crate::Game;
-use crate::components::{BlockType, Particle};
-use crate::constants::*;
+use crate::components::{BlockPos, BlockType, Particle};
+use crate::constants::{BLOCK_SIZE, HEAT_RESISTANCE_STEP, TEMPERATURE_DEBUFF_THRESHOLD};
 use crate::render::game_renderer::GameRenderer;
 use crate::utils::{get_temperature, world_to_chunk_coords};
 use ::rand::Rng;
 use macroquad::prelude::*;
+use num_traits::ToPrimitive;
 
 pub fn handle_block_interaction(
     game: &mut Game,
@@ -12,7 +13,10 @@ pub fn handle_block_interaction(
     world_my: f32,
     game_renderer: &GameRenderer,
 ) {
-    let (target_cx, target_cy) = world_to_chunk_coords(world_mx, world_my);
+    let BlockPos {
+        x: target_cx,
+        y: target_cy,
+    } = world_to_chunk_coords(world_mx, world_my);
     game.world_manager
         .ensure_chunk_exists_and_generated(target_cx, target_cy);
 
@@ -28,8 +32,8 @@ pub fn handle_block_interaction(
             let old_type = block.block_type;
             let block_x = block.x;
             let block_y = block.y;
-            let bx = (block_x / BLOCK_SIZE).floor() as i32;
-            let by = (block_y / BLOCK_SIZE).floor() as i32;
+            let bx = (block_x / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
+            let by = (block_y / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
 
             if block.liquid_level > 0 {
                 if let Some(it) = old_type.get_data().and_then(|d| d.item_type.clone()) {
@@ -38,7 +42,7 @@ pub fn handle_block_interaction(
                         > game.player_manager.player.max_cargo
                     {
                         game.notification_manager.add_notification(
-                            "Cargo Full!".to_string(),
+                            "Cargo Full!",
                             "error",
                             game_renderer.get_font(),
                         );
@@ -72,11 +76,18 @@ pub fn handle_block_interaction(
             }
         } else if block.max_hp != -1 {
             let temp = get_temperature(game.player_manager.player.y);
-            let resistance = (game.player_manager.player.heat_resistance_level - 1) as f32
+            let resistance = (game.player_manager.player.heat_resistance_level - 1)
+                .to_f32()
+                .unwrap_or(0.0)
                 * HEAT_RESISTANCE_STEP;
             let effective_temp = temp - resistance;
 
-            let mut drill_power = game.player_manager.player.drill_level as f32;
+            let mut drill_power = game
+                .player_manager
+                .player
+                .drill_level
+                .to_f32()
+                .unwrap_or(0.0);
 
             if effective_temp >= TEMPERATURE_DEBUFF_THRESHOLD {
                 drill_power /= 2.0;
@@ -84,7 +95,9 @@ pub fn handle_block_interaction(
                 drill_power -= excess;
             }
 
-            block.current_hp -= drill_power.max(1.0) as i32;
+            {
+                block.current_hp -= drill_power.max(1.0).to_i32().unwrap_or(0);
+            }
             block.last_damage_time = Some(get_time());
 
             if block.current_hp <= 0 {
@@ -98,16 +111,13 @@ pub fn handle_block_interaction(
 
                 // Handle WarpGate special removal
                 if old_block_type == BlockType::WarpGate
-                    && let Some(pos) = game
-                        .player_manager
-                        .player
-                        .warp_gates
-                        .iter()
-                        .position(|w| w.x == block_x && w.y == block_y)
+                    && let Some(pos) = game.player_manager.player.warp_gates.iter().position(|w| {
+                        (w.x - block_x).abs() < f32::EPSILON && (w.y - block_y).abs() < f32::EPSILON
+                    })
                 {
                     game.player_manager.player.warp_gates.remove(pos);
                     game.notification_manager.add_notification(
-                        "Warp Gate Destroyed!".to_string(),
+                        "Warp Gate Destroyed!",
                         "info",
                         game_renderer.get_font(),
                     );
@@ -118,8 +128,8 @@ pub fn handle_block_interaction(
                 block.is_modified = true;
                 block.block_type = BlockType::Air;
 
-                let bx = (block_x / BLOCK_SIZE).floor() as i32;
-                let by = (block_y / BLOCK_SIZE).floor() as i32;
+                let bx = (block_x / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
+                let by = (block_y / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
                 liquid_to_activate.push((bx, by - 1));
                 liquid_to_activate.push((bx, by + 1));
                 liquid_to_activate.push((bx - 1, by));
@@ -143,8 +153,10 @@ pub fn handle_block_interaction(
         }
     }
 
-    for pos in liquid_to_activate {
-        game.world_manager.active_liquids.insert(pos);
+    for (lx, ly) in liquid_to_activate {
+        game.world_manager
+            .active_liquids
+            .insert(BlockPos::new(lx, ly));
     }
 
     if should_mark_modified

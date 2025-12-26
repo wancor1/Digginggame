@@ -24,7 +24,7 @@ pub fn try_interact_functional_block(
             .player
             .warp_gates
             .iter()
-            .any(|w| w.x == block_x && w.y == block_y)
+            .any(|w| (w.x - block_x).abs() < f32::EPSILON && (w.y - block_y).abs() < f32::EPSILON)
         {
             game.player_manager
                 .player

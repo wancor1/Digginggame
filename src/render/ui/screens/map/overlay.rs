@@ -1,6 +1,6 @@
 use crate::Game;
-use crate::constants::*;
-use crate::render::ui::common::MenuRenderContext;
+use crate::constants::{BLOCK_SIZE, SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use macroquad::prelude::*;
 
 pub fn draw_overlay_ui(
@@ -129,7 +129,7 @@ pub fn draw_confirmation_dialog(game: &mut Game, ctx: &mut MenuRenderContext) {
         draw_rectangle_lines(dx, dy, dialog_w, dialog_h, 2.0 * ctx.scale, WHITE);
 
         if let Some(font) = ctx.font {
-            let prompt = format!("Warp to {}?", gate_name);
+            let prompt = format!("Warp to {gate_name}?");
             let prompt_size = measure_text(&prompt, Some(font), ctx.font_size, 1.0);
             draw_text_ex(
                 &prompt,
@@ -144,7 +144,6 @@ pub fn draw_confirmation_dialog(game: &mut Game, ctx: &mut MenuRenderContext) {
             );
 
             // YES Button
-            use crate::render::ui::common::{ButtonParams, draw_button};
             let btn_w = 35.0 * ctx.scale;
             let btn_h = 12.0 * ctx.scale;
 

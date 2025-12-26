@@ -1,17 +1,33 @@
 use super::WorldManager;
 use crate::components::{Block, BlockType};
-use crate::constants::*;
+use crate::constants::{
+    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, SCREEN_HEIGHT, SCREEN_WIDTH,
+    SURFACE_Y_LEVEL,
+};
 use crate::utils::chunk_to_macrogrid_coords;
 use macroquad::prelude::*;
+use num_traits::ToPrimitive;
 
 impl WorldManager {
     pub fn generate_visible_chunks(&mut self, camera_x: f32, camera_y: f32) {
-        let start_cx = (camera_x / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let start_cy = (camera_y / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let end_cx =
-            ((camera_x + SCREEN_WIDTH) / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let end_cy =
-            ((camera_y + SCREEN_HEIGHT) / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
+        let start_cx = (camera_x / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let start_cy = (camera_y / (CHUNK_SIZE_Y_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let end_cx = ((camera_x + SCREEN_WIDTH)
+            / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let end_cy = ((camera_y + SCREEN_HEIGHT)
+            / (CHUNK_SIZE_Y_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
 
         for cx in start_cx..=end_cx {
             for cy in start_cy..=end_cy {
@@ -29,12 +45,24 @@ impl WorldManager {
             SCREEN_HEIGHT + BLOCK_SIZE * 2.0,
         );
 
-        let start_cx = (view_rect.x / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let start_cy = (view_rect.y / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let end_cx = ((view_rect.x + view_rect.w) / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE))
-            .floor() as i32;
-        let end_cy = ((view_rect.y + view_rect.h) / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE))
-            .floor() as i32;
+        let start_cx = (view_rect.x / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let start_cy = (view_rect.y / (CHUNK_SIZE_Y_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let end_cx = ((view_rect.x + view_rect.w)
+            / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let end_cy = ((view_rect.y + view_rect.h)
+            / (CHUNK_SIZE_Y_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
 
         for cx in start_cx..=end_cx {
             for cy in start_cy..=end_cy {
@@ -55,7 +83,8 @@ impl WorldManager {
                             // 1. It's not broken
                             // 2. It has a background to show (back_type != Air)
                             // 3. It's underground (so we can draw black background)
-                            let is_underground = block.y >= SURFACE_Y_LEVEL as f32 * BLOCK_SIZE;
+                            let is_underground =
+                                block.y >= SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0) * BLOCK_SIZE;
                             let should_render = (!block.is_broken)
                                 || (block.back_type != BlockType::Air)
                                 || is_underground;
@@ -85,12 +114,24 @@ impl WorldManager {
             SCREEN_HEIGHT + BLOCK_SIZE * 2.0,
         );
 
-        let start_cx = (view_rect.x / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let start_cy = (view_rect.y / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE)).floor() as i32;
-        let end_cx = ((view_rect.x + view_rect.w) / (CHUNK_SIZE_X_BLOCKS as f32 * BLOCK_SIZE))
-            .floor() as i32;
-        let end_cy = ((view_rect.y + view_rect.h) / (CHUNK_SIZE_Y_BLOCKS as f32 * BLOCK_SIZE))
-            .floor() as i32;
+        let start_cx = (view_rect.x / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let start_cy = (view_rect.y / (CHUNK_SIZE_Y_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let end_cx = ((view_rect.x + view_rect.w)
+            / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
+        let end_cy = ((view_rect.y + view_rect.h)
+            / (CHUNK_SIZE_Y_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
+            .floor()
+            .to_i32()
+            .unwrap_or(0);
 
         for cx in start_cx..=end_cx {
             for cy in start_cy..=end_cy {
@@ -105,7 +146,8 @@ impl WorldManager {
                             // 1. It's not broken
                             // 2. It has a background to show (back_type != Air)
                             // 3. It's underground (so we can draw black background)
-                            let is_underground = block.y >= SURFACE_Y_LEVEL as f32 * BLOCK_SIZE;
+                            let is_underground =
+                                block.y >= SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0) * BLOCK_SIZE;
                             let should_render = (!block.is_broken)
                                 || (block.back_type != BlockType::Air)
                                 || is_underground;

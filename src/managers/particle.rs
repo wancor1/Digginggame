@@ -16,7 +16,8 @@ impl Default for ParticleManager {
 }
 
 impl ParticleManager {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             active_particles: Vec::new(),
         }
@@ -68,10 +69,12 @@ impl ParticleManager {
 
             if is_on_ground {
                 let now = get_time();
-                if particle.time_landed.is_none() {
+                if let Some(time_landed) = particle.time_landed {
+                    if now - time_landed > MAX_LIFESPAN_ON_GROUND_SEC {
+                        particle.alive = false;
+                    }
+                } else {
                     particle.time_landed = Some(now);
-                } else if now - particle.time_landed.unwrap() > MAX_LIFESPAN_ON_GROUND_SEC {
-                    particle.alive = false;
                 }
             } else {
                 particle.time_landed = None;

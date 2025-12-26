@@ -1,4 +1,7 @@
-use crate::constants::*;
+use crate::constants::{
+    BLOCK_SIZE, SELECTION_ENLARGE_AMOUNT, SELECTION_PULSE_DURATION, SPRITE_SELECT_LARGE,
+    SPRITE_SELECT_NORMAL,
+};
 use macroquad::prelude::*;
 use macroquad::texture::Texture2D;
 
@@ -17,7 +20,8 @@ impl Default for SelectBlock {
 }
 
 impl SelectBlock {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             selection_effect_start_time: 0.0,
             is_effect_active: false,
@@ -47,16 +51,24 @@ impl SelectBlock {
         self.is_valid = is_valid;
     }
 
-    pub fn get_block_coords(&self) -> Option<(f32, f32)> {
+    #[must_use]
+    pub const fn get_block_coords(&self) -> Option<(f32, f32)> {
         self.block_coords
     }
 
+    /// Draws the selection block.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `block_coords` is `None` when `is_effect_active` is `true`.
     pub fn draw(&mut self, camera_x: f32, camera_y: f32, atlas: &Texture2D) {
         if !self.is_effect_active {
             return;
         }
 
-        let (world_block_x, world_block_y) = self.block_coords.unwrap();
+        let (world_block_x, world_block_y) = self
+            .block_coords
+            .expect("block_coords should be Some when is_effect_active is true");
 
         let screen_x = (world_block_x - camera_x).round();
         let screen_y = (world_block_y - camera_y).round();

@@ -1,5 +1,5 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::{BLOCK_SIZE, SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::render::ui::common::MenuRenderContext;
 use macroquad::prelude::*;
 
