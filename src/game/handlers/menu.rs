@@ -13,7 +13,7 @@ pub fn open_save_selection(game: &mut Game) {
 }
 
 pub fn load_save(game: &mut Game, filename: String) {
-    game.current_save_name = filename.clone();
+    game.current_save_name.clone_from(&filename);
     game.persistence_manager.load_game(filename);
     game.state = GameState::Playing;
 }
@@ -23,9 +23,12 @@ pub fn start_new_game_setup(game: &mut Game) {
     game.input_buffer.clear();
 }
 
-pub fn confirm_new_game(game: &mut Game, name: String, renderer: &GameRenderer) {
-    let mut filename = name.clone();
-    if !filename.ends_with(".dat") {
+pub fn confirm_new_game(game: &mut Game, name: &str, renderer: &GameRenderer) {
+    let mut filename = name.to_string();
+    if !std::path::Path::new(&filename)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("dat"))
+    {
         filename.push_str(".dat");
     }
     game.current_save_name = filename;
@@ -51,11 +54,8 @@ pub fn confirm_new_game(game: &mut Game, name: String, renderer: &GameRenderer) 
             name: "Home".to_string(),
         });
 
-    game.notification_manager.add_notification(
-        "New Game!".to_string(),
-        "success",
-        renderer.get_font(),
-    );
+    game.notification_manager
+        .add_notification("New Game!", "success", renderer.get_font());
 }
 
 pub fn save_game(game: &mut Game) {

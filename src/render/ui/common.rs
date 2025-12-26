@@ -1,8 +1,11 @@
-use crate::constants::*;
+use crate::constants::{
+    COLOR_BUTTON_BG, COLOR_BUTTON_BORDER, COLOR_BUTTON_PRESSED_BG, COLOR_BUTTON_TEXT,
+};
 use macroquad::prelude::*;
 use macroquad::text::Font;
 use macroquad::texture::Texture2D;
 
+#[derive(Clone, Copy)]
 pub struct ButtonParams<'a> {
     pub x: f32,
     pub y: f32,
@@ -53,7 +56,7 @@ pub fn draw_button(params: ButtonParams, font: Option<&Font>) -> bool {
 
     let t_measure = measure_text(&label, font, params.font_size, 1.0);
     let tx = params.x + (params.w - t_measure.width) / 2.0;
-    let ty = params.y + (params.h + t_measure.height) / 2.0;
+    let ty = params.y + f32::midpoint(params.h, t_measure.height);
 
     draw_text_ex(
         &label,

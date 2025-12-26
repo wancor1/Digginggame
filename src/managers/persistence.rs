@@ -19,7 +19,7 @@ pub struct BlockSaveData {
 pub struct ChunkSaveData {
     pub cx: i32,
     pub cy: i32,
-    /// Flat RLE encoded blocks: [type_id, count, type_id, count, ...]
+    /// Flat RLE encoded blocks: [`type_id`, level, count, `type_id`, level, count, ...]
     /// This represents the entire chunk state efficiently in a single array.
     pub blocks: Vec<u32>,
     /// Special blocks that need additional data (like names)
@@ -63,34 +63,35 @@ pub struct SaveData {
     pub world_seed_main: u32,
     pub world_seed_ore: u32,
     #[serde(default, with = "visited_chunks_format")]
-    pub visited_chunks: std::collections::HashSet<(i32, i32)>,
+    pub visited_chunks: std::collections::HashSet<crate::components::BlockPos>,
     pub modified_macrogrids: Vec<MacroGridSaveData>,
 }
 
 mod visited_chunks_format {
+    use crate::components::BlockPos;
     use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
     use std::collections::HashSet;
 
     pub fn serialize<S>(
-        visited_chunks: &HashSet<(i32, i32)>,
+        visited_chunks: &HashSet<BlockPos>,
         serializer: S,
     ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let mut flat = Vec::with_capacity(visited_chunks.len() * 2);
-        let mut v: Vec<(i32, i32)> = visited_chunks.iter().cloned().collect();
+        let mut v: Vec<BlockPos> = visited_chunks.iter().copied().collect();
         // Sorting improves zstd compression ratio
-        v.sort_unstable_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
+        v.sort_unstable_by(|a, b| a.x.cmp(&b.x).then(a.y.cmp(&b.y)));
 
-        for (x, y) in v {
-            flat.push(x);
-            flat.push(y);
+        for pos in v {
+            flat.push(pos.x);
+            flat.push(pos.y);
         }
         flat.serialize(serializer)
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashSet<(i32, i32)>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashSet<BlockPos>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -106,11 +107,14 @@ mod visited_chunks_format {
             VisitedChunksData::Flat(flat) => {
                 let mut set = HashSet::with_capacity(flat.len() / 2);
                 for chunk in flat.chunks_exact(2) {
-                    set.insert((chunk[0], chunk[1]));
+                    set.insert(BlockPos::new(chunk[0], chunk[1]));
                 }
                 Ok(set)
             }
-            VisitedChunksData::Pairs(pairs) => Ok(pairs.into_iter().collect()),
+            VisitedChunksData::Pairs(pairs) => Ok(pairs
+                .into_iter()
+                .map(|(x, y)| BlockPos::new(x, y))
+                .collect()),
         }
     }
 }
@@ -120,6 +124,12 @@ pub struct PersistenceManager {
     pub is_loading: bool,
     save_result: Arc<Mutex<Option<Result<String, String>>>>,
     load_result: Arc<Mutex<Option<Result<SaveData, String>>>>,
+}
+
+impl Default for PersistenceManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PersistenceManager {
@@ -157,6 +167,11 @@ impl PersistenceManager {
         files
     }
 
+    /// Saves the game state to a file.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal lock is poisoned.
     pub fn save_game(&mut self, filename: String, data: SaveData) {
         if self.is_saving {
             return;
@@ -178,7 +193,7 @@ impl PersistenceManager {
             })();
 
             let res_final = match res {
-                Ok(_) => Ok("Save Successful".to_string()),
+                Ok(()) => Ok("Save Successful".to_string()),
                 Err(e) => Err(e.to_string()),
             };
 
@@ -187,6 +202,11 @@ impl PersistenceManager {
         });
     }
 
+    /// Loads the game state from a file.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal lock is poisoned.
     pub fn load_game(&mut self, filename: String) {
         if self.is_loading {
             return;
@@ -214,6 +234,11 @@ impl PersistenceManager {
         });
     }
 
+    /// Checks if a save operation has completed.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal lock is poisoned.
     pub fn check_save_status(&mut self) -> Option<Result<String, String>> {
         let mut lock = self.save_result.lock().unwrap();
         if lock.is_some() {
@@ -223,6 +248,11 @@ impl PersistenceManager {
         None
     }
 
+    /// Checks if a load operation has completed.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the internal lock is poisoned.
     pub fn check_load_status(&mut self) -> Option<Result<SaveData, String>> {
         let mut lock = self.load_result.lock().unwrap();
         if lock.is_some() {

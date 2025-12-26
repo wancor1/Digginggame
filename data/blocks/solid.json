@@ -1,0 +1,79 @@
+[
+  {
+    "id": 1,
+    "key": "dirt",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 5,
+    "sprite": { "x": 48.0, "y": 8.0, "w": 8.0, "h": 8.0 },
+    "item_type": "dirt",
+    "weight": 5,
+    "map_color": [139, 69, 19]
+  },
+  {
+    "id": 2,
+    "key": "grass_block",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 3,
+    "sprite": { "x": 48.0, "y": 0.0, "w": 8.0, "h": 8.0 },
+    "item_type": "grass_block",
+    "weight": 3,
+    "map_color": [34, 139, 34]
+  },
+  {
+    "id": 3,
+    "key": "stone",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 15,
+    "sprite": { "x": 48.0, "y": 16.0, "w": 8.0, "h": 8.0 },
+    "item_type": "stone",
+    "weight": 20,
+    "map_color": [128, 128, 128]
+  },
+  {
+    "id": 4,
+    "key": "indestructible",
+    "is_solid": true,
+    "is_placeable": false,
+    "base_hardness": -1,
+    "sprite": { "x": 48.0, "y": 24.0, "w": 8.0, "h": 8.0 },
+    "item_type": null,
+    "weight": 0,
+    "map_color": [50, 50, 50]
+  },
+  {
+    "id": 100,
+    "key": "coal",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 18,
+    "sprite": { "x": 128.0, "y": 0.0, "w": 8.0, "h": 8.0 },
+    "item_type": "coal",
+    "weight": 10,
+    "map_color": [30, 30, 30]
+  },
+  {
+    "id": 101,
+    "key": "oil_shale",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 0,
+    "sprite": { "x": 128.0, "y": 8.0, "w": 8.0, "h": 8.0 },
+    "item_type": "oil_shale",
+    "weight": 0,
+    "map_color": [100, 80, 60]
+  },
+  {
+    "id": 102,
+    "key": "limestone",
+    "is_solid": true,
+    "is_placeable": true,
+    "base_hardness": 0,
+    "sprite": { "x": 128.0, "y": 16.0, "w": 8.0, "h": 8.0 },
+    "item_type": "limestone",
+    "weight": 0,
+    "map_color": [200, 200, 180]
+  }
+]

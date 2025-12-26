@@ -14,8 +14,7 @@ use ratatui::{
 use std::{fs, io, path::Path, time::Duration};
 use tui_textarea::TextArea;
 
-mod models;
-use models::SaveData;
+use digginggame::managers::persistence::SaveData;
 
 const SAVE_DIR: &str = "saves";
 
@@ -34,9 +33,9 @@ struct App<'a> {
     current_filename: Option<String>,
 }
 
-impl<'a> App<'a> {
-    fn new() -> App<'a> {
-        App {
+impl App<'_> {
+    fn new() -> Self {
+        Self {
             mode: AppMode::FileList,
             files: Vec::new(),
             list_state: ListState::default(),
@@ -70,26 +69,25 @@ impl<'a> App<'a> {
             self.current_filename = Some(filename.clone());
 
             let path = Path::new(SAVE_DIR).join(filename);
-            match self.read_and_decode(&path) {
+            match Self::read_and_decode(&path) {
                 Ok(json_content) => {
                     self.textarea = TextArea::from(json_content.lines());
                     self.textarea
                         .set_block(Block::default().borders(Borders::ALL).title(format!(
-                            " Editing: {} (Ctrl+S to Save, Esc to Cancel) ",
-                            filename
+                            " Editing: {filename} (Ctrl+S to Save, Esc to Cancel) "
                         )));
                     self.textarea
                         .set_line_number_style(Style::default().fg(Color::DarkGray));
                     self.mode = AppMode::Editing;
                 }
                 Err(e) => {
-                    self.mode = AppMode::Error(format!("Failed to load: {}", e));
+                    self.mode = AppMode::Error(format!("Failed to load: {e}"));
                 }
             }
         }
     }
 
-    fn read_and_decode(&self, path: &Path) -> Result<String> {
+    fn read_and_decode(path: &Path) -> Result<String> {
         let compressed = fs::read(path).context("Failed to read file")?;
         let decompressed = zstd::decode_all(&compressed[..]).context("Failed to decompress")?;
         // First deserialize to SaveData to validate structure (optional, but good practice)
@@ -120,7 +118,7 @@ impl<'a> App<'a> {
                                     // Write
                                     if let Err(e) = fs::write(&path, compressed) {
                                         self.mode =
-                                            AppMode::Error(format!("Failed to write file: {}", e));
+                                            AppMode::Error(format!("Failed to write file: {e}"));
                                     } else {
                                         self.mode = AppMode::Success(
                                             "Saved successfully! Press Enter.".to_string(),
@@ -128,17 +126,17 @@ impl<'a> App<'a> {
                                     }
                                 }
                                 Err(e) => {
-                                    self.mode = AppMode::Error(format!("Compression failed: {}", e))
+                                    self.mode = AppMode::Error(format!("Compression failed: {e}"));
                                 }
                             }
                         }
                         Err(e) => {
-                            self.mode = AppMode::Error(format!("Serialization failed: {}", e))
+                            self.mode = AppMode::Error(format!("Serialization failed: {e}"));
                         }
                     }
                 }
                 Err(e) => {
-                    self.mode = AppMode::Error(format!("Invalid Save Data Structure: {}", e));
+                    self.mode = AppMode::Error(format!("Invalid Save Data Structure: {e}"));
                 }
             }
         }
@@ -202,7 +200,7 @@ fn main() -> Result<()> {
     terminal.show_cursor()?;
 
     if let Err(err) = res {
-        println!("{:?}", err);
+        println!("{err:?}");
     }
 
     Ok(())
@@ -212,41 +210,36 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
     loop {
         terminal.draw(|f| ui(f, app))?;
 
-        #[allow(clippy::collapsible_if)]
-        if event::poll(Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                match app.mode {
-                    AppMode::FileList => match key.code {
-                        KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Down => app.next_file(),
-                        KeyCode::Up => app.previous_file(),
-                        KeyCode::Enter => app.load_selected_file(),
-                        KeyCode::Char('r') => app.refresh_file_list(),
-                        _ => {} // Ignore other keys
-                    },
-                    AppMode::Editing => {
-                        // Check for Ctrl+S
-                        if key.code == KeyCode::Char('s')
-                            && key.modifiers.contains(KeyModifiers::CONTROL)
-                        {
-                            app.save_current_file();
-                        } else if key.code == KeyCode::Esc {
-                            app.mode = AppMode::FileList;
-                            app.current_filename = None;
-                        } else {
-                            // Forward to textarea
-                            // Convert crossterm key to tui-textarea key
-                            app.textarea.input(key);
-                        }
+        if event::poll(Duration::from_millis(100))?
+            && let Event::Key(key) = event::read()?
+        {
+            match app.mode {
+                AppMode::FileList => match key.code {
+                    KeyCode::Char('q') => return Ok(()),
+                    KeyCode::Down => app.next_file(),
+                    KeyCode::Up => app.previous_file(),
+                    KeyCode::Enter => app.load_selected_file(),
+                    KeyCode::Char('r') => app.refresh_file_list(),
+                    _ => {} // Ignore other keys
+                },
+                AppMode::Editing => {
+                    // Check for Ctrl+S
+                    if key.code == KeyCode::Char('s')
+                        && key.modifiers.contains(KeyModifiers::CONTROL)
+                    {
+                        app.save_current_file();
+                    } else if key.code == KeyCode::Esc {
+                        app.mode = AppMode::FileList;
+                        app.current_filename = None;
+                    } else {
+                        // Forward to textarea
+                        // Convert crossterm key to tui-textarea key
+                        app.textarea.input(key);
                     }
-                    AppMode::Error(_) | AppMode::Success(_) => {
-                        if key.code == KeyCode::Enter || key.code == KeyCode::Esc {
-                            if matches!(app.mode, AppMode::Success(_)) {
-                                app.mode = AppMode::Editing; // Return to editing
-                            } else {
-                                app.mode = AppMode::Editing; // Return to editing even on error to fix it
-                            }
-                        }
+                }
+                AppMode::Error(_) | AppMode::Success(_) => {
+                    if key.code == KeyCode::Enter || key.code == KeyCode::Esc {
+                        app.mode = AppMode::Editing; // Return to editing
                     }
                 }
             }
@@ -288,7 +281,7 @@ fn ui(f: &mut Frame, app: &mut App) {
             f.render_widget(&app.textarea, chunks[0]);
         }
         AppMode::Error(msg) => {
-            let p = Paragraph::new(format!("Error: {}\n\nPress Enter to continue.", msg)).block(
+            let p = Paragraph::new(format!("Error: {msg}\n\nPress Enter to continue.")).block(
                 Block::default()
                     .borders(Borders::ALL)
                     .title(" Error ")
@@ -297,7 +290,7 @@ fn ui(f: &mut Frame, app: &mut App) {
             f.render_widget(p, chunks[0]);
         }
         AppMode::Success(msg) => {
-            let p = Paragraph::new(format!("{}\n\nPress Enter to continue editing.", msg)).block(
+            let p = Paragraph::new(format!("{msg}\n\nPress Enter to continue editing.")).block(
                 Block::default()
                     .borders(Borders::ALL)
                     .title(" Success ")

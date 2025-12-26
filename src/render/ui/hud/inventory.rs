@@ -1,6 +1,6 @@
 use crate::Game;
 use crate::components::BlockType;
-use crate::constants::*;
+use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use macroquad::prelude::*;
@@ -65,7 +65,7 @@ pub fn draw_inventory(game: &Game, ctx: &mut MenuRenderContext) {
         let weight = crate::utils::get_item_weight(it) * count;
         let label = format!(
             "{}: {} ({}kg)",
-            game.lang_manager.get_string(&format!("block.{}.name", it)),
+            game.lang_manager.get_string(&format!("block.{it}.name")),
             count,
             weight
         );

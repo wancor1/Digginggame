@@ -1,5 +1,5 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::{FONT_SIZE, SCREEN_WIDTH, SPRITE_CURSOR};
 use crate::events::GameEvent;
 use macroquad::prelude::*;
 use macroquad::text::Font;
@@ -17,7 +17,10 @@ impl UIRenderer {
 
         let (render_width, _, offset_x, offset_y) = crate::utils::get_render_dimensions();
 
-        let scale = render_width / SCREEN_WIDTH;
+        let rw = render_width.floor();
+        let ox = offset_x.floor();
+        let oy = offset_y.floor();
+        let scale = rw / SCREEN_WIDTH;
         let s_font_size = (FONT_SIZE * scale).floor() as u16;
 
         set_default_camera();
@@ -27,8 +30,8 @@ impl UIRenderer {
                 font,
                 atlas,
                 scale,
-                offset_x,
-                offset_y,
+                offset_x: ox,
+                offset_y: oy,
                 font_size: s_font_size,
                 events: &mut events,
             };

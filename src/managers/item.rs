@@ -1,5 +1,5 @@
 use crate::components::{Block, Item, Player};
-use crate::constants::*;
+use crate::constants::{BLOCK_SIZE, PLAYER_FRICTION_AIR, PLAYER_FRICTION_GROUND, PLAYER_GRAVITY};
 use crate::utils::get_item_weight;
 use macroquad::prelude::*;
 
@@ -14,7 +14,8 @@ impl Default for ItemManager {
 }
 
 impl ItemManager {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self { items: Vec::new() }
     }
 
@@ -34,7 +35,7 @@ impl ItemManager {
     pub fn update(&mut self, player: &mut Player, blocks: &[&Block]) {
         let player_rect = player.rect();
 
-        for item in self.items.iter_mut() {
+        for item in &mut self.items {
             if !item.alive {
                 continue;
             }
@@ -53,6 +54,9 @@ impl ItemManager {
             item_rect_x.h -= 0.2;
 
             for block in blocks {
+                if block.is_broken || !block.block_type.is_solid() {
+                    continue;
+                }
                 let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
                 if item_rect_x.overlaps(&block_rect) {
                     if item.vx > 0.0 {
@@ -74,6 +78,9 @@ impl ItemManager {
             let mut _on_ground = false;
 
             for block in blocks {
+                if block.is_broken || !block.block_type.is_solid() {
+                    continue;
+                }
                 let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
                 if item_rect_y.overlaps(&block_rect) {
                     if item.vy > 0.0 {

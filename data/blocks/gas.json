@@ -1,0 +1,13 @@
+[
+  {
+    "id": 0,
+    "key": "air",
+    "is_solid": false,
+    "is_placeable": false,
+    "base_hardness": 0,
+    "sprite": null,
+    "item_type": null,
+    "weight": 0,
+    "map_color": [0, 0, 0]
+  }
+]

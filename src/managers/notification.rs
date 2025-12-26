@@ -1,4 +1,7 @@
-use crate::constants::*;
+use crate::constants::{
+    MAX_NOTIFICATIONS, NOTIFICATION_INTER_ITEM_SPACING, NOTIFICATION_MAX_DISPLAY_TIME,
+    NOTIFICATION_MAX_WIDTH, NOTIFICATION_PADDING_X, NOTIFICATION_PADDING_Y, SCREEN_WIDTH,
+};
 use crate::ui::{Notification, NotificationState};
 use macroquad::prelude::*;
 
@@ -6,18 +9,25 @@ pub struct NotificationManager {
     pub notifications: Vec<Notification>,
 }
 
+impl Default for NotificationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotificationManager {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {
             notifications: Vec::new(),
         }
     }
 
-    pub fn add_notification(&mut self, message: String, msg_type: &str, font: Option<&Font>) {
-        let max_width = NOTIFICATION_MAX_WIDTH - NOTIFICATION_PADDING_X * 2.0;
+    pub fn add_notification(&mut self, message: &str, msg_type: &str, font: Option<&Font>) {
+        let max_width = NOTIFICATION_PADDING_X.mul_add(-2.0, NOTIFICATION_MAX_WIDTH);
         let notif = Notification::new(
             message,
-            NOTIFICATION_MAX_DISPLAY_TIME as f64,
+            f64::from(NOTIFICATION_MAX_DISPLAY_TIME),
             msg_type,
             max_width,
             font,

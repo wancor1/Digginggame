@@ -74,6 +74,9 @@ pub const PLAYER_FRICTION_GROUND: f32 = 0.8;
 pub const PLAYER_TERMINAL_XVELOCITY: f32 = 1.25;
 pub const PLAYER_TERMINAL_YVELOCITY: f32 = 2.25;
 
+pub const LIQUID_RESISTANCE: f32 = 0.8;
+pub const LIQUID_BUOYANCY: f32 = 0.15;
+
 // Sprites
 pub const SPRITE_SELECT_NORMAL: Rect = Rect {
     x: 24.0,

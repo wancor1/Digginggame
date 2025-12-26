@@ -1,5 +1,5 @@
 use crate::components::Camera;
-use crate::constants::*;
+use crate::constants::{PLAYER_INITIAL_X, PLAYER_INITIAL_Y, SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::managers::{
     ItemManager, LanguageManager, NotificationManager, ParticleManager, PersistenceManager,
     PlayerManager, WorldManager,
@@ -71,7 +71,8 @@ pub struct Game {
 }
 
 impl Game {
-    pub async fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             world_manager: WorldManager::new(),
             particle_manager: ParticleManager::new(),
@@ -123,37 +124,7 @@ impl Game {
                         self.ui_overlay = UIOverlay::None;
                     }
                 } else if self.ui_overlay == UIOverlay::Map {
-                    if self.is_key_pressed_buffered(KeyCode::Escape)
-                        || self.is_key_pressed_buffered(KeyCode::M)
-                    {
-                        self.ui_overlay = UIOverlay::None;
-                        self.clear_inputs();
-                    }
-
-                    if self.is_key_pressed_buffered(KeyCode::Equal)
-                        || self.is_key_pressed_buffered(KeyCode::KpAdd)
-                    {
-                        self.map_zoom = (self.map_zoom * 2.0).min(32.0);
-                    }
-                    if self.is_key_pressed_buffered(KeyCode::Minus)
-                        || self.is_key_pressed_buffered(KeyCode::KpSubtract)
-                    {
-                        self.map_zoom = (self.map_zoom / 2.0).max(1.0 / 32.0);
-                    }
-
-                    let move_speed = 5.0 / self.map_zoom;
-                    if is_key_down(KeyCode::W) || is_key_down(KeyCode::Up) {
-                        self.map_view_y -= move_speed;
-                    }
-                    if is_key_down(KeyCode::S) || is_key_down(KeyCode::Down) {
-                        self.map_view_y += move_speed;
-                    }
-                    if is_key_down(KeyCode::A) || is_key_down(KeyCode::Left) {
-                        self.map_view_x -= move_speed;
-                    }
-                    if is_key_down(KeyCode::D) || is_key_down(KeyCode::Right) {
-                        self.map_view_x += move_speed;
-                    }
+                    handlers::map::handle_map_input(self);
                 } else {
                     self.handle_gameplay_update(game_renderer);
                 }
@@ -168,12 +139,12 @@ impl Game {
                 Err(msg) => ("error", msg),
             };
             self.notification_manager
-                .add_notification(msg, t, game_renderer.get_font());
+                .add_notification(&msg, t, game_renderer.get_font());
         }
     }
 
     pub fn capture_input(&mut self) {
-        let keys_to_capture = [
+        const KEYS_TO_CAPTURE: [KeyCode; 21] = [
             KeyCode::Escape,
             KeyCode::I,
             KeyCode::M,
@@ -196,7 +167,7 @@ impl Game {
             KeyCode::Left,
             KeyCode::Right,
         ];
-        for key in keys_to_capture {
+        for key in KEYS_TO_CAPTURE {
             if is_key_pressed(key) {
                 self.key_presses.push(key);
             }
@@ -245,7 +216,7 @@ impl Game {
         self.current_save_name = "savegame.dat".to_string();
         self.input_buffer = String::new();
         self.notification_manager.add_notification(
-            "Returned to Title Screen".to_string(),
+            "Returned to Title Screen",
             "info",
             game_renderer.get_font(),
         );
@@ -257,7 +228,7 @@ impl Game {
         self.camera.y = PLAYER_INITIAL_Y - SCREEN_HEIGHT / 2.0;
     }
 
-    pub fn return_to_title_from_save_select(&mut self) {
+    pub const fn return_to_title_from_save_select(&mut self) {
         self.state = GameState::Title;
         self.ui_overlay = UIOverlay::None;
     }

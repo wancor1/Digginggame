@@ -1,27 +1,47 @@
 use crate::components::Player;
-use crate::constants::*;
+use crate::constants::{
+    BLOCK_SIZE, LIQUID_BUOYANCY, LIQUID_RESISTANCE, PLAYER_FRICTION_AIR, PLAYER_FRICTION_GROUND,
+    PLAYER_GRAVITY, PLAYER_TERMINAL_XVELOCITY, PLAYER_TERMINAL_YVELOCITY, SURFACE_Y_LEVEL,
+};
 use crate::managers::world::WorldManager;
 use macroquad::prelude::*;
+use num_traits::ToPrimitive;
 
 pub struct PlayerManager {
     pub player: Player,
 }
 
 impl PlayerManager {
-    pub fn new(x: f32, y: f32) -> Self {
+    #[must_use]
+    pub const fn new(x: f32, y: f32) -> Self {
         Self {
             player: Player::new(x, y),
         }
     }
 
     pub fn update(&mut self, world_manager: &mut WorldManager) {
+        let liquid_level = self.get_liquid_level(world_manager);
         let (move_vec, dash_mult) = self.process_input();
-        self.apply_movement(move_vec, dash_mult);
-        self.apply_physics(dash_mult);
+        self.apply_movement(move_vec, dash_mult, liquid_level);
+        self.apply_physics(dash_mult, liquid_level);
 
         self.perform_movement_and_collisions(world_manager);
 
         self.handle_surface_logic();
+    }
+
+    fn get_liquid_level(&self, world_manager: &mut WorldManager) -> u8 {
+        let px = self.player.x + self.player.width / 2.0;
+        let py = self.player.y + self.player.height / 2.0;
+        if let Some((_, _, _, _, block)) = world_manager.get_block_at_world_coords(px, py) {
+            if block.block_type.is_liquid() {
+                block.liquid_level
+            } else {
+                0
+            }
+        } else {
+            0
+        }
     }
 
     fn process_input(&mut self) -> (Vec2, f32) {
@@ -45,18 +65,25 @@ impl PlayerManager {
         (move_vec, dash_mult)
     }
 
-    fn apply_movement(&mut self, move_vec: Vec2, dash_mult: f32) {
-        let base_accel = 0.2 + (self.player.engine_level as f32 - 1.0) * 0.1;
+    fn apply_movement(&mut self, move_vec: Vec2, dash_mult: f32, liquid_level: u8) {
+        let mut base_accel =
+            (self.player.engine_level.to_f32().unwrap_or(0.0) - 1.0).mul_add(0.1, 0.2);
 
-        if move_vec.x != 0.0 {
-            self.player.vx += move_vec.x * base_accel * dash_mult;
-        } else {
+        if liquid_level > 0 {
+            let effect_ratio = f32::from(liquid_level) / 8.0;
+            base_accel *= 0.5f32.mul_add(-effect_ratio, 1.0);
+        }
+
+        if move_vec.x == 0.0 {
             self.player.vx *= PLAYER_FRICTION_GROUND;
+        } else {
+            self.player.vx += move_vec.x * base_accel * dash_mult;
         }
     }
 
-    fn apply_physics(&mut self, dash_mult: f32) {
-        let base_thrust = 0.15 + (self.player.engine_level as f32 - 1.0) * 0.08;
+    fn apply_physics(&mut self, dash_mult: f32, liquid_level: u8) {
+        let base_thrust =
+            (self.player.engine_level.to_f32().unwrap_or(0.0) - 1.0).mul_add(0.08, 0.15);
 
         // Vertical movement (Thrust)
         if (is_key_down(KeyCode::Up) || is_key_down(KeyCode::W) || is_key_down(KeyCode::Space))
@@ -69,16 +96,29 @@ impl PlayerManager {
         // Gravity
         self.player.vy += PLAYER_GRAVITY;
 
+        // Buoyancy and Resistance
+        if liquid_level > 0 {
+            let effect_ratio = f32::from(liquid_level) / 8.0;
+
+            // Buoyancy
+            self.player.vy -= LIQUID_BUOYANCY * effect_ratio;
+
+            // Friction/Resistance
+            let resistance = (1.0 - LIQUID_RESISTANCE).mul_add(-effect_ratio, 1.0);
+            self.player.vx *= resistance;
+            self.player.vy *= resistance;
+        }
+
         // Friction
         self.player.vx *= PLAYER_FRICTION_AIR;
         self.player.vy *= PLAYER_FRICTION_AIR;
 
         // Clamp Velocity
         let max_xvel = PLAYER_TERMINAL_XVELOCITY
-            * (1.0 + (self.player.engine_level as f32 - 1.0) * 0.2)
+            * (self.player.engine_level.to_f32().unwrap_or(0.0) - 1.0).mul_add(0.2, 1.0)
             * dash_mult;
         let max_yvel = PLAYER_TERMINAL_YVELOCITY
-            * (1.0 + (self.player.engine_level as f32 - 1.0) * 0.2)
+            * (self.player.engine_level.to_f32().unwrap_or(0.0) - 1.0).mul_add(0.2, 1.0)
             * dash_mult;
         self.player.vx = self.player.vx.clamp(-max_xvel, max_xvel);
         self.player.vy = self.player.vy.clamp(-max_yvel, max_yvel);
@@ -93,12 +133,12 @@ impl PlayerManager {
     }
 
     fn handle_surface_logic(&mut self) {
-        if self.player.y < (SURFACE_Y_LEVEL as f32 * BLOCK_SIZE) + 4.0 {
+        if self.player.y < (SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0)).mul_add(BLOCK_SIZE, 4.0) {
             // Auto-store natural items
             let mut i = 0;
             while i < self.player.cargo.len() {
                 if self.player.cargo[i].is_auto_stored
-                    && self.player.storage.len() < self.player.max_storage as usize
+                    && self.player.storage.len() < self.player.max_storage.to_usize().unwrap_or(0)
                 {
                     let item = self.player.cargo.remove(i);
                     self.player.storage.push(item);
@@ -116,10 +156,18 @@ impl PlayerManager {
 
     fn handle_collisions(&mut self, world_manager: &mut WorldManager, is_x: bool) {
         let player_box = self.player.rect();
-        let start_x = (player_box.x / BLOCK_SIZE).floor() as i32 - 1;
-        let start_y = (player_box.y / BLOCK_SIZE).floor() as i32 - 1;
-        let end_x = ((player_box.x + player_box.w) / BLOCK_SIZE).floor() as i32 + 1;
-        let end_y = ((player_box.y + player_box.h) / BLOCK_SIZE).floor() as i32 + 1;
+        let start_x = (player_box.x / BLOCK_SIZE).floor().to_i32().unwrap_or(0) - 1;
+        let start_y = (player_box.y / BLOCK_SIZE).floor().to_i32().unwrap_or(0) - 1;
+        let end_x = ((player_box.x + player_box.w) / BLOCK_SIZE)
+            .floor()
+            .to_i32()
+            .unwrap_or(0)
+            + 1;
+        let end_y = ((player_box.y + player_box.h) / BLOCK_SIZE)
+            .floor()
+            .to_i32()
+            .unwrap_or(0)
+            + 1;
 
         for x in start_x..=end_x {
             for y in start_y..=end_y {
@@ -135,8 +183,8 @@ impl PlayerManager {
         y: i32,
         is_x: bool,
     ) {
-        let world_x = x as f32 * BLOCK_SIZE;
-        let world_y = y as f32 * BLOCK_SIZE;
+        let world_x = x.to_f32().unwrap_or(0.0) * BLOCK_SIZE;
+        let world_y = y.to_f32().unwrap_or(0.0) * BLOCK_SIZE;
 
         if let Some((_, _, _, _, block)) = world_manager.get_block_at_world_coords(world_x, world_y)
             && !block.is_broken

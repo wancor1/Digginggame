@@ -7,13 +7,13 @@ pub fn upgrade_drill(game: &mut Game, renderer: &GameRenderer) {
         game.player_manager.player.money -= cost;
         game.player_manager.player.drill_level += 1;
         game.notification_manager.add_notification(
-            "Drill Upgraded!".to_string(),
+            "Drill Upgraded!",
             "success",
             renderer.get_font(),
         );
     } else {
         game.notification_manager.add_notification(
-            "Not enough money!".to_string(),
+            "Not enough money!",
             "error",
             renderer.get_font(),
         );
@@ -28,13 +28,13 @@ pub fn upgrade_tank(game: &mut Game, renderer: &GameRenderer) {
         game.player_manager.player.max_fuel += 50.0;
         game.player_manager.player.fuel = game.player_manager.player.max_fuel;
         game.notification_manager.add_notification(
-            "Tank Upgraded!".to_string(),
+            "Tank Upgraded!",
             "success",
             renderer.get_font(),
         );
     } else {
         game.notification_manager.add_notification(
-            "Not enough money!".to_string(),
+            "Not enough money!",
             "error",
             renderer.get_font(),
         );
@@ -47,13 +47,13 @@ pub fn upgrade_engine(game: &mut Game, renderer: &GameRenderer) {
         game.player_manager.player.money -= cost;
         game.player_manager.player.engine_level += 1;
         game.notification_manager.add_notification(
-            "Engine Upgraded!".to_string(),
+            "Engine Upgraded!",
             "success",
             renderer.get_font(),
         );
     } else {
         game.notification_manager.add_notification(
-            "Not enough money!".to_string(),
+            "Not enough money!",
             "error",
             renderer.get_font(),
         );
@@ -67,13 +67,13 @@ pub fn upgrade_cargo(game: &mut Game, renderer: &GameRenderer) {
         game.player_manager.player.cargo_level += 1;
         game.player_manager.player.max_cargo += 250;
         game.notification_manager.add_notification(
-            "Cargo Upgraded!".to_string(),
+            "Cargo Upgraded!",
             "success",
             renderer.get_font(),
         );
     } else {
         game.notification_manager.add_notification(
-            "Not enough money!".to_string(),
+            "Not enough money!",
             "error",
             renderer.get_font(),
         );
@@ -86,13 +86,13 @@ pub fn upgrade_heat_resistance(game: &mut Game, renderer: &GameRenderer) {
         game.player_manager.player.money -= cost;
         game.player_manager.player.heat_resistance_level += 1;
         game.notification_manager.add_notification(
-            "Heat Res. Upgraded!".to_string(),
+            "Heat Res. Upgraded!",
             "success",
             renderer.get_font(),
         );
     } else {
         game.notification_manager.add_notification(
-            "Not enough money!".to_string(),
+            "Not enough money!",
             "error",
             renderer.get_font(),
         );
@@ -112,20 +112,17 @@ pub fn buy_warp_gate(game: &mut Game, renderer: &GameRenderer) {
                     is_auto_stored: false,
                 });
             game.notification_manager.add_notification(
-                "Warp Gate Purchased!".to_string(),
+                "Warp Gate Purchased!",
                 "success",
                 renderer.get_font(),
             );
         } else {
-            game.notification_manager.add_notification(
-                "Cargo Full!".to_string(),
-                "error",
-                renderer.get_font(),
-            );
+            game.notification_manager
+                .add_notification("Cargo Full!", "error", renderer.get_font());
         }
     } else {
         game.notification_manager.add_notification(
-            "Not enough money!".to_string(),
+            "Not enough money!",
             "error",
             renderer.get_font(),
         );

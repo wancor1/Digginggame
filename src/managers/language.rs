@@ -10,7 +10,14 @@ pub struct LanguageManager {
     pub translations: HashMap<String, String>,
 }
 
+impl Default for LanguageManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LanguageManager {
+    #[must_use]
     pub fn new() -> Self {
         let mut manager = Self {
             current_lang_code: DEFAULT_LANGUAGE.to_string(),
@@ -55,12 +62,13 @@ impl LanguageManager {
         }
     }
 
+    #[must_use]
     pub fn _get_available_languages(&self) -> HashMap<String, String> {
         self.languages.clone()
     }
 
     pub fn load_language(&mut self, lang_code: &str) -> bool {
-        let path = Path::new(LANG_FOLDER).join(format!("{}.json", lang_code));
+        let path = Path::new(LANG_FOLDER).join(format!("{lang_code}.json"));
         if let Ok(content) = fs::read_to_string(path)
             && let Ok(json) = serde_json::from_str::<HashMap<String, Value>>(&content)
         {
@@ -76,6 +84,7 @@ impl LanguageManager {
         false
     }
 
+    #[must_use]
     pub fn get_string(&self, key: &str) -> String {
         self.translations
             .get(key)
@@ -86,10 +95,11 @@ impl LanguageManager {
     // Rust doesn't support **kwargs in the same way. We'll use a simple format replacement helper if needed,
     // or just return the string. The Python code uses .format(**kwargs).
     // Start with basic get_string.
+    #[must_use]
     pub fn _get_string_fmt(&self, key: &str, args: &[(&str, &str)]) -> String {
         let mut s = self.get_string(key);
         for (k, v) in args {
-            s = s.replace(&format!("{{{}}}", k), v);
+            s = s.replace(&format!("{{{k}}}"), v);
         }
         s
     }

@@ -1,5 +1,5 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::SCREEN_WIDTH;
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use macroquad::prelude::*;

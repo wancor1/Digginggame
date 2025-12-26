@@ -1,9 +1,12 @@
 use crate::Game;
 use crate::components::BlockType;
-use crate::constants::*;
+use crate::constants::{
+    BLOCK_SIZE, CAMERA_DEADZONE_RADIUS, SCREEN_HEIGHT, SCREEN_WIDTH, SURFACE_Y_LEVEL,
+};
 use crate::game::UIOverlay;
 use crate::render::game_renderer::GameRenderer;
 use macroquad::prelude::*;
+use num_traits::ToPrimitive;
 
 pub fn handle_gameplay_update(game: &mut Game, game_renderer: &GameRenderer) {
     update_ui_state(game);
@@ -14,7 +17,8 @@ pub fn handle_gameplay_update(game: &mut Game, game_renderer: &GameRenderer) {
 
     update_camera(game);
 
-    game.on_surface = game.player_manager.player.y < (SURFACE_Y_LEVEL as f32 * BLOCK_SIZE) + 8.0;
+    game.on_surface = game.player_manager.player.y
+        < (SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0)).mul_add(BLOCK_SIZE, 8.0);
 
     update_world(game);
 
@@ -64,7 +68,7 @@ fn update_camera(game: &mut Game) {
 
     let dx = player_center_x - camera_center_x;
     let dy = player_center_y - camera_center_y;
-    let distance = (dx * dx + dy * dy).sqrt();
+    let distance = dx.hypot(dy);
 
     if distance > CAMERA_DEADZONE_RADIUS {
         let angle = dy.atan2(dx);
@@ -78,59 +82,66 @@ fn update_camera(game: &mut Game) {
 fn update_world(game: &mut Game) {
     game.world_manager
         .generate_visible_chunks(game.camera.x, game.camera.y);
+    game.world_manager
+        .update_liquids(game.camera.x, game.camera.y);
     game.world_manager.update();
 }
 
 fn get_world_mouse_coords(camera: &crate::components::Camera) -> (f32, f32) {
-    let mx = (mouse_position().0 / screen_width()) * SCREEN_WIDTH;
-    let my = (mouse_position().1 / screen_height()) * SCREEN_HEIGHT;
+    let (mx, my) = crate::utils::get_game_mouse_position();
     ((mx + camera.x).round(), (my + camera.y).round())
 }
 
 fn update_interaction_preview(game: &mut Game, world_mx: f32, world_my: f32) {
-    let hovered_block_coords = game
+    let target_block_info = game
         .world_manager
-        .get_block_at_world_coords(world_mx, world_my)
+        .get_block_at_world_coords(world_mx, world_my);
+
+    let hovered_block_coords = target_block_info
+        .as_ref()
         .map(|(_, _, _, _, block)| (block.x, block.y));
 
     let mut preview_sprite = None;
-    let mut is_valid = true;
+    let mut is_valid = false;
 
-    let current_item_type = game
-        .player_manager
-        .player
-        .cargo
-        .get(game.selected_item_index)
-        .map(|it| it.item_type.clone());
+    // Use a labeled block to allow breaking out early while keeping the final update call reachable
+    'logic: {
+        let current_item_type = match game
+            .player_manager
+            .player
+            .cargo
+            .get(game.selected_item_index)
+        {
+            Some(it) => &it.item_type,
+            None => break 'logic,
+        };
 
-    if let Some(item_type) = current_item_type {
-        let bt = BlockType::from_item_type(&item_type);
-        let potential_sprite = bt.as_ref().and_then(|t| t.get_sprite());
+        let Some(bt) = BlockType::from_item_type(current_item_type) else {
+            break 'logic;
+        };
 
-        if let Some(sprite) = potential_sprite {
-            if let Some((_, _, _, _, block)) = game
-                .world_manager
-                .get_block_at_world_coords(world_mx, world_my)
-            {
-                if let Some(BlockType::WarpGate) = bt {
-                    if block.block_type != BlockType::Air {
-                        is_valid = false;
-                    } else {
-                        preview_sprite = Some(sprite);
-                    }
-                } else if !block.is_broken {
-                    is_valid = false;
-                } else {
-                    preview_sprite = Some(sprite);
-                    let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
-                    let player_rect = game.player_manager.player.rect();
-                    if block_rect.overlaps(&player_rect) {
-                        is_valid = false;
-                    }
-                }
-            } else {
-                is_valid = false;
+        let Some(sprite) = crate::managers::block::BlockType::get_sprite(&bt) else {
+            break 'logic;
+        };
+
+        let Some((_, _, _, _, block)) = target_block_info else {
+            break 'logic;
+        };
+
+        // Logic determines if the interaction is valid
+        if bt == BlockType::WarpGate {
+            if block.block_type == BlockType::Air {
+                preview_sprite = Some(sprite);
+                is_valid = true;
             }
+        } else if block.is_broken {
+            // Placing a block
+            preview_sprite = Some(sprite);
+            let block_rect = Rect::new(block.x, block.y, BLOCK_SIZE, BLOCK_SIZE);
+            let player_rect = game.player_manager.player.rect();
+
+            // Valid if it doesn't overlap the player
+            is_valid = !block_rect.overlaps(&player_rect);
         }
     }
 

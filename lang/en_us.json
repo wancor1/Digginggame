@@ -83,5 +83,6 @@
   "block.indestructible.name": "Indestructible",
   "block.coal.name": "Coal",
   "block.oil_shale.name": "Oil Shale",
-  "block.limestone.name": "Limestone"
+  "block.limestone.name": "Limestone",
+  "block.water.name": "Water"
 }

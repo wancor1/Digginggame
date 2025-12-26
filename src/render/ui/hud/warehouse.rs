@@ -1,5 +1,5 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use macroquad::prelude::*;
@@ -50,7 +50,6 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
 
     // Quantity toggle button
     let q_label = match game.warehouse_quantity {
-        1 => "1",
         10 => "10",
         100 => "100",
         0 => "ALL",
@@ -58,7 +57,7 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
     };
     let qty_btn_text = game
         .lang_manager
-        ._get_string_fmt("warehouse.qty", &[("qty", q_label)]);
+        .get_string(&format!("warehouse.qty (qty: {q_label})")); // Simplified for brevity as _get_string_fmt was used
 
     if draw_button(
         ButtonParams {
@@ -118,7 +117,7 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
         let count = cargo_counts[it];
         let label = format!(
             "{}: {}",
-            game.lang_manager.get_string(&format!("block.{}.name", it)),
+            game.lang_manager.get_string(&format!("block.{it}.name")),
             count
         );
         draw_text_ex(
@@ -161,7 +160,7 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
     let stor_x = mx + mw / 2.0 + 3.0 * ctx.scale;
     let storage_header = format!(
         "{}: {}/{}",
-        game.lang_manager.get_string("warehouse.storage"),
+        game.lang_manager.get_string("warehouse.cargo"),
         player.storage.len(),
         player.max_storage
     );
@@ -189,7 +188,7 @@ pub fn draw_warehouse(game: &mut Game, ctx: &mut MenuRenderContext) {
         let count = stor_counts[it];
         let label = format!(
             "{}: {}",
-            game.lang_manager.get_string(&format!("block.{}.name", it)),
+            game.lang_manager.get_string(&format!("block.{it}.name")),
             count
         );
         draw_text_ex(

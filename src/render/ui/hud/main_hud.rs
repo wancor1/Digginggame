@@ -1,15 +1,20 @@
 use crate::Game;
-use crate::constants::*;
+use crate::components::{BlockPos, ChunkRelPos};
+use crate::constants::{
+    BLOCK_SIZE, SCREEN_HEIGHT, SCREEN_WIDTH, SURFACE_Y_LEVEL, TEMPERATURE_DEBUFF_THRESHOLD,
+};
 use crate::events::GameEvent;
+use crate::game::UIOverlay;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use crate::utils::{get_temperature, world_to_chunk_coords, world_to_relative_in_chunk_coords};
 use macroquad::prelude::*;
+use num_traits::ToPrimitive;
 
 pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     let player = &game.player_manager.player;
     let hud_y = ctx.offset_y + 5.0 * ctx.scale;
     let hud_x = ctx.offset_x + 5.0 * ctx.scale;
-    let mini_font_size = (6.0 * ctx.scale) as u16;
+    let mini_font_size = (6.0 * ctx.scale).to_u16().unwrap_or(0);
 
     draw_rectangle(hud_x, hud_y, 40.0 * ctx.scale, 4.0 * ctx.scale, DARKGRAY);
     let fuel_ratio = player.fuel / player.max_fuel;
@@ -60,7 +65,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
         },
     );
 
-    let depth = (player.y / BLOCK_SIZE).floor() as i32 - SURFACE_Y_LEVEL;
+    let depth = (player.y / BLOCK_SIZE).floor().to_i32().unwrap_or(0) - SURFACE_Y_LEVEL;
     draw_text_ex(
         &format!(
             "{}: {}m",
@@ -84,7 +89,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
         WHITE
     };
     draw_text_ex(
-        &format!("TEMP: {:.1}C", temp),
+        &format!("TEMP: {temp:.1}C"),
         ctx.offset_x + (SCREEN_WIDTH - 45.0) * ctx.scale,
         hud_y + 20.0 * ctx.scale,
         TextParams {
@@ -97,13 +102,13 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
 
     // --- HOVERED BLOCK INFO ---
     if let Some((bx, by)) = game.select_block.get_block_coords() {
-        let (cx, cy) = world_to_chunk_coords(bx, by);
+        let BlockPos { x: cx, y: cy } = world_to_chunk_coords(bx, by);
         if let Some(chunk) = game
             .world_manager
             .get_chunk(cx, cy)
             .filter(|c| c.is_generated)
         {
-            let (rx, ry) = world_to_relative_in_chunk_coords(bx, by);
+            let ChunkRelPos { x: rx, y: ry } = world_to_relative_in_chunk_coords(bx, by);
             if rx < chunk.blocks.len() && ry < chunk.blocks[0].len() {
                 let block = &chunk.blocks[rx][ry];
                 let block_name = block
@@ -115,9 +120,9 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
                     })
                     .unwrap_or_else(|| "???".to_string());
 
-                let gx = (bx / BLOCK_SIZE).round() as i32;
-                let gy = (by / BLOCK_SIZE).round() as i32;
-                let info_text = format!("{} ({}, {})", block_name, gx, gy);
+                let gx = (bx / BLOCK_SIZE).round().to_i32().unwrap_or(0);
+                let gy = (by / BLOCK_SIZE).round().to_i32().unwrap_or(0);
+                let info_text = format!("{block_name} ({gx}, {gy})");
 
                 let text_dims = measure_text(&info_text, ctx.font, mini_font_size, 1.0);
                 let info_x = ctx.offset_x + (SCREEN_WIDTH * ctx.scale - text_dims.width) / 2.0;
@@ -188,7 +193,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
             sel_x + slot_size + 2.0 * ctx.scale,
             sel_y + 4.0 * ctx.scale,
             TextParams {
-                font_size: (4.0 * ctx.scale) as u16,
+                font_size: (4.0 * ctx.scale).to_u16().unwrap_or(0),
                 font: ctx.font,
                 color: LIGHTGRAY,
                 ..Default::default()
@@ -210,7 +215,6 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     }
     // --------------
 
-    use crate::game::UIOverlay;
     if game.on_surface && game.ui_overlay == UIOverlay::None {
         if draw_button(
             ButtonParams {

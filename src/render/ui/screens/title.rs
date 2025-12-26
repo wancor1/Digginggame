@@ -1,13 +1,15 @@
 use crate::Game;
-use crate::constants::*;
+use crate::constants::{FONT_SIZE, SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::events::GameEvent;
 use crate::render::ui::common::{ButtonParams, MenuRenderContext, draw_button};
 use macroquad::prelude::*;
 
 pub fn draw_title_screen(game: &Game, ctx: &mut MenuRenderContext) {
     let title = "Digging Game";
-    let center_x = screen_width() / 2.0;
-    let center_y = screen_height() / 2.0;
+    let game_w = SCREEN_WIDTH * ctx.scale;
+    let game_h = SCREEN_HEIGHT * ctx.scale;
+    let center_x = ctx.offset_x + game_w / 2.0;
+    let center_y = ctx.offset_y + game_h / 2.0;
 
     let params = TextParams {
         font_size: (FONT_SIZE * ctx.scale * 2.0) as u16,
@@ -19,14 +21,14 @@ pub fn draw_title_screen(game: &Game, ctx: &mut MenuRenderContext) {
     draw_text_ex(
         title,
         (center_x - t_measure.width / 2.0).floor(),
-        (center_y * 0.5).floor(),
+        (ctx.offset_y + game_h * 0.25).floor(),
         params,
     );
 
     let bw = 60.0 * ctx.scale;
     let bh = 10.0 * ctx.scale;
-    let bx = (screen_width() - bw) / 2.0;
-    let by = center_y;
+    let bx = (center_x - bw / 2.0).floor();
+    let by = center_y.floor();
 
     let s_font_size = (FONT_SIZE * ctx.scale).floor() as u16;
 

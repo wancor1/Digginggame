@@ -1,4 +1,4 @@
-use crate::constants::*;
+use crate::constants::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::game::{Game, GameState, UIOverlay};
 use crate::render::game_renderer::GameRenderer;
 
@@ -65,7 +65,7 @@ pub fn handle_loading(game: &mut Game, game_renderer: &GameRenderer) {
                     .generate_visible_chunks(game.camera.x, game.camera.y);
 
                 game.notification_manager.add_notification(
-                    "Loaded!".to_string(),
+                    "Loaded!",
                     "success",
                     game_renderer.get_font(),
                 );
@@ -74,7 +74,7 @@ pub fn handle_loading(game: &mut Game, game_renderer: &GameRenderer) {
             }
             Err(msg) => {
                 game.notification_manager
-                    .add_notification(msg, "error", game_renderer.get_font());
+                    .add_notification(&msg, "error", game_renderer.get_font());
             }
         }
     }

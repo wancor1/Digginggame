@@ -1,9 +1,11 @@
 use super::Game;
+use crate::components::BlockPos;
 use crate::components::OwnedItem;
-use crate::constants::*;
+use crate::constants::{CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, MACROGRID_SIZE_CHUNKS};
 use crate::managers::persistence::{
     BlockSaveData, ChunkSaveData, ItemStack, SAVE_VERSION, SaveData,
 };
+use num_traits::ToPrimitive;
 
 impl Game {
     fn stack_items(items: &[OwnedItem]) -> Vec<ItemStack> {
@@ -27,70 +29,78 @@ impl Game {
         stacks
     }
 
+    #[must_use]
     pub fn make_save_data(&self) -> SaveData {
         let mut modified_macrogrids: Vec<crate::managers::persistence::MacroGridSaveData> =
             Vec::new();
 
-        for (&(mgx, mgy), macrogrid) in self.world_manager.macrogrids.iter() {
+        for (BlockPos { x: mgx, y: mgy }, macrogrid) in &self.world_manager.macrogrids {
             let mut chunks_in_mg: Vec<ChunkSaveData> = Vec::new();
 
-            for (&(rel_cx, rel_cy), chunk) in macrogrid.chunks.iter() {
+            for (
+                BlockPos {
+                    x: rel_cx,
+                    y: rel_cy,
+                },
+                chunk,
+            ) in &macrogrid.chunks
+            {
                 if chunk.is_modified_in_session {
-                    let cx = mgx * MACROGRID_SIZE_CHUNKS as i32 + rel_cx;
+                    let cx = mgx * MACROGRID_SIZE_CHUNKS.to_i32().unwrap_or(0) + rel_cx;
 
-                    let cy = mgy * MACROGRID_SIZE_CHUNKS as i32 + rel_cy;
+                    let cy = mgy * MACROGRID_SIZE_CHUNKS.to_i32().unwrap_or(0) + rel_cy;
 
                     let mut rle_blocks: Vec<u32> = Vec::new();
 
                     let mut named_blocks: Vec<BlockSaveData> = Vec::new();
 
                     let mut last_type_id: Option<u32> = None;
-
+                    let mut last_level: u8 = 0;
                     let mut current_count: u32 = 0;
 
                     // Scan row-major (y then x) for better horizontal RLE runs
-
                     for by in 0..CHUNK_SIZE_Y_BLOCKS {
                         for bx in 0..CHUNK_SIZE_X_BLOCKS {
                             let block = &chunk.blocks[bx][by];
-
                             let type_id = block.block_type.to_id();
-
-                            let index = (bx * CHUNK_SIZE_Y_BLOCKS + by) as u32;
+                            let level = block.liquid_level;
+                            let index: u32 = (bx * CHUNK_SIZE_Y_BLOCKS + by)
+                                .to_u32()
+                                .unwrap_or(0)
+                                .to_u32()
+                                .unwrap_or(0);
 
                             if let Some(name) = &block.name {
                                 named_blocks.push(BlockSaveData {
                                     i: index,
-
                                     t: block.block_type,
-
                                     n: Some(name.clone()),
                                 });
                             }
 
-                            if let Some(last_id) = last_type_id {
-                                if last_id == type_id && current_count < u32::MAX {
+                            if let (Some(l_id), l_lvl) = (last_type_id, last_level) {
+                                if l_id == type_id && l_lvl == level && current_count < u32::MAX {
                                     current_count += 1;
                                 } else {
-                                    rle_blocks.push(last_id);
-
+                                    rle_blocks.push(l_id);
+                                    rle_blocks.push(u32::from(l_lvl));
                                     rle_blocks.push(current_count);
 
                                     last_type_id = Some(type_id);
-
+                                    last_level = level;
                                     current_count = 1;
                                 }
                             } else {
                                 last_type_id = Some(type_id);
-
+                                last_level = level;
                                 current_count = 1;
                             }
                         }
                     }
 
-                    if let Some(last_id) = last_type_id {
-                        rle_blocks.push(last_id);
-
+                    if let Some(l_id) = last_type_id {
+                        rle_blocks.push(l_id);
+                        rle_blocks.push(u32::from(last_level));
                         rle_blocks.push(current_count);
                     }
 
@@ -108,9 +118,9 @@ impl Game {
 
             if !chunks_in_mg.is_empty() {
                 modified_macrogrids.push(crate::managers::persistence::MacroGridSaveData {
-                    mgx,
+                    mgx: *mgx,
 
-                    mgy,
+                    mgy: *mgy,
 
                     chunks: chunks_in_mg,
                 });
@@ -125,14 +135,14 @@ impl Game {
 
             if let Some(mg_data) = modified_macrogrids
                 .iter_mut()
-                .find(|mg| mg.mgx == mg_coords.0 && mg.mgy == mg_coords.1)
+                .find(|mg| mg.mgx == mg_coords.x && mg.mgy == mg_coords.y)
             {
                 mg_data.chunks.push(chunk_data.clone());
             } else {
                 modified_macrogrids.push(crate::managers::persistence::MacroGridSaveData {
-                    mgx: mg_coords.0,
+                    mgx: mg_coords.x,
 
-                    mgy: mg_coords.1,
+                    mgy: mg_coords.y,
 
                     chunks: vec![chunk_data.clone()],
                 });
