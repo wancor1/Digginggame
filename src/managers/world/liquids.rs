@@ -131,7 +131,8 @@ impl WorldManager {
                     // Determine Target: Self (if not full) or Up (if full)
                     // Added: Trapped Air Check. If target is sealed air, don't fill.
                     let (target_x, target_y, target_level, can_fill) = if level < 8 {
-                        (bx, by, level, true)
+                        let not_trapped = !self.check_trapped_air(bx, by);
+                        (bx, by, level, not_trapped)
                     } else if let Some(up) = self.get_block_ref(bx, by - 1) {
                         let is_permeable = !up.block_type.is_solid() && up.liquid_level < 8;
                         let not_trapped = if is_permeable {
@@ -284,7 +285,7 @@ impl WorldManager {
         queue.push_back((bx, by));
         visited.insert(BlockPos::new(bx, by));
 
-        let limit = 64; // Max air volume to consider "trapped"
+        let limit = 1024; // Max air volume to consider "trapped"
 
         while let Some((cx, cy)) = queue.pop_front() {
             if visited.len() >= limit {
