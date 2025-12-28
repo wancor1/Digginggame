@@ -48,6 +48,25 @@ pub fn get_game_mouse_position() -> (f32, f32) {
 }
 
 #[must_use]
+pub fn get_game_mouse_position_if_inside_render() -> Option<(f32, f32)> {
+    let (render_width, render_height, offset_x, offset_y) = get_render_dimensions();
+    let (mx, my) = mouse_position();
+    let rw = render_width.floor();
+    let rh = render_height.floor();
+    let ox = offset_x.floor();
+    let oy = offset_y.floor();
+
+    let inside_x = mx >= ox && mx < ox + rw;
+    let inside_y = my >= oy && my < oy + rh;
+    if !(inside_x && inside_y) {
+        return None;
+    }
+
+    let scale = rw / SCREEN_WIDTH;
+    Some(((mx - ox) / scale, (my - oy) / scale))
+}
+
+#[must_use]
 pub fn world_to_chunk_coords(world_x: f32, world_y: f32) -> BlockPos {
     let chunk_x = (world_x / (CHUNK_SIZE_X_BLOCKS.to_f32().unwrap_or(0.0) * BLOCK_SIZE))
         .floor()

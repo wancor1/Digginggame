@@ -138,7 +138,6 @@ async fn main() {
         {
             game.handle_event(event, &game_renderer);
         }
-
         next_frame().await;
     }
 }

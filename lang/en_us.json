@@ -61,6 +61,7 @@
   "hud.fuel": "FUEL",
   "hud.cargo": "CARGO",
   "hud.depth" : "DEPTH",
+  "hud.temp": "TEMP",
   "warp.title": "Select Destination",
   "warp.name_prompt": "Enter gate name:",
   "inventory.title": "Inventory",

@@ -29,7 +29,7 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     draw_text_ex(
         &game.lang_manager.get_string("hud.fuel"),
         hud_x,
-        hud_y + 8.0 * ctx.scale,
+        hud_y + 10.0 * ctx.scale,
         TextParams {
             font_size: mini_font_size,
             font: ctx.font,
@@ -89,7 +89,10 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
         WHITE
     };
     draw_text_ex(
-        &format!("TEMP: {temp:.1}C"),
+        &format!(
+            "{}: {temp:.1}C",
+            game.lang_manager.get_string("hud.temp")
+        ),
         ctx.offset_x + (SCREEN_WIDTH - 45.0) * ctx.scale,
         hud_y + 20.0 * ctx.scale,
         TextParams {

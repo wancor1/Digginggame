@@ -61,7 +61,16 @@ impl UIRenderer {
             .draw_high_res(font, scale, offset_x, offset_y);
 
         let mouse_pos = mouse_position();
-        if let Some(atlas_tex) = atlas {
+        let inside_render = crate::utils::get_game_mouse_position_if_inside_render().is_some();
+
+        let screen_h = screen_height();
+        let near_vertical_edge = mouse_pos.1 <= 1.0 || mouse_pos.1 >= screen_h - 1.0;
+        let show_os_cursor = near_vertical_edge || !inside_render || atlas.is_none();
+
+        if show_os_cursor {
+            show_mouse(true);
+        } else if let Some(atlas_tex) = atlas {
+            show_mouse(false);
             draw_texture_ex(
                 atlas_tex,
                 mouse_pos.0,

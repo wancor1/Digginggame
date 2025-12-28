@@ -61,6 +61,7 @@
   "hud.fuel": "燃料",
   "hud.cargo": "貨物",
   "hud.depth" : "深さ",
+  "hud.temp": "温度",
   "warp.title": "行き先を選択",
   "warp.name_prompt": "ゲート名を入力:",
   "inventory.title": "インベントリ",

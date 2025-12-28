@@ -22,11 +22,15 @@ pub fn handle_gameplay_update(game: &mut Game, game_renderer: &GameRenderer) {
 
     update_world(game);
 
-    let (world_mx, world_my) = get_world_mouse_coords(&game.camera);
+    let world_mouse = get_world_mouse_coords(&game.camera);
 
     if game.state == crate::game::GameState::Playing && game.ui_overlay == UIOverlay::None {
-        update_interaction_preview(game, world_mx, world_my);
-        handle_interactions(game, world_mx, world_my, game_renderer);
+        if let Some((world_mx, world_my)) = world_mouse {
+            update_interaction_preview(game, world_mx, world_my);
+            handle_interactions(game, world_mx, world_my, game_renderer);
+        } else {
+            game.select_block.update(None, None, true);
+        }
     } else {
         game.select_block.update(None, None, true);
     }
@@ -87,9 +91,9 @@ fn update_world(game: &mut Game) {
     game.world_manager.update();
 }
 
-fn get_world_mouse_coords(camera: &crate::components::Camera) -> (f32, f32) {
-    let (mx, my) = crate::utils::get_game_mouse_position();
-    ((mx + camera.x).round(), (my + camera.y).round())
+fn get_world_mouse_coords(camera: &crate::components::Camera) -> Option<(f32, f32)> {
+    let (mx, my) = crate::utils::get_game_mouse_position_if_inside_render()?;
+    Some(((mx + camera.x).round(), (my + camera.y).round()))
 }
 
 fn update_interaction_preview(game: &mut Game, world_mx: f32, world_my: f32) {
