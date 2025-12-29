@@ -1,21 +1,95 @@
-MIT License
+wancoro_inu License
 
-Copyright (c) 2025 わんころいぬ
+Copyright © wancoro_inu
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+本ライセンスは、wancoro_inu／わんころいぬ（以下「著作権者」という）が創作した一切の成果物（プログラム、データ、画像、文章、音声等、媒体・形式を問わない。以下「本成果物」という）に適用される。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+第1条（著作権）
+1. 本成果物に関する著作権その他一切の知的財産権は、著作権者に帰属する。
+2. 本ライセンスは、権利の譲渡を意味するものではなく、本成果物の利用を条件付きで許諾するものである。
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+第2条（利用者）
+本成果物を利用する者（以下「利用者」という）は、本ライセンス条項を遵守することを条件として、本成果物を利用することができる。
+
+第3条（利用目的の範囲）
+1. 個人利用：自由に利用して差し支えない。
+2. 商用利用：許可する。ただしクレジット表記を必須とする。
+3. 組み込み利用（ゲーム等の製品・サービス・システムへの組込み含む）：
+   (1) クレジット表記を必須とする。
+   (2) 組み込み利用を前提としない一般用途を除き、事前連絡を要する。
+
+第4条（改変・加工）
+1. 利用者は本成果物を改変・編集・加工することができる。
+2. 改変した場合、その旨を明記しなければならない。
+3. 改変物の配布は禁止する（有償・無償を問わない。第5条3項に定める「配布」を含む）。
+4. クレジット表記は必須とする。
+
+第5条（再配布）
+1. 無改変再配布は禁止する。
+2. 有償・無償、有形・無形の別を問わず、再配布を一切認めない。
+3. 本ライセンスにおける「配布」及び「再配布」とは、本成果物又は改変物を第三者が取得可能な状態にする行為をいい、公開・限定公開、有償・無償、オンライン・オフライン、媒体・形式を問わない。
+   例：リポジトリの公開、Fork、ミラー、添付ファイル配布、配布用アーカイブ（zip等）の配布、ストア／マーケット／ワークショップ等への投稿
+4. 著作権者及び著作権者が明示に許可した者を除き、本成果物又は改変物を公開（公表）してはならない。
+
+第6条（クレジット表記）
+1. クレジット表記は以下いずれかの名称を用いるものとする：
+   ・wancoro_inu
+   ・わんころいぬ
+2. クレジット表記は、本成果物そのものを頒布又は公表する場合に求められるものとし、
+   単なる利用態様（例：本成果物を用いた動画配信・プレイ配信等）のみをもって、
+   クレジット表記義務が生じるものではない。
+
+第7条（同一ライセンス条件）
+1. 本成果物を基に作成された二次的著作物には、本ライセンスと同一の条件を適用するものとする。
+2. ただし、APIその他外部連携等については別ライセンスの併用を妨げない。
+3. 改変を伴わず別ライセンスを適用することは禁止する。
+
+第8条（マネタイズ・販売）
+1. 著作権者以外による本成果物の販売・有償頒布等は、一切認めない。
+2. マネタイズ手段の如何を問わない。
+
+第9条（禁止事項）
+以下の行為を禁止する：
+1. 犯罪行為・違法行為への利用
+2. 宗教又は政治的プロパガンダ目的での利用
+3. AI学習・データセットへの利用（原則禁止）
+4. NFT化（厳禁）
+5. ブロックチェーン関連用途（厳禁）
+
+2項
+ただし、AI学習又はデータセットへの利用については、
+事前に著作権者へ報告・相談があり、
+著作権者が個別に明示の許諾を行った場合に限り、
+この限りではないものとする。
+なお、相談があった場合であっても、
+著作権者は必ずしも許諾を行う義務を負うものではなく、
+許諾の可否は著作権者の裁量により判断されるものとする。
+
+※年齢制限コンテンツへの利用は許容する。
+
+第10条（連絡義務）
+1. 通常利用のみの場合、連絡は不要とする。
+2. 商用利用の場合、原則として事前連絡を要する。
+   ただし、「ゲームを遊ぶ」「APIを利用する」等の一般的ユーザー利用はこの限りではない。
+3. 利用報告は歓迎するが強制しない。
+
+第11条（免責）
+1. 本成果物の利用により生じたいかなる損害・トラブル・不利益等についても、著作権者は一切の責任を負わない。
+2. 利用者は、自己の責任において本成果物を利用するものとする。
+3. 「このアプリで起こったすべての悪いことについて、著作権者は一切関知しない。」
+
+第12条（ライセンス文書の最新版）
+本ライセンスは、以下のURLに掲載された内容及び本書面のうち、訂正日が新しいものを正本とする。
+訂正日が同一であり、かつ内容に相違がある場合は、当該URLに掲載された内容を優先して適用するものとする。
+
+https://github.com/wancor1/LICENSE
+
+第13条（ライセンスの更新）
+著作権者は、本ライセンス条項を予告なく改訂することができる。
+改訂後のライセンス条項は、第12条に定める正本に掲載された時点で効力を生じるものとする。
+
+（用語）本書面における「訂正日」とは、本ライセンス本文（条文）の内容を最終更新した日をいう（誤字脱字等の修正を含む）。
+
+制定日：2025年12月29日
+訂正日：2025年12月29日
+著作権者：wancoro_inu／わんころいぬ
