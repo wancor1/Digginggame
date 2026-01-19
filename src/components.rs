@@ -179,6 +179,7 @@ pub struct MacroCell {
     pub sediment_depth: f32,
     pub paleo_env: f32,     // -1: Deep Sea, 0: Shallow Sea, 1: Land
     pub geohistory_seed: u32,
+    pub crust_thickness: f32,
 }
 
 pub struct MacroGrid {

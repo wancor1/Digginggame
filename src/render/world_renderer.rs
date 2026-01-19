@@ -4,6 +4,7 @@ use crate::constants::{
 };
 use crate::managers::block::BlockType;
 use macroquad::prelude::*;
+use noise::NoiseFn;
 use num_traits::ToPrimitive;
 
 pub struct WorldRenderer;
@@ -12,15 +13,15 @@ impl WorldRenderer {
     fn get_background_info(
         world_manager: &crate::managers::world::WorldManager,
         block: &crate::components::Block,
-    ) -> (f32, BlockType) {
+    ) -> (f32, BlockType, bool) {
         let bx = (block.x / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
         let by = (block.y / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
 
-        let mut min_dist = 5;
+        let mut min_dist = 6;
         let mut nearest_solid_type = block.back_type;
 
-        for dx in -4i32..=4i32 {
-            for dy in -4i32..=4i32 {
+        for dx in -5i32..=5i32 {
+            for dy in -5i32..=5i32 {
                 let dist = dx.abs().max(dy.abs());
                 if dist == 0 || dist >= min_dist {
                     continue;
@@ -36,27 +37,48 @@ impl WorldRenderer {
             }
         }
 
-        let brightness = if min_dist > 4 {
+        // Ambient Occlusion Light
+        let ao_light = if min_dist > 5 {
             0.0
         } else {
-            0.5f32.powi(min_dist)
+            (1.0 - (min_dist as f32 / 6.0)).powf(1.5) * 0.4
         };
 
-        // Determine the background type:
-        // 1. If original back_type is solid, keep it.
-        // 2. If it was liquid, interpolate from nearest solid (to avoid liquid-texture walls).
-        // 3. If it was Air (sky), keep it as Air to avoid showing walls in the empty sky.
-        // 4. For others (like special blocks), allow interpolation if they aren't solid.
+        // Sunlight simulation
+        let mut has_sunlight = false;
+        let sunlight = if by < SURFACE_Y_LEVEL {
+            has_sunlight = true;
+            1.0
+        } else {
+            let mut s = 1.0;
+            let scan_limit = (by - SURFACE_Y_LEVEL).clamp(0, 20);
+            for i in 1..=scan_limit {
+                if let Some(nb) = world_manager.get_block_ref(bx, by - i)
+                    && !nb.is_broken
+                    && nb.block_type.is_solid()
+                {
+                    s = 0.0;
+                    break;
+                }
+            }
+            if s > 0.0 {
+                has_sunlight = true;
+            }
+            s
+        };
+
+        let brightness = (sunlight * 0.8 + ao_light).min(1.0);
+
+        // Determine the background type
         let final_type = if block.back_type.is_solid() {
             block.back_type
         } else if block.back_type == BlockType::Air {
             BlockType::Air
         } else {
-            // This covers liquids and other non-solid special blocks
             nearest_solid_type
         };
 
-        (brightness, final_type)
+        (brightness, final_type, has_sunlight)
     }
 
     pub fn draw(game: &mut Game, atlas: Option<&Texture2D>) {
@@ -77,47 +99,57 @@ impl WorldRenderer {
             let draw_x = (block.x - cx).round();
             let draw_y = (block.y - cy).round();
 
-            // Draw black background if underground
-            if block.y >= SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0) * BLOCK_SIZE {
-                draw_rectangle(draw_x, draw_y, BLOCK_SIZE, BLOCK_SIZE, BLACK);
+            let (brightness, back_type, has_sunlight) =
+                Self::get_background_info(world_manager, block);
+
+            // Draw background underground with subtle texture
+            // Only draw black/dark background if there's no sunlight
+            if block.y >= SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0) * BLOCK_SIZE && !has_sunlight {
+                let nx = block.x as f64 * 0.15;
+                let ny = block.y as f64 * 0.15;
+                let n = world_manager.noise_main.get([nx, ny]) as f32;
+                let base_gray = 0.03 + n * 0.01;
+                draw_rectangle(
+                    draw_x,
+                    draw_y,
+                    BLOCK_SIZE,
+                    BLOCK_SIZE,
+                    Color::new(base_gray, base_gray, base_gray * 1.3, 1.0),
+                );
             }
 
-            if block.is_broken {
-                // Render back wall if broken
-                let (brightness, back_type) = Self::get_background_info(world_manager, block);
+            if block.is_broken || block.block_type.is_liquid() {
+                // Render back wall
                 if brightness > 0.0
                     && let (Some(rect), Some(atlas_tex)) = (back_type.get_sprite(), atlas)
                 {
+                    // Background walls are significantly darker than foreground blocks (max 0.6)
+                    let b = brightness * 0.6;
+                    let tint = if has_sunlight {
+                        Color::new(b, b, b, 1.0)
+                    } else {
+                        // Cooler, more atmospheric tint for deep areas
+                        Color::new(b * 0.7, b * 0.75, b * 0.9, 1.0)
+                    };
+
                     draw_texture_ex(
                         atlas_tex,
                         draw_x,
                         draw_y,
-                        Color::new(brightness, brightness, brightness, 1.0),
+                        tint,
                         DrawTextureParams {
                             source: Some(rect),
                             ..Default::default()
                         },
                     );
-                }
-            } else if block.block_type.is_liquid() {
-                // Render back wall first for liquids
-                let (brightness, back_type) = Self::get_background_info(world_manager, block);
-                if brightness > 0.0
-                    && let (Some(rect), Some(atlas_tex)) = (back_type.get_sprite(), atlas)
-                {
-                    draw_texture_ex(
-                        atlas_tex,
-                        draw_x,
-                        draw_y,
-                        Color::new(brightness, brightness, brightness, 1.0),
-                        DrawTextureParams {
-                            source: Some(rect),
-                            ..Default::default()
-                        },
-                    );
+
+                    // Add a subtle darkening overlay to background walls to further distinguish them
+                    draw_rectangle(draw_x, draw_y, BLOCK_SIZE, BLOCK_SIZE, Color::new(0.0, 0.0, 0.0, 0.2));
                 }
 
-                if let (Some(rect), Some(atlas_tex)) = (block.sprite_rect, atlas) {
+                if block.block_type.is_liquid()
+                    && let (Some(rect), Some(atlas_tex)) = (block.sprite_rect, atlas)
+                {
                     let level = f32::from(block.liquid_level.clamp(1, 8));
                     let height_ratio = level / 8.0;
                     let draw_height = BLOCK_SIZE * height_ratio;
@@ -139,6 +171,9 @@ impl WorldRenderer {
                     );
                 }
             } else if let (Some(rect), Some(atlas_tex)) = (block.sprite_rect, atlas) {
+                // Draw a subtle drop shadow/border for foreground blocks to distinguish them from background
+                draw_rectangle(draw_x + 1.0, draw_y + 1.0, BLOCK_SIZE, BLOCK_SIZE, Color::new(0.0, 0.0, 0.0, 0.5));
+
                 draw_texture_ex(
                     atlas_tex,
                     draw_x,

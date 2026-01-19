@@ -12,29 +12,33 @@ pub fn generate_macro_cell(mg_x: i32, mg_y: i32, seed: u32) -> MacroCell {
     let worley = Worley::new(seed);
     let perlin = Perlin::new(seed.wrapping_add(1));
 
-    // Scaling for macrogrid - larger scale for plates
-    let x = mg_x as f64 * 0.05;
-    let y = mg_y as f64 * 0.05;
+    // Scaling for macrogrid - even larger scale for continents to avoid "too many islands"
+    let x = mg_x as f64 * 0.025;
+    let y = mg_y as f64 * 0.025;
 
     let plate_val = worley.get([x, y]);
     let plate_id = (plate_val.abs() * 1000.0) as u32;
 
-    // Estimate geological stress by checking neighbors for ID changes
-    // Improved to a continuous value
-    let eps = 0.02;
+    // Estimate geological stress by checking neighbors
+    let eps = 0.01;
     let v0 = worley.get([x, y]);
     let v1 = worley.get([x + eps, y]);
     let v2 = worley.get([x, y + eps]);
 
-    let d_stress = ((v0 - v1).abs() + (v0 - v2).abs()) as f32 * 50.0;
+    let d_stress = ((v0 - v1).abs() + (v0 - v2).abs()) as f32 * 80.0;
     let stress = d_stress.min(1.0);
 
-    // Climate parameters
-    let temperature_base = perlin.get([x * 2.0, y * 2.0, 0.0]) as f32;
-    let humidity_base = perlin.get([x * 2.0, y * 2.0, 10.0]) as f32;
+    // Climate and Geology parameters
+    let temperature_base = perlin.get([x * 1.2, y * 1.2, 0.0]) as f32;
+    let humidity_base = perlin.get([x * 1.2, y * 1.2, 10.0]) as f32;
     let sediment_depth = perlin.get([x * 2.0, y * 2.0, 20.0]) as f32;
-    let paleo_env = perlin.get([x * 1.5, y * 1.5, 30.0]) as f32;
-    let geohistory_seed = seed.wrapping_add((mg_x ^ mg_y) as u32);
+    
+    // paleo_env determines Continent vs Ocean. 
+    let paleo_env = perlin.get([x * 0.8, y * 0.8, 30.0]) as f32;
+    
+    let crust_thickness = perlin.get([x * 0.5, y * 0.5, 40.0]) as f32;
+    
+    let geohistory_seed = seed.wrapping_add((mg_x.wrapping_mul(34123) ^ mg_y.wrapping_mul(12347)) as u32);
 
     MacroCell {
         plate_id,
@@ -44,6 +48,7 @@ pub fn generate_macro_cell(mg_x: i32, mg_y: i32, seed: u32) -> MacroCell {
         sediment_depth,
         paleo_env,
         geohistory_seed,
+        crust_thickness,
     }
 }
 
@@ -56,18 +61,20 @@ pub fn generate_chunk_blocks(
     macro_cell: &MacroCell,
 ) -> Vec<Vec<Block>> {
     let (origin_x, origin_y) = chunk_coords_to_world_origin(chunk_x, chunk_y);
-    let mut blocks = Vec::new();
+    let mut blocks = Vec::with_capacity(CHUNK_SIZE_X_BLOCKS);
 
-    // Advanced noise setups
-    let cave_ridged = RidgedMulti::<Perlin>::new(macro_cell.geohistory_seed);
-    let strata_fbm = Fbm::<Perlin>::new(macro_cell.geohistory_seed.wrapping_add(5));
+    // Seed-based noise generators for local features
+    let local_seed = macro_cell.geohistory_seed;
+    let cave_ridged = RidgedMulti::<Perlin>::new(local_seed);
+    let cave_fbm = Fbm::<Perlin>::new(local_seed.wrapping_add(1));
+    let strata_fbm = Fbm::<Perlin>::new(local_seed.wrapping_add(2));
+    let detail_noise = Fbm::<Perlin>::new(local_seed.wrapping_add(3));
+    let vein_noise = RidgedMulti::<Perlin>::new(local_seed.wrapping_add(4));
 
-    // Step 3: Baseline Strata and Elevation
-    // Surface elevation influenced by geological stress
-    let surface_base = SURFACE_Y_LEVEL as f32;
+    let sea_level = SURFACE_Y_LEVEL as f32;
 
     for bx in 0..CHUNK_SIZE_X_BLOCKS {
-        let mut row = Vec::new();
+        let mut row = Vec::with_capacity(CHUNK_SIZE_Y_BLOCKS);
         for by in 0..CHUNK_SIZE_Y_BLOCKS {
             let wx = origin_x + bx.to_f32().unwrap_or(0.0) * BLOCK_SIZE;
             let wy = origin_y + by.to_f32().unwrap_or(0.0) * BLOCK_SIZE;
@@ -75,299 +82,222 @@ pub fn generate_chunk_blocks(
             let wx_f64 = wx.to_f64().unwrap_or(0.0);
             let wy_f64 = wy.to_f64().unwrap_or(0.0);
 
-            let y_block = (wy / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
             let x_block = (wx / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
-            let x_m = x_block as f64; // 1 block = 1 meter
+            let y_block = (wy / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
+            let x_m = x_block as f64;
+            let y_m = y_block as f64;
 
-            // Phase 9: Basin and Plateau dynamics
+            // --- Phase 1: Surface Elevation ---
+            let is_ocean = macro_cell.paleo_env < -0.1;
+            
             let get_surface_y = |x_val: f64| {
-                let s_noise = noise_main.get([x_val * 0.005, 0.0]) as f32 * 15.0;
+                let landscape_noise = noise_main.get([x_val * 0.003, 100.0]) as f32;
                 
-                let s_stress = macro_cell.geological_stress * 60.0;
+                let jag_noise = noise_main.get([x_val * 0.04, 200.0]).abs() as f32;
+                let mountain_val = macro_cell.geological_stress.powf(1.2) * 100.0;
+                let mountain_height = mountain_val * (0.4 + jag_noise * 0.6);
                 
-                let basin_effect = if macro_cell.sediment_depth > 0.3 {
-                    (macro_cell.sediment_depth - 0.3) * 40.0
-                } else { 0.0 };
-                
-                let plateau_noise = noise_main.get([x_val * 0.002, 500.0]).abs() as f32;
-                let plateau_effect = if macro_cell.geological_stress > 0.6 && plateau_noise < 0.2 {
-                    25.0
+                let plat_noise = noise_main.get([x_val * 0.006, 300.0]) as f32;
+                let plat_effect = if !is_ocean && macro_cell.geological_stress > 0.3 {
+                    (plat_noise * 8.0).tanh() * 20.0
                 } else { 0.0 };
 
-                (surface_base - s_noise - s_stress + basin_effect - plateau_effect).floor() as i32
+                let env_base = if is_ocean {
+                    sea_level + 18.0 + (macro_cell.paleo_env.abs() * 45.0)
+                } else {
+                    sea_level - 6.0 - (macro_cell.paleo_env * 20.0)
+                };
+
+                (env_base - landscape_noise * 15.0 - mountain_height - plat_effect).floor() as i32
             };
 
             let surface_y_raw = get_surface_y(x_m);
             
-            // Phase 9: River system (Fluviology)
-            let river_noise = noise_main.get([x_m * 0.015, 800.0]);
-            let is_river = macro_cell.humidity_base > 0.1 && river_noise > 0.82;
-            let river_depth = if is_river { (river_noise - 0.82) * 50.0 } else { 0.0 };
+            // River system
+            let river_noise = noise_main.get([x_m * 0.012, 800.0]);
+            let is_river = !is_ocean && macro_cell.humidity_base > 0.2 && river_noise > 0.82;
+            let river_depth = if is_river { (river_noise - 0.82) * 60.0 } else { 0.0 };
             let surface_y = surface_y_raw + river_depth.floor() as i32;
 
-            // Step 4: Erosion & Outcrops
-            let y_left = get_surface_y(x_m - 1.0);
-            let y_right = get_surface_y(x_m + 1.0);
-            let slope = (y_right - y_left).abs();
-            let is_eroded = slope > 2;
-
-            // Step 5 & 10: Detailed Biomes
+            // --- Phase 2: Biome & Climate ---
             let temp = macro_cell.temperature_base;
             let humid = macro_cell.humidity_base;
 
-            let (surface_block, soil_block, subsoil_block) = if temp < -0.3 {
+            let (mut surface_block, soil_block, subsoil_block) = if temp < -0.4 {
                 (BlockType::Permafrost, BlockType::Permafrost, BlockType::Gravel)
+            } else if temp < -0.1 {
+                (BlockType::Grass, BlockType::Dirt, BlockType::Gravel)
             } else if temp > 0.4 {
                 if humid < -0.2 {
                     (BlockType::Sand, BlockType::Sand, BlockType::Sand)
-                } else {
+                } else if humid > 0.3 {
                     (BlockType::Grass, BlockType::Dirt, BlockType::Dirt)
-                }
-            } else {
-                if humid > 0.5 {
-                    (BlockType::Grass, BlockType::Dirt, BlockType::Gravel)
                 } else {
-                    (BlockType::Grass, BlockType::Dirt, BlockType::Stone)
+                    (BlockType::Sand, BlockType::Dirt, BlockType::Dirt)
                 }
-            };
-
-            // Phase 9: Intrusive Structures (Dykes and Sills)
-            let dyke_noise = noise_main.get([x_m * 0.012, 0.0, 900.0]);
-            let is_dyke = dyke_noise > 0.95;
-            let sill_noise = noise_main.get([0.0, y_block as f64 * 0.008, 1100.0]);
-            let is_sill = sill_noise > 0.96 && y_block > surface_y + 50;
-
-            // Folding (褶曲) using FBM for better complexity
-            let fold_noise = (strata_fbm.get([x_m * 0.002, 100.0]) as f32 * 50.0).floor() as i32;
-            
-            // Faulting (断層)
-            let fault_offset = if macro_cell.geological_stress > 0.85 {
-                let f_noise = noise_main.get([x_m * 0.04, 200.0]);
-                if f_noise > 0.7 { 30 } else if f_noise < -0.7 { -30 } else { 0 }
+            } else if humid > 0.4 {
+                (BlockType::Grass, BlockType::Dirt, BlockType::Dirt)
             } else {
-                0
+                (BlockType::Grass, BlockType::Dirt, BlockType::Stone)
             };
+            
+            if is_ocean {
+                surface_block = if temp > 0.2 { BlockType::Sand } else { BlockType::Gravel };
+            }
 
-            // Phase 15: Unconformity (不整合)
-            let unconformity_y = 400; 
-            let is_below_unconformity = y_block > unconformity_y;
-            let unconformity_tilt = if is_below_unconformity {
-                (noise_main.get([x_m * 0.01, 1200.0]) * 50.0) as i32
+            // --- Phase 3: Strata Layers & Geological Structures ---
+            let distort_x = x_m + strata_fbm.get([x_m * 0.002, y_m * 0.002]) * 50.0;
+            let distort_y = y_m + strata_fbm.get([x_m * 0.002 + 100.0, y_m * 0.002]) * 50.0;
+
+            let fold_v = strata_fbm.get([distort_x * 0.005, distort_y * 0.001]);
+            let fold_offset = (fold_v as f32 * 50.0).floor() as i32;
+            
+            let fault_v = noise_main.get([x_m * 0.04, 500.0]);
+            let is_fault_line = macro_cell.geological_stress > 0.5 && fault_v.abs() > 0.8;
+            let fault_offset = if is_fault_line {
+                (fault_v.signum() * (30.0 + f64::from(macro_cell.geological_stress) * 70.0)) as i32
             } else { 0 };
 
-            let sedimentary_depth =
-                60 + (macro_cell.sediment_depth * 80.0) as i32 + fold_noise + fault_offset + unconformity_tilt;
+            let crust_mod = (macro_cell.crust_thickness * 150.0) as i32;
+            let sedimentary_depth = 70 + (macro_cell.sediment_depth * 120.0) as i32 + fold_offset + fault_offset + crust_mod;
+            let metamorphic_depth = sedimentary_depth + 160 + fold_offset + (crust_mod / 2);
 
-            let metamorphic_depth = sedimentary_depth + 120 + fold_noise;
+            let intrusion_v = detail_noise.get([wx_f64 * 0.007, wy_f64 * 0.007, 777.0]);
+            let is_intrusion = intrusion_v > 0.74 && y_block > surface_y + 30;
+            let is_halo = !is_intrusion && intrusion_v > 0.62 && y_block > surface_y + 20;
 
-            // Phase 11: Natural Caves (Worm Caves using RidgedMulti)
-            let cave_val = cave_ridged.get([x_m * 0.05, y_block as f64 * 0.05, 1500.0]);
-            let is_cave = cave_val > 0.85 && y_block > surface_y + 15;
+            let pipe_grid = 250.0;
+            let pg_x = (wx_f64 / pipe_grid).floor();
+            let pipe_noise = detail_noise.get([pg_x * 17.0, 999.0]);
+            let pipe_center = (pg_x * pipe_grid) + (pipe_noise.abs() * 0.7 + 0.15) * pipe_grid;
+            let is_in_pipe = pipe_noise > 0.82 && (wx_f64 - pipe_center).abs() < (3.0 + pipe_noise * 4.0) && y_block > surface_y + 50;
 
-            // Phase 14: Karst Dynamics (鍾乳洞)
-            let karst_noise = noise_main.get([x_m * 0.02, wy_f64 * 0.02, 2000.0]);
+            let vein_v = vein_noise.get([wx_f64 * 0.12, wy_f64 * 0.12, 888.0]);
+            let is_vein = vein_v > 0.86 && y_block > surface_y + 20;
 
-            // Phase 11: Geodes
-            let geode_noise = noise_main.get([x_m * 0.08, y_block as f64 * 0.08, 3000.0]);
-            let is_geode_center = geode_noise > 0.985 && y_block > metamorphic_depth;
-            
-            // Initial Spawn Point - Warp Gate
+            let worm_v = cave_ridged.get([x_m * 0.07, y_m * 0.07, 1500.0]);
+            let chamber_v = cave_fbm.get([x_m * 0.025, y_m * 0.025, 2500.0]);
+            let is_cave = (worm_v > 0.87 || chamber_v > 0.82) && y_block > surface_y + 15;
+
+            let magma_v = detail_noise.get([x_m * 0.04, y_m * 0.04, 4000.0]);
+            let is_magma = magma_v > 0.85 && y_block > metamorphic_depth + 120;
+
+            // --- Phase 4: Block Selection ---
             let player_start_x_block = (PLAYER_INITIAL_X / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
             let player_start_y_block = (PLAYER_INITIAL_Y / BLOCK_SIZE).floor().to_i32().unwrap_or(0);
 
-            let (max_hp, sprite_rect, block_type) =
-                if x_block == player_start_x_block && y_block == player_start_y_block {
-                    let bt = BlockType::WarpGate;
-                    (50, bt.get_sprite(), bt)
-                } else if x_block == player_start_x_block && y_block == player_start_y_block + 1 {
-                    let bt = BlockType::Indestructible;
-                    (bt.get_base_hardness(), bt.get_sprite(), bt)
-                } else if y_block < surface_y_raw && !is_river {
-                    (0, None, BlockType::Air)
-                } else if is_river && y_block < surface_y_raw {
-                    (0, None, BlockType::Air)
-                } else if is_river && y_block < surface_y {
-                    let bt = BlockType::Water;
-                    (bt.get_base_hardness(), bt.get_sprite(), bt)
-                } else if is_cave && !is_dyke && !is_sill {
-                    // Standard cave carving
-                    (0, None, BlockType::Air)
-                } else if is_geode_center {
-                    (0, None, BlockType::Air)
-                } else if y_block == surface_y {
-                    // Surface determination with erosion
-                    let bt = if is_eroded { BlockType::Stone } else { surface_block };
-                    (bt.get_base_hardness(), bt.get_sprite(), bt)
-                } else {
-                    let mut b_type = soil_block;
+            let mut b_type;
 
-                    if y_block > surface_y {
-                        let relative_depth = y_block - surface_y;
-                        
-                        // Phase 9: Soil Horizons and Intrusions
-                        if relative_depth < 4 && !is_dyke && !is_sill {
-                            b_type = soil_block;
-                        } else if relative_depth < 12 && !is_dyke && !is_sill {
-                            b_type = subsoil_block;
-                        } else if is_dyke || is_sill {
-                            // Dyke/Sill intrusion
-                            b_type = if relative_depth > metamorphic_depth { BlockType::Basalt } else { BlockType::Granite };
-                        } else if relative_depth < sedimentary_depth {
-                            // Phase 13: Bio-sedimentary Layers
-                            let sedimentary_base = if macro_cell.paleo_env > 0.2 {
-                                BlockType::Dirt // Former Land
-                            } else if macro_cell.paleo_env > -0.2 {
-                                BlockType::Limestone // Former Shallow Sea
-                            } else {
-                                BlockType::Chert // Former Deep Sea
-                            };
-
-                            if is_eroded && relative_depth < 6 {
-                                let outcrop_noise = noise_ore.get([x_m * 0.1, y_block as f64 * 0.1]);
-                                b_type = if outcrop_noise > 0.7 { BlockType::Coal } else { BlockType::Stone };
-                            } else {
-                                let stone_patch = noise_main.get([x_m * 0.06, wy_f64 * 0.06]);
-                                b_type = if stone_patch > 0.3 { BlockType::Stone } else { sedimentary_base };
-                                
-                                // Phase 14: Limestone caves
-                                if b_type == BlockType::Limestone && karst_noise > 0.65 {
-                                    b_type = BlockType::Air;
-                                }
-
-                                if relative_depth > 20 && b_type != BlockType::Air {
-                                    let rock_noise = noise_main.get([x_m * 0.1, wy_f64 * 0.1, 10.0]);
-                                    if rock_noise > 0.7 { b_type = BlockType::OilShale; }
-                                }
-                            }
-                        } else if relative_depth < metamorphic_depth {
-                            b_type = BlockType::Schist;
-                            let meta_noise = noise_main.get([x_m * 0.1, wy_f64 * 0.1]);
-                            if meta_noise > 0.4 { b_type = BlockType::Marble; }
-                        } else {
-                            b_type = BlockType::Granite;
-                            let igneous_noise = noise_main.get([x_m * 0.07, wy_f64 * 0.07]);
-                            if igneous_noise > 0.5 { b_type = BlockType::Basalt; }
-                            
-                            if relative_depth > metamorphic_depth + 1000 { b_type = BlockType::Indestructible; }
-                        }
-
-                        // Phase 16: Hydrothermal Alteration
-                        if !is_dyke && !is_sill {
-                            let dist_to_dyke = (dyke_noise - 0.95).abs();
-                            if dist_to_dyke < 0.02 {
-                                // Altered Zone
-                                if b_type == BlockType::Stone || b_type == BlockType::Limestone {
-                                    b_type = BlockType::Quartz; // Silicification
-                                }
-                            }
-                        }
-
-                        // Geode Surroundings
-                        if geode_noise > 0.96 && b_type != BlockType::Air {
-                            b_type = if geode_noise > 0.98 { BlockType::Ruby } else { BlockType::Quartz };
-                        }
-
-                        // --- Phase 8: Mineralization Process ---
-                        let ore_noise_val = noise_ore.get([wx_f64 * 0.12, wy_f64 * 0.12]);
-                        let vein_noise = noise_ore.get([wx_f64 * 0.04, wy_f64 * 0.2, 100.0]); 
-                        
-                        // 1. Sedimentary & Weathering Deposits
-                        if relative_depth < sedimentary_depth {
-                            if temp > 0.5 && humid > 0.5 && relative_depth < 18 {
-                                if ore_noise_val > 0.75 { b_type = BlockType::Bauxite; }
-                            }
-                            
-                            if temp > 0.3 && humid < -0.4 && relative_depth > 12 {
-                                if ore_noise_val > 0.65 { b_type = BlockType::Halite; }
-                                else if ore_noise_val < -0.75 { b_type = BlockType::Gypsum; }
-                            }
-
-                            if ore_noise_val > 0.78 {
-                                b_type = BlockType::Coal;
-                            }
-                        }
-                        
-                        // 2. Metamorphic Deposits
-                        else if relative_depth < metamorphic_depth {
-                            if ore_noise_val > 0.82 {
-                                b_type = BlockType::Graphite;
-                            } else if ore_noise_val < -0.88 {
-                                b_type = BlockType::Ruby;
-                            }
-                        }
-                        
-                        // 3. Igneous & Magmatic Deposits
-                        else {
-                            if ore_noise_val > 0.75 {
-                                b_type = BlockType::Hematite; 
-                            } else if ore_noise_val < -0.75 {
-                                b_type = BlockType::Chalcopyrite; 
-                            }
-                            
-                            if relative_depth > metamorphic_depth + 400 && ore_noise_val > 0.92 {
-                                b_type = BlockType::NativePlatinum;
-                            }
-
-                            let pipe_noise = noise_ore.get([wx_f64 * 0.03, 0.0, 500.0]);
-                            if pipe_noise > 0.93 {
-                                b_type = BlockType::Kimberlite;
-                                if noise_ore.get([wx_f64 * 0.5, wy_f64 * 0.5]) > 0.6 {
-                                    b_type = BlockType::Diamond;
-                                }
-                            }
-                        }
-
-                        // 4. Hydrothermal Veins
-                        if macro_cell.geological_stress > 0.6 && vein_noise.abs() > 0.88 {
-                            if relative_depth > 40 {
-                                let vein_type_roll = noise_ore.get([wx_f64 * 0.02, wy_f64 * 0.02, 300.0]);
-                                b_type = if vein_type_roll > 0.6 {
-                                    BlockType::NativeGold
-                                } else if vein_type_roll > 0.2 {
-                                    BlockType::Galena 
-                                } else if vein_type_roll > -0.3 {
-                                    BlockType::Sphalerite 
-                                } else {
-                                    BlockType::Quartz
-                                };
-                            }
-                        }
-
-                        let boundary_dist = (relative_depth - metamorphic_depth).abs();
-                        if boundary_dist < 12 && ore_noise_val > 0.85 {
-                            b_type = BlockType::Spodumene;
-                        }
+            if x_block == player_start_x_block && y_block == player_start_y_block {
+                b_type = BlockType::WarpGate;
+            } else if x_block == player_start_x_block && y_block == player_start_y_block + 1 {
+                b_type = BlockType::Indestructible;
+            } else if y_block < surface_y_raw {
+                b_type = if y_block >= sea_level.floor() as i32 { BlockType::Seawater } else { BlockType::Air };
+            } else if is_river && y_block < surface_y {
+                b_type = BlockType::Water;
+            } else if is_cave && !is_magma && !is_in_pipe && !is_vein {
+                b_type = BlockType::Air;
+            } else if is_magma {
+                b_type = BlockType::Magma;
+            } else if y_block == surface_y {
+                let is_cliff = (get_surface_y(x_m + 1.0) - get_surface_y(x_m - 1.0)).abs() > 3;
+                b_type = if is_cliff && !is_ocean { BlockType::Stone } else { surface_block };
+            } else {
+                let d = y_block - surface_y;
+                
+                if d < 7 {
+                    b_type = soil_block;
+                } else if d < 15 {
+                    let is_low = surface_y_raw > sea_level as i32 + 5;
+                    b_type = if is_low && humid > 0.2 { BlockType::Gravel } else { subsoil_block };
+                } else if is_in_pipe {
+                    b_type = BlockType::Kimberlite;
+                } else if is_intrusion {
+                    let type_noise = detail_noise.get([x_m * 0.05, y_m * 0.05, 7000.0]);
+                    b_type = if type_noise > 0.2 { BlockType::Basalt } else { BlockType::Granite };
+                } else if d < sedimentary_depth {
+                    let env = macro_cell.paleo_env + (strata_fbm.get([x_m * 0.002, y_m * 0.01]) as f32 * 0.5);
+                    b_type = if env > 0.3 { BlockType::Stone }
+                             else if env > 0.0 { BlockType::Limestone }
+                             else if env > -0.3 { BlockType::OilShale }
+                             else { BlockType::Chert };
+                    
+                    if is_halo && b_type == BlockType::Limestone {
+                        b_type = BlockType::Marble;
                     }
-
-                    if y_block > 2000 {
-                        b_type = BlockType::Indestructible;
+                    
+                    if (b_type == BlockType::Limestone || b_type == BlockType::Gravel) && chamber_v > 0.75 {
+                        b_type = BlockType::Water;
                     }
-
-                let base_hardness = b_type.get_base_hardness();
-                let s_rect = b_type.get_sprite();
-
-                let hp = if base_hardness == -1 {
-                    -1
+                } else if d < metamorphic_depth {
+                    let m_noise = detail_noise.get([x_m * 0.06, y_m * 0.06, 6000.0]);
+                    b_type = if is_halo || m_noise > 0.25 { BlockType::Marble } else { BlockType::Schist };
                 } else {
-                    let depth = (y_block - surface_y).to_f64().unwrap_or(0.0);
-                    let multiplier = 1.0 + depth * HARDNESS_DEPTH_MULTIPLIER;
-                    (base_hardness.to_f64().unwrap_or(0.0) * multiplier)
-                        .floor()
-                        .to_i32()
-                        .unwrap_or(0)
-                };
+                    let d_noise = detail_noise.get([x_m * 0.04, y_m * 0.04, 7000.0]);
+                    b_type = if d_noise > 0.3 { BlockType::Basalt } else { BlockType::Granite };
+                    
+                    if d > metamorphic_depth + 1200 {
+                        b_type = BlockType::Peridotite;
+                    }
+                }
 
-                (hp, s_rect, b_type)
+                // --- Mineralization Logic ---
+                let ore_rand = noise_ore.get([wx_f64 * 0.2, wy_f64 * 0.2]);
+                let cluster_rand = noise_ore.get([wx_f64 * 0.05, wy_f64 * 0.05, 888.0]);
+
+                if is_in_pipe {
+                    if ore_rand > 0.65 { b_type = BlockType::Diamond; }
+                } else if is_vein {
+                    b_type = if ore_rand > 0.6 { BlockType::NativeGold }
+                             else if ore_rand > 0.2 { BlockType::Quartz }
+                             else if ore_rand < -0.7 { BlockType::Galena }
+                             else if ore_rand < -0.4 { BlockType::NativePlatinum }
+                             else { b_type };
+                } else if is_halo && b_type == BlockType::Marble {
+                    if ore_rand > 0.5 { b_type = BlockType::Hematite; }
+                    else if ore_rand < -0.5 { b_type = BlockType::Chalcopyrite; }
+                } else if cluster_rand > 0.68 {
+                    if d < sedimentary_depth {
+                        if ore_rand > 0.55 { b_type = BlockType::Coal; }
+                        else if ore_rand < -0.7 && temp > 0.3 { b_type = BlockType::Halite; }
+                        else if ore_rand < -0.6 { b_type = BlockType::Gypsum; }
+                    } else if d < metamorphic_depth {
+                        if ore_rand > 0.7 { b_type = BlockType::Graphite; }
+                        else if ore_rand < -0.8 { b_type = BlockType::Ruby; }
+                        else if ore_rand > 0.75 { b_type = BlockType::Spodumene; }
+                    } else if ore_rand > 0.65 {
+                        b_type = BlockType::Hematite;
+                    } else if ore_rand < -0.65 {
+                        b_type = BlockType::Chalcopyrite;
+                    } else if ore_rand > 0.8 {
+                        b_type = BlockType::Cassiterite;
+                    }
+                }
+                
+                if is_cave && (worm_v > 0.85 || chamber_v > 0.8) {
+                    let geode = detail_noise.get([x_m * 0.4, y_m * 0.4, 999.0]);
+                    if geode > 0.82 { b_type = BlockType::Quartz; }
+                    else if geode < -0.9 { b_type = BlockType::Ruby; }
+                }
+            }
+
+            if y_block > 3000 { b_type = BlockType::Indestructible; }
+
+            let base_hardness = b_type.get_base_hardness();
+            let s_rect = b_type.get_sprite();
+            let hp = if base_hardness == -1 { -1 } else {
+                let depth = (y_block - SURFACE_Y_LEVEL).max(0).to_f64().unwrap_or(0.0);
+                let multiplier = 1.0 + depth * HARDNESS_DEPTH_MULTIPLIER;
+                (base_hardness.to_f64().unwrap_or(0.0) * multiplier).floor() as i32
             };
 
-            if block_type == BlockType::WarpGate {
-                let mut b = Block::new(wx, wy, max_hp, sprite_rect, block_type);
+            let mut b = Block::new(wx, wy, hp, s_rect, b_type);
+            if b_type == BlockType::WarpGate {
                 b.name = Some("Home".to_string());
-                b.back_type = BlockType::Air; 
-                row.push(b);
-            } else {
-                row.push(Block::new(wx, wy, max_hp, sprite_rect, block_type));
+                b.back_type = BlockType::Air;
             }
+            row.push(b);
         }
         blocks.push(row);
     }

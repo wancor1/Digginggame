@@ -59,10 +59,10 @@
     "key": "oil_shale",
     "is_solid": true,
     "is_placeable": true,
-    "base_hardness": 0,
+    "base_hardness": 1,
     "sprite": { "x": 128.0, "y": 8.0, "w": 8.0, "h": 8.0 },
     "item_type": "oil_shale",
-    "weight": 0,
+    "weight": 1,
     "map_color": [100, 80, 60]
   },
   {
@@ -70,10 +70,10 @@
     "key": "limestone",
     "is_solid": true,
     "is_placeable": true,
-    "base_hardness": 0,
+    "base_hardness": 1,
     "sprite": { "x": 128.0, "y": 16.0, "w": 8.0, "h": 8.0 },
     "item_type": "limestone",
-    "weight": 0,
+    "weight": 1,
     "map_color": [200, 200, 180]
   },
   {

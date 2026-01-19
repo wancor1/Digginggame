@@ -49,6 +49,7 @@ impl BlockType {
 
     pub const WATER: Self = Self(107);
     pub const MAGMA: Self = Self(108);
+    pub const SEAWATER: Self = Self(109);
     pub const WARP_GATE: Self = Self(500);
 
     pub const Air: Self = Self::AIR;
@@ -85,6 +86,7 @@ impl BlockType {
     pub const Kimberlite: Self = Self::KIMBERLITE;
     pub const Water: Self = Self::WATER;
     pub const Magma: Self = Self::MAGMA;
+    pub const Seawater: Self = Self::SEAWATER;
     pub const Indestructible: Self = Self::INDESTRUCTIBLE;
     pub const WarpGate: Self = Self::WARP_GATE;
 

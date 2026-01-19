@@ -86,5 +86,6 @@
   "block.coal.name": "石炭",
   "block.oil_shale.name": "オイルシェール",
   "block.limestone.name": "石灰岩",
-  "block.water.name": "水"
+  "block.water.name": "水",
+  "block.seawater.name": "海水"
 }

@@ -112,6 +112,20 @@ async fn main() {
         camera_to_render_target.render_target = Some(render_target.clone());
         set_camera(&camera_to_render_target);
         clear_background(SKYBLUE);
+
+        // Draw sky gradient
+        for i in 0..10 {
+            let gy = i as f32 * (SCREEN_HEIGHT / 10.0);
+            let t = i as f32 / 10.0;
+            let color = Color::new(
+                0.53 + t * 0.1, // SKYBLUE is roughly (0.53, 0.81, 0.92)
+                0.81 - t * 0.1,
+                0.92,
+                1.0,
+            );
+            draw_rectangle(game.camera.x, game.camera.y + gy, SCREEN_WIDTH, SCREEN_HEIGHT / 10.0, color);
+        }
+
         game_renderer.draw_world(&mut game);
         set_default_camera();
 

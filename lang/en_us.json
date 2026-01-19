@@ -86,5 +86,6 @@
   "block.coal.name": "Coal",
   "block.oil_shale.name": "Oil Shale",
   "block.limestone.name": "Limestone",
-  "block.water.name": "Water"
+  "block.water.name": "Water",
+  "block.seawater.name": "Seawater"
 }

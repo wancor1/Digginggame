@@ -42,11 +42,9 @@ impl WorldManager {
             self.ensure_macrocell_exists(pos);
             self.macrogrids
                 .get(&pos)
-                .unwrap()
-                .cell
-                .as_ref()
-                .unwrap()
-                .clone()
+                .and_then(|m| m.cell.as_ref())
+                .cloned()
+                .unwrap_or_else(|| generation::generate_macro_cell(x, y, self.world_seed_main))
         };
 
         let c00 = get_cell(x0, y0);
@@ -82,6 +80,11 @@ impl WorldManager {
             lerp_f32(c01.paleo_env, c11.paleo_env, tx),
             ty,
         );
+        let interp_crust = lerp_f32(
+            lerp_f32(c00.crust_thickness, c10.crust_thickness, tx),
+            lerp_f32(c01.crust_thickness, c11.crust_thickness, tx),
+            ty,
+        );
 
         // Plate ID and Geohistory are NOT interpolated, use the nearest
         let (plate_id, geohistory_seed) = if tx < 0.5 {
@@ -100,16 +103,17 @@ impl WorldManager {
             sediment_depth: interp_sediment,
             paleo_env: interp_paleo,
             geohistory_seed,
+            crust_thickness: interp_crust,
         }
     }
 
     pub fn ensure_chunk_exists_and_generated(&mut self, chunk_x: i32, chunk_y: i32) {
         let (mg_coords, rel_coords) = chunk_to_macrogrid_coords(chunk_x, chunk_y);
 
-        // Get interpolated macrocell data for this chunk
+        // Get interpolated macrocell data for this chunk. This also ensures macrocells exist.
         let macro_cell = self.get_interpolated_macro_cell(chunk_x, chunk_y);
 
-        let macrogrid = self.macrogrids.get_mut(&mg_coords).unwrap();
+        let macrogrid = self.macrogrids.entry(mg_coords).or_default();
 
         let entry = macrogrid
             .chunks
@@ -136,16 +140,47 @@ impl WorldManager {
                 modifications::apply_chunk_save_data(entry, &mod_data);
             }
 
-            // Track liquids
-            for (bx, row) in entry.blocks.iter().enumerate() {
-                for (by, block) in row.iter().enumerate() {
+            // Track liquids - Only activate if potentially unstable
+            let chunk_x_blocks = chunk_x * CHUNK_SIZE_X_BLOCKS.to_i32().unwrap_or(0);
+            let chunk_y_blocks = chunk_y * CHUNK_SIZE_Y_BLOCKS.to_i32().unwrap_or(0);
+            
+            // To properly check neighbors, we'd need adjacent chunks. 
+            // For simplicity and performance during generation, we'll activate 
+            // liquid blocks that are at the boundaries of the chunk or have non-full/different neighbors within the chunk.
+            for bx in 0..CHUNK_SIZE_X_BLOCKS {
+                for by in 0..CHUNK_SIZE_Y_BLOCKS {
+                    let block = &entry.blocks[bx][by];
                     if block.block_type.is_liquid() {
-                        let world_bx = chunk_x * CHUNK_SIZE_X_BLOCKS.to_i32().unwrap_or(0)
-                            + bx.to_i32().unwrap_or(0);
-                        let world_by = chunk_y * CHUNK_SIZE_Y_BLOCKS.to_i32().unwrap_or(0)
-                            + by.to_i32().unwrap_or(0);
-                        self.active_liquids
-                            .insert(BlockPos::new(world_bx, world_by));
+                        let mut unstable = false;
+                        if block.liquid_level < 8 {
+                            unstable = true;
+                        } else {
+                            // Check neighbors within this chunk
+                            let neighbors = [
+                                (bx as i32 - 1, by as i32),
+                                (bx as i32 + 1, by as i32),
+                                (bx as i32, by as i32 - 1),
+                                (bx as i32, by as i32 + 1),
+                            ];
+                            for (nx, ny) in neighbors {
+                                if nx < 0 || nx >= CHUNK_SIZE_X_BLOCKS as i32 || ny < 0 || ny >= CHUNK_SIZE_Y_BLOCKS as i32 {
+                                    // Boundary blocks are considered potentially unstable to trigger cross-chunk flow
+                                    unstable = true;
+                                    break;
+                                }
+                                let nb = &entry.blocks[nx as usize][ny as usize];
+                                if !nb.block_type.is_solid() && (nb.block_type != block.block_type || nb.liquid_level < 8) {
+                                    unstable = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if unstable {
+                            let world_bx = chunk_x_blocks + bx.to_i32().unwrap_or(0);
+                            let world_by = chunk_y_blocks + by.to_i32().unwrap_or(0);
+                            self.active_liquids.insert(BlockPos::new(world_bx, world_by));
+                        }
                     }
                 }
             }
