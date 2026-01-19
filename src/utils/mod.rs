@@ -1,7 +1,8 @@
 use crate::components::{BlockPos, ChunkRelPos};
 use crate::constants::{
-    BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS, MACROGRID_SIZE_CHUNKS, SCREEN_HEIGHT,
-    SCREEN_WIDTH, SURFACE_TEMPERATURE, SURFACE_Y_LEVEL, TEMPERATURE_GRADIENT,
+    ATMOSPHERIC_TEMPERATURE_GRADIENT, BLOCK_SIZE, CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS,
+    GEOTHERMAL_TEMPERATURE_GRADIENT, MACROGRID_SIZE_CHUNKS, SCREEN_HEIGHT, SCREEN_WIDTH,
+    SURFACE_TEMPERATURE, SURFACE_Y_LEVEL,
 };
 use macroquad::prelude::*;
 use num_traits::ToPrimitive;
@@ -11,9 +12,11 @@ pub mod icon;
 #[must_use]
 pub fn get_temperature(y: f32) -> f32 {
     let depth = (y / BLOCK_SIZE).floor() - SURFACE_Y_LEVEL.to_f32().unwrap_or(0.0);
-    depth
-        .max(0.0)
-        .mul_add(TEMPERATURE_GRADIENT, SURFACE_TEMPERATURE)
+    if depth >= 0.0 {
+        depth.mul_add(GEOTHERMAL_TEMPERATURE_GRADIENT, SURFACE_TEMPERATURE)
+    } else {
+        depth.mul_add(ATMOSPHERIC_TEMPERATURE_GRADIENT, SURFACE_TEMPERATURE)
+    }
 }
 
 #[must_use]

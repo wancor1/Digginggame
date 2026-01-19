@@ -13,10 +13,42 @@ impl BlockType {
     pub const GRASS: Self = Self(2);
     pub const STONE: Self = Self(3);
     pub const INDESTRUCTIBLE: Self = Self(4);
+    pub const SCHIST: Self = Self(5);
+    pub const GRANITE: Self = Self(6);
+    pub const MARBLE: Self = Self(7);
+    pub const BASALT: Self = Self(8);
+    pub const SAND: Self = Self(9);
+    pub const GRAVEL: Self = Self(10);
+    pub const PERMAFROST: Self = Self(11);
+
     pub const COAL: Self = Self(100);
     pub const OIL_SHALE: Self = Self(101);
     pub const LIMESTONE: Self = Self(102);
+
+    pub const HEMATITE: Self = Self(110);
+    pub const CHALCOPYRITE: Self = Self(111);
+    pub const NATIVE_GOLD: Self = Self(112);
+    pub const GALENA: Self = Self(113);
+    pub const SPHALERITE: Self = Self(114);
+    pub const CASSITERITE: Self = Self(115);
+    pub const BAUXITE: Self = Self(116);
+    pub const NATIVE_PLATINUM: Self = Self(117);
+
+    pub const QUARTZ: Self = Self(130);
+    pub const DIAMOND: Self = Self(131);
+    pub const RUBY: Self = Self(132);
+    pub const SPODUMENE: Self = Self(133);
+
+    pub const CHERT: Self = Self(150);
+    pub const HALITE: Self = Self(151);
+    pub const GYPSUM: Self = Self(152);
+
+    pub const GRAPHITE: Self = Self(170);
+    pub const PERIDOTITE: Self = Self(171);
+    pub const KIMBERLITE: Self = Self(172);
+
     pub const WATER: Self = Self(107);
+    pub const MAGMA: Self = Self(108);
     pub const WARP_GATE: Self = Self(500);
 
     pub const Air: Self = Self::AIR;
@@ -26,7 +58,33 @@ impl BlockType {
     pub const Coal: Self = Self::COAL;
     pub const OilShale: Self = Self::OIL_SHALE;
     pub const Limestone: Self = Self::LIMESTONE;
+    pub const Schist: Self = Self::SCHIST;
+    pub const Granite: Self = Self::GRANITE;
+    pub const Marble: Self = Self::MARBLE;
+    pub const Basalt: Self = Self::BASALT;
+    pub const Sand: Self = Self::SAND;
+    pub const Gravel: Self = Self::GRAVEL;
+    pub const Permafrost: Self = Self::PERMAFROST;
+    pub const Hematite: Self = Self::HEMATITE;
+    pub const Chalcopyrite: Self = Self::CHALCOPYRITE;
+    pub const NativeGold: Self = Self::NATIVE_GOLD;
+    pub const Galena: Self = Self::GALENA;
+    pub const Sphalerite: Self = Self::SPHALERITE;
+    pub const Cassiterite: Self = Self::CASSITERITE;
+    pub const Bauxite: Self = Self::BAUXITE;
+    pub const NativePlatinum: Self = Self::NATIVE_PLATINUM;
+    pub const Quartz: Self = Self::QUARTZ;
+    pub const Diamond: Self = Self::DIAMOND;
+    pub const Ruby: Self = Self::RUBY;
+    pub const Spodumene: Self = Self::SPODUMENE;
+    pub const Chert: Self = Self::CHERT;
+    pub const Halite: Self = Self::HALITE;
+    pub const Gypsum: Self = Self::GYPSUM;
+    pub const Graphite: Self = Self::GRAPHITE;
+    pub const Peridotite: Self = Self::PERIDOTITE;
+    pub const Kimberlite: Self = Self::KIMBERLITE;
     pub const Water: Self = Self::WATER;
+    pub const Magma: Self = Self::MAGMA;
     pub const Indestructible: Self = Self::INDESTRUCTIBLE;
     pub const WarpGate: Self = Self::WARP_GATE;
 

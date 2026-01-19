@@ -62,6 +62,7 @@
   "hud.cargo": "CARGO",
   "hud.depth" : "DEPTH",
   "hud.temp": "TEMP",
+  "hud.altitude" : "ALTITUDE",
   "warp.title": "Select Destination",
   "warp.name_prompt": "Enter gate name:",
   "inventory.title": "Inventory",

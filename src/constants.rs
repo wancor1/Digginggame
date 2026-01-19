@@ -102,6 +102,7 @@ pub const SPRITE_BREAK_ANIM_V_START: f32 = 0.0;
 
 // Temperature System
 pub const SURFACE_TEMPERATURE: f32 = 25.0;
-pub const TEMPERATURE_GRADIENT: f32 = 0.1; // Degrees increase per block depth
+pub const GEOTHERMAL_TEMPERATURE_GRADIENT: f32 = 0.1; // Degrees increase per block depth (underground)
+pub const ATMOSPHERIC_TEMPERATURE_GRADIENT: f32 = 0.05; // Degrees decrease per block altitude (above ground)
 pub const TEMPERATURE_DEBUFF_THRESHOLD: f32 = 35.0;
 pub const HEAT_RESISTANCE_STEP: f32 = 5.0; // How many degrees each resistance level mitigates

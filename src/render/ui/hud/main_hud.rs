@@ -66,11 +66,12 @@ pub fn draw_hud(game: &Game, ctx: &mut MenuRenderContext) {
     );
 
     let depth = (player.y / BLOCK_SIZE).floor().to_i32().unwrap_or(0) - SURFACE_Y_LEVEL;
+    let altitude = -depth;
     draw_text_ex(
         &format!(
             "{}: {}m",
-            game.lang_manager.get_string("hud.depth"),
-            depth.max(0)
+            game.lang_manager.get_string("hud.altitude"),
+            altitude
         ),
         ctx.offset_x + (SCREEN_WIDTH - 45.0) * ctx.scale,
         hud_y + 12.0 * ctx.scale,

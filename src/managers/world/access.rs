@@ -1,7 +1,7 @@
 use super::WorldManager;
 use super::generation;
 use super::modifications;
-use crate::components::{Block, BlockPos, Chunk, ChunkRelPos};
+use crate::components::{Block, BlockPos, Chunk, ChunkRelPos, MacroCell};
 use crate::constants::{CHUNK_SIZE_X_BLOCKS, CHUNK_SIZE_Y_BLOCKS};
 use crate::utils::{
     chunk_to_macrogrid_coords, world_to_chunk_coords, world_to_relative_in_chunk_coords,
@@ -9,9 +9,107 @@ use crate::utils::{
 use num_traits::ToPrimitive;
 
 impl WorldManager {
+    pub fn ensure_macrocell_exists(&mut self, mg_coords: BlockPos) {
+        let macrogrid = self.macrogrids.entry(mg_coords).or_default();
+        if macrogrid.cell.is_none() {
+            macrogrid.cell = Some(generation::generate_macro_cell(
+                mg_coords.x,
+                mg_coords.y,
+                self.world_seed_main,
+            ));
+        }
+    }
+
+    pub fn get_interpolated_macro_cell(&mut self, chunk_x: i32, chunk_y: i32) -> MacroCell {
+        use crate::constants::MACROGRID_SIZE_CHUNKS;
+        let m_size = MACROGRID_SIZE_CHUNKS as f32;
+
+        // Calculate macro-grid space coordinates of the chunk center
+        // Each macro-grid sample is at its center: (mg_x * 8 + 3.5, mg_y * 8 + 3.5)
+        let fx = (chunk_x as f32 - (m_size - 1.0) / 2.0) / m_size;
+        let fy = (chunk_y as f32 - (m_size - 1.0) / 2.0) / m_size;
+
+        let x0 = fx.floor() as i32;
+        let y0 = fy.floor() as i32;
+        let x1 = x0 + 1;
+        let y1 = y0 + 1;
+
+        let tx = fx - fx.floor();
+        let ty = fy - fy.floor();
+
+        let mut get_cell = |x: i32, y: i32| {
+            let pos = BlockPos::new(x, y);
+            self.ensure_macrocell_exists(pos);
+            self.macrogrids
+                .get(&pos)
+                .unwrap()
+                .cell
+                .as_ref()
+                .unwrap()
+                .clone()
+        };
+
+        let c00 = get_cell(x0, y0);
+        let c10 = get_cell(x1, y0);
+        let c01 = get_cell(x0, y1);
+        let c11 = get_cell(x1, y1);
+
+        // Bilinear interpolation
+        let lerp_f32 = |v0: f32, v1: f32, t: f32| v0 + (v1 - v0) * t;
+
+        let interp_stress = lerp_f32(
+            lerp_f32(c00.geological_stress, c10.geological_stress, tx),
+            lerp_f32(c01.geological_stress, c11.geological_stress, tx),
+            ty,
+        );
+        let interp_temp = lerp_f32(
+            lerp_f32(c00.temperature_base, c10.temperature_base, tx),
+            lerp_f32(c01.temperature_base, c11.temperature_base, tx),
+            ty,
+        );
+        let interp_humidity = lerp_f32(
+            lerp_f32(c00.humidity_base, c10.humidity_base, tx),
+            lerp_f32(c01.humidity_base, c11.humidity_base, tx),
+            ty,
+        );
+        let interp_sediment = lerp_f32(
+            lerp_f32(c00.sediment_depth, c10.sediment_depth, tx),
+            lerp_f32(c01.sediment_depth, c11.sediment_depth, tx),
+            ty,
+        );
+        let interp_paleo = lerp_f32(
+            lerp_f32(c00.paleo_env, c10.paleo_env, tx),
+            lerp_f32(c01.paleo_env, c11.paleo_env, tx),
+            ty,
+        );
+
+        // Plate ID and Geohistory are NOT interpolated, use the nearest
+        let (plate_id, geohistory_seed) = if tx < 0.5 {
+            if ty < 0.5 { (c00.plate_id, c00.geohistory_seed) } else { (c01.plate_id, c01.geohistory_seed) }
+        } else if ty < 0.5 {
+            (c10.plate_id, c10.geohistory_seed)
+        } else {
+            (c11.plate_id, c11.geohistory_seed)
+        };
+
+        MacroCell {
+            plate_id,
+            geological_stress: interp_stress,
+            temperature_base: interp_temp,
+            humidity_base: interp_humidity,
+            sediment_depth: interp_sediment,
+            paleo_env: interp_paleo,
+            geohistory_seed,
+        }
+    }
+
     pub fn ensure_chunk_exists_and_generated(&mut self, chunk_x: i32, chunk_y: i32) {
         let (mg_coords, rel_coords) = chunk_to_macrogrid_coords(chunk_x, chunk_y);
-        let macrogrid = self.macrogrids.entry(mg_coords).or_default();
+
+        // Get interpolated macrocell data for this chunk
+        let macro_cell = self.get_interpolated_macro_cell(chunk_x, chunk_y);
+
+        let macrogrid = self.macrogrids.get_mut(&mg_coords).unwrap();
 
         let entry = macrogrid
             .chunks
@@ -19,7 +117,13 @@ impl WorldManager {
             .or_insert_with(|| Chunk::new(chunk_x, chunk_y));
 
         if !entry.is_generated {
-            entry.blocks = generation::generate_chunk_blocks(chunk_x, chunk_y, &self.noise_ore);
+            entry.blocks = generation::generate_chunk_blocks(
+                chunk_x,
+                chunk_y,
+                &self.noise_main,
+                &self.noise_ore,
+                &macro_cell,
+            );
             entry.is_generated = true;
             self.generated_chunk_coords
                 .insert(BlockPos::new(chunk_x, chunk_y));

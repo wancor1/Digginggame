@@ -170,7 +170,19 @@ impl Chunk {
     }
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct MacroCell {
+    pub plate_id: u32,
+    pub geological_stress: f32,
+    pub temperature_base: f32,
+    pub humidity_base: f32,
+    pub sediment_depth: f32,
+    pub paleo_env: f32,     // -1: Deep Sea, 0: Shallow Sea, 1: Land
+    pub geohistory_seed: u32,
+}
+
 pub struct MacroGrid {
+    pub cell: Option<MacroCell>,
     pub chunks: std::collections::HashMap<BlockPos, Chunk>,
 }
 
@@ -184,6 +196,7 @@ impl MacroGrid {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            cell: None,
             chunks: std::collections::HashMap::new(),
         }
     }
